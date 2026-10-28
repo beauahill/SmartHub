@@ -9,6 +9,7 @@ Parts exported (world position as <name>.stl, print orientation as print_<name>.
   grille_ring    ring frame that the linen wraps around, slides on from below, magnets to the tub
   bezel_front    tablet frame, front lip + pocket
   bezel_tray     back housing for the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
+  dc_plate       flush plate that carries the 24 V panel jack, screws into the spine's rear face
   _render_fabric linen skin, for renders only
 Measure your tablet and drivers and edit the PARAMETERS block before printing.
 
@@ -92,6 +93,15 @@ BEZ_GAP = 4.0                                # air gap between lid and lowest be
 
 # Hardware
 M3_CLR, M3_INSERT, INSERT_DEPTH = 3.4, 4.0, 6.0
+# 24 V input: a panel-mount DC-099 barrel jack (5.5 x 2.1 mm, 11 mm hole, 6 mm max panel, hex nut).
+# The jack nuts onto a small printed plate, which sits flush in a pocket on the spine's rear face and
+# is held by two M3 countersunk screws in heat-set inserts. The cavity behind it clears the nut.
+DC_JACK_HOLE = 11.3                          # 11 mm nominal; printed holes run small
+DC_JACK_Z = 16.0                             # jack center above the lid top
+DC_PLATE_W, DC_PLATE_H, DC_PLATE_T, DC_PLATE_R = 40.0, 24.0, 3.0, 3.0
+DC_PLATE_CLR = 0.2                           # pocket clearance per side
+DC_CAVITY_D = 19.0                           # clears a 14 mm hex nut across its corners
+DC_SCREW_X = 15.0                            # plate screws at +-X
 # Magnet pairs: a 6x2 mm disc in the tub and a 6x1 mm disc in the grille ring at each position.
 MAG_D = 6.4                                  # pocket diameter for 6 mm discs
 MAG_T_TUB, MAG_T_FRAME = 2.0, 1.0            # magnet thicknesses
@@ -347,7 +357,8 @@ HS = 115.0
 bps = to_world(0, T, HS)
 Yb0 = bp0[1]
 REAR_Y = Yb0 + 50
-prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + 8), (bps[1], bps[2]), (bp0[1], bp0[2]), (Yb0 - 6, bp0[2])]])
+REAR_FACE_H = max(8.0, DC_JACK_Z + DC_PLATE_H / 2 + 3.0)   # flat rear face tall enough for the jack plate
+prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + REAR_FACE_H), (bps[1], bps[2]), (bp0[1], bp0[2]), (Yb0 - 6, bp0[2])]])
 SW = 60.0
 spine = prof.extrude(SW).rotate([90, 0, 90]).translate([-SW/2, 0, 0])   # profile (Y,Z) extruded along X
 spine = spine.translate([0, 0, -0.5])     # sink 0.5 mm into the lid so they fuse
@@ -361,8 +372,28 @@ p_low = np.array([0, WIRE_HOLE[1], TOPZ - 2])
 p_high = to_world(0, T - 6, CH_H)
 chan = M.batch_hull([M.sphere(6, 48).translate(p_low.tolist()), M.sphere(6, 48).translate(p_high.tolist())])
 spine = spine - chan
-# DC pigtail hole from the rear into the channel
-spine = spine - cyl_y(0, TOPZ + 14, WIRE_HOLE[1], REAR_Y + 5, 11)
+# 24 V jack: flush pocket for the plate, cavity for the jack body and nut, inserts for the plate screws
+def plate_cs(w, h, r):
+    return rrect(-w/2, w/2, -h/2, h/2, r, r)
+def along_y(cs, y0, y1, z):
+    """extrude an X-Z profile (drawn as X-Y) along +Y from y0 to y1, centered at height z"""
+    return cs.extrude(y1 - y0).rotate([-90, 0, 0]).translate([0, y0, z])
+REAR_FACE = REAR_Y - 0.6
+DC_Z = TOPZ + DC_JACK_Z
+POCKET_FLOOR = REAR_FACE - DC_PLATE_T
+spine = spine - along_y(plate_cs(DC_PLATE_W + 2 * DC_PLATE_CLR, DC_PLATE_H + 2 * DC_PLATE_CLR, DC_PLATE_R + DC_PLATE_CLR),
+                        POCKET_FLOOR, REAR_FACE + 1, DC_Z)
+spine = spine - cyl_y(0, DC_Z, WIRE_HOLE[1] - 8, POCKET_FLOOR + 0.01, DC_CAVITY_D)   # runs into the cable channel
+for sx in (-DC_SCREW_X, DC_SCREW_X):
+    spine = spine - cyl_y(sx, DC_Z, POCKET_FLOOR - INSERT_DEPTH, POCKET_FLOOR + 0.01, M3_INSERT)
+
+# jack plate, built face down: z = 0 is the outside face
+dc_plate = plate_cs(DC_PLATE_W, DC_PLATE_H, DC_PLATE_R).extrude(DC_PLATE_T)
+dc_plate = dc_plate - cyl_z(0, 0, -1, DC_PLATE_T + 1, DC_JACK_HOLE)
+for sx in (-DC_SCREW_X, DC_SCREW_X):
+    dc_plate = dc_plate - cyl_z(sx, 0, -1, DC_PLATE_T + 1, M3_CLR)
+    dc_plate = dc_plate - M.cylinder(1.7, 3.4, M3_CLR / 2, SEG).translate([sx, 0, -0.01])   # 90 deg countersink
+dc_plate_w = dc_plate.rotate([90, 0, 0]).translate([0, REAR_FACE, DC_Z])
 # don't let the spine poke into the tray
 spine = spine - place(rr_xz(EW + 2, EH + 2, ER, -1, T))
 lid_spine = lid + spine
@@ -382,7 +413,7 @@ def export(man, name):
 
 parts_world = {
     "base_tub": tub, "lid_spine": lid_spine, "grille_ring": gf,
-    "bezel_front": bezel_front_w, "bezel_tray": bezel_tray_w,
+    "bezel_front": bezel_front_w, "bezel_tray": bezel_tray_w, "dc_plate": dc_plate_w,
 }
 meshes = {k: export(v, k) for k, v in parts_world.items()}
 export(fabric, "_render_fabric")
@@ -392,6 +423,7 @@ export(tr.rotate([-90, 0, 0]), "print_bezel_tray")             # back wall down
 export(gf.rotate([180, 0, 0]), "print_grille_ring")          # top edge down
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
+export(dc_plate, "print_dc_plate")                             # outside face down
 
 # acoustic volumes
 fr_ch = (IX - (FR_CH_X0 + CHAMBER_WALL)) * (FR_CH_Y1 - CHAMBER_WALL - IY0) * (TUB_H - FLOOR) / 1e6

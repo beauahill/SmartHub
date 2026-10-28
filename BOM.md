@@ -15,7 +15,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | E5 | 1 | 5 V buck module, MP1584EN | 22 x 17 mm. 24 V in, 5 V out, feeds the ESP32-C3 5V pin and the radar | `buck_5v` cradle |
 | E6 | 1 | USB-C PD step-down module, 12 to 24 V in, USB-C output | 15 W or more. Charges the tablet through the UGREEN adapter's charging port. The cradle is set to 40 x 25 mm; change it to fit your module | `pd_module` cradle |
 | E8 | 1 | 24 V DC power adapter, 4 A (96 W) | Regulated. Stays under the KABD-430's 26 V maximum | |
-| E9 | 1 | DC barrel jack pigtail, 5.5 x 2.1 mm female | Body under 11 mm diameter | Rear hole in the spine |
+| E9 | 1 | DC-099 panel-mount barrel jack, 5.5 x 2.1 mm female, metal | 11 mm panel hole, 6 mm maximum panel, hex nut, 5 A. Match the plug on your 24 V adapter; a 5.5 x 2.5 mm jack fits the same hole | `DC_*` parameters, `dc_plate` |
 | E10 | 1 | Dayton Audio ICP1 or KPX programmer, optional | Only needed to change the KABD-430 DSP program in SigmaStudio, which runs on Windows: crossover, high-pass, limiter, Bluetooth input | J5 programming port |
 
 ## 2. Audio path
@@ -48,9 +48,10 @@ Measure your drivers and correct `FR_BC`, `WF_BC` and `PR_BC` before printing th
 
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
-| H1 | 12 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 8 in the bezel front, 4 in the spine | `M3_INSERT`, `INSERT_DEPTH` |
+| H1 | 14 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 8 in the bezel front, 4 for the tray bolts in the spine, 2 for the jack plate | `M3_INSERT`, `INSERT_DEPTH` |
 | H2 | 8 | M3 x 25 socket head cap screws | Tray to bezel front. The counterbores deepen with the tray, so M3 x 25 always gives about 4 mm insert engagement | `SCREWS` |
 | H3 | 4 | M3 x 8 socket or button head screws | Tray to spine. Heads inside the tray | `SPINE_PTS` |
+| H3a | 2 | M3 x 8 countersunk (flat head) screws | Jack plate to spine, flush with the plate | `DC_SCREW_X` |
 | H4 | 4 | M3 x 6 thread-forming screws | KABD-430 into its 2.6 mm standoff pilots, which are about 4.9 mm deep. Longer screws bottom out | Amp standoffs |
 | H5 | 6 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm | `BOSSES` |
 | H6 | 12 | Neodymium disc magnets, 6 x 2 mm, N52 | One per tub pocket. Sits 0.2 mm below the surface | `MAG_T_TUB` |
@@ -64,7 +65,7 @@ Measure your drivers and correct `FR_BC`, `WF_BC` and `PR_BC` before printing th
 | # | Qty | Part | Spec / notes |
 | --- | --- | --- | --- |
 | W1 | 3 m | Speaker wire, 20 AWG | Three pairs from the KABD-430 down the spine channel and through the 12 mm lid hole |
-| W2 | 1 m | Power wire, 18 AWG, red and black | 24 V distribution in the tray |
+| W2 | 1 m | Power wire, 18 AWG, red and black | From the jack up the spine channel, then 24 V distribution in the tray |
 | W3 | 1 m | Silicone hookup wire, 26 to 28 AWG | Radar to ESP32-C3: 5V, GND, TX, RX |
 | W4 | 1 set | Speaker and power connectors for the KABD-430 | The functional cable kit covers the AUX input; check what else ships with your board |
 | W5 | | Heat shrink, solder, hot glue | Hot glue seals the full-range wire pass-throughs |
@@ -74,10 +75,11 @@ Measure your drivers and correct `FR_BC`, `WF_BC` and `PR_BC` before printing th
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
 | P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 850 cm³ |
-| P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 348 cm³ |
+| P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 353 cm³ |
 | P3 | 1 | `grille_ring.stl` | 299 x 149 x 112 | 92 cm³ |
 | P4 | 1 | `bezel_front.stl` | 284 x 200 x 10 | 136 cm³ |
 | P5 | 1 | `bezel_tray.stl` | 284 x 200 x 30 | 207 cm³ |
+| P6 | 1 | `dc_plate.stl` | 40 x 24 x 3 | 2.5 cm³ |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |

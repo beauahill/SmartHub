@@ -31,7 +31,7 @@ The full parts list is in [BOM.md](BOM.md).
   to the AUX input of a Dayton Audio KABD-430 DSP amplifier in the bezel tray. The amp drives two Dayton ND65
   full-range drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105
   passive radiator.
-- **Power.** One 24 V adapter enters through the rear of the spine. It feeds the amp directly, a
+- **Power.** One 24 V adapter plugs into a flush panel-mount barrel jack on the rear of the spine. It feeds the amp directly, a
   USB-C PD module that charges the tablet through the UGREEN adapter, and a small 5 V buck for the
   ESP32 and radar.
 - **Volume cap.** The tablet's media volume sets the amp's input level. Counter Home holds media
@@ -65,6 +65,7 @@ already oriented for printing.
 | `grille_ring` | 299 x 149 x 112 | Linen wraps around it. Slides on from below, held by magnets |
 | `bezel_front` | 284 x 200 x 10 | Prints face down. Holds the tablet and the radar |
 | `bezel_tray` | 284 x 200 x 30 | Prints back wall down. Holds the amp, power modules and audio adapter |
+| `dc_plate` | 40 x 24 x 3 | Prints face down. Carries the 24 V panel jack |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
@@ -93,7 +94,8 @@ The script prints part volumes and the acoustic volumes: about 0.58 L per full-r
 
 ### 2. Assemble
 
-1. Press the M3 heat-set inserts into the bezel front (8) and the spine (4).
+1. Press the M3 heat-set inserts into the bezel front (8), the spine's tray bolt holes (4) and the
+   jack pocket on the spine's rear face (2).
 2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
    pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
    ring magnets sit flush.
@@ -101,12 +103,15 @@ The script prints part volumes and the acoustic volumes: about 0.58 L per full-r
    Mount the drivers from the outside on gasket tape, using the pilot holes.
 4. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
 5. Wrap the linen around the grille ring, then slide the ring onto the tub.
-6. Bolt the tray to the spine and mount the amp on its standoffs. Stick the PD module, UGREEN adapter,
+6. Nut the DC-099 jack onto the jack plate and solder 18 AWG leads to it. Feed the leads through the
+   pocket cavity and up the cable channel into the tray, then screw the plate flush with two
+   M3 x 8 countersunk screws.
+7. Bolt the tray to the spine and mount the amp on its standoffs. Stick the PD module, UGREEN adapter,
    5 V buck and ESP32-C3 into their cradles with VHB tape. Fit the radar in the chin pocket.
-7. Connect the audio: right-angle adapter into the tablet, UGREEN adapter into that, PD module into the
+8. Connect the audio: right-angle adapter into the tablet, UGREEN adapter into that, PD module into the
    UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
-8. Put foam on the six tablet back-stop posts, drop in the tablet, and screw the front bezel on with M3 x 25 screws.
+9. Put foam on the six tablet back-stop posts, drop in the tablet, and screw the front bezel on with M3 x 25 screws.
 
 The right-angle adapter has to turn the plug back into the tray within 10 mm of the tablet edge.
 If yours is bigger, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
@@ -258,3 +263,4 @@ These items came out of reviewing the Cowork export.
 | Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
 | Setup script printed the wrong Home Assistant secret names | Fixed |
 | KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth now follows the amp height, 30 mm for a 23 mm board |
+| 24 V entered through a pigtail hole | Changed to a flush panel-mount DC-099 jack on a screw-in plate |
