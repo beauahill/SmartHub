@@ -8,7 +8,7 @@ Parts exported (world position as <name>.stl, print orientation as print_<name>.
                  spine that joins it to the bezel tray and carries the cable channel
   grille_ring    ring frame that the linen wraps around, slides on from below, magnets to the tub
   bezel_front    tablet frame, front lip + pocket
-  bezel_tray     back housing for amp / PD module / USB-C adapter
+  bezel_tray     back housing for the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
   _render_fabric linen skin, for renders only
 Measure your tablet and drivers and edit the PARAMETERS block before printing.
 
@@ -65,8 +65,15 @@ RADAR_W, RADAR_H = 23.0, 17.0                # pocket for HLK-LD2410C (22 x 16 m
 LIP = 2.4
 USB_NOTCH_H = 22.0                           # height of the USB-C notch, centered on the tablet
 POCKET_D = TAB_T + 0.4
-TRAY_D = 26.0
 TRAY_WALL = 2.4
+# Amplifier: Dayton Audio KABD-430. Board 91.4 x 68.6 mm, M3 holes on 83.8 x 61.0 mm.
+# Height: the user guide says 20 mm, retail listings say 0.9 in (23 mm). Measure yours and set AMP_H.
+AMP_HOLES = (83.8, 61.0)                     # hole spacing, x by z
+AMP_H = 23.0                                 # tallest part above the PCB bottom, including the PCB
+AMP_STANDOFF = 3.5                           # PCB bottom above the tray back wall
+AMP_CLEAR = 1.0                              # gap between the tallest part and the tablet back
+# Tray depth follows the amp: wall + standoff + amp + clearance, never less than the original 26 mm.
+TRAY_D = max(26.0, math.ceil(TRAY_WALL + AMP_STANDOFF + AMP_H + AMP_CLEAR))
 # Cradles on the inside of the tray back wall: (name, x, z, width, height) of the board itself, in
 # bezel coordinates (z from the bezel bottom edge). Low walls locate each part; VHB tape holds it.
 # Set the PD module size to the module you buy.
@@ -281,20 +288,21 @@ for (x, z) in SCREWS:
 # --- bezel tray
 tr = M.batch_hull([rr_xz(EW, EH, ER, T_FRONT, T - BCH), rr_xz(EW - 2*BCH, EH - 2*BCH, ER - BCH, T - BCH, T)]) - rr_xz(EW - 2*TRAY_WALL, EH - 2*TRAY_WALL, ER - TRAY_WALL, T_FRONT - 1, T - TRAY_WALL)
 # screw bosses through the tray depth
+CBORE = 5.0 + (TRAY_D - 26.0)   # counterbore grows with the tray, so M3x25 keeps ~4 mm insert engagement
 for (x, z) in SCREWS:
     tr = tr + (lcyl_a(x, z, T_FRONT, T - 0.01, 8.0) ^ rr_xz(EW, EH, ER, T_FRONT - 1, T + 1))
 for (x, z) in SCREWS:
-    tr = tr - lcyl_a(x, z, T_FRONT - 1, T + 1, M3_CLR) - lcyl_a(x, z, T - 5.0, T + 1, 6.2)   # 5 mm counterbore -> M3x25 gives ~4 mm insert engagement
+    tr = tr - lcyl_a(x, z, T_FRONT - 1, T + 1, M3_CLR) - lcyl_a(x, z, T - CBORE, T + 1, 6.2)
 # tablet back-stop posts (put 1.5 mm foam on the tips)
 for x in (-115, 0, 115):
     for z in (40, EH - 40):
         tr = tr + lcyl_a(x, z, T_FRONT, T - 0.01, 8.0)
-# JAB4 standoffs (board 91.4 x 68.6; check hole pattern on your board)
+# KABD-430 standoffs, 2.6 mm pilots for M3 thread-forming screws
 JX, JZ = -70.0, HC
-for dx in (-42, 42):
-    for dz in (-30.5, 30.5):
-        tr = tr + lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - 4, T - 0.01, 7.0)
-        tr = tr - lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - 5, T - 1.0, 2.6)
+for dx in (-AMP_HOLES[0] / 2, AMP_HOLES[0] / 2):
+    for dz in (-AMP_HOLES[1] / 2, AMP_HOLES[1] / 2):
+        tr = tr + lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF, T - 0.01, 7.0)
+        tr = tr - lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF - 1, T - 1.0, 2.6)
 # USB notch continuation
 tr = tr - lbox(ux0, ux1, T_FRONT - 1, T_FRONT + 3, TAB_CZ - USB_NOTCH_H / 2, TAB_CZ + USB_NOTCH_H / 2)
 # cradles for the small boards, standing off the inside of the back wall

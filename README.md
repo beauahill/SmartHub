@@ -12,7 +12,8 @@ chin wakes the screen when someone walks up.
 | ![Rear](enclosure/renders/rear.png) | ![Side](enclosure/renders/side.png) |
 
 The renders show the first version of the bezel. The current bezel is 8 mm wider, with 13 mm side
-borders instead of 9 mm, to make room for the USB-C adapter.
+borders instead of 9 mm, to make room for the USB-C adapter. Its tray is also 4 mm deeper, to fit
+the KABD-430 amplifier.
 
 The full parts list is in [BOM.md](BOM.md).
 
@@ -27,7 +28,7 @@ The full parts list is in [BOM.md](BOM.md).
   Assistant over ESPHome. Automations wake the screen, fall back to a dim clock, then turn it off.
 - **Sound.** The tablet's USB-C port goes through a right-angle adapter into a UGREEN 2-in-1 adapter.
   That adapter splits it into a 3.5 mm audio output and a USB-C charging input. A 3.5 mm cable runs
-  to the AUX input of a Wondom JAB4 DSP amplifier in the bezel tray. The amp drives two Dayton ND65
+  to the AUX input of a Dayton Audio KABD-430 DSP amplifier in the bezel tray. The amp drives two Dayton ND65
   full-range drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105
   passive radiator.
 - **Power.** One 24 V adapter enters through the rear of the spine. It feeds the amp directly, a
@@ -63,13 +64,17 @@ already oriented for printing.
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
 | `grille_ring` | 299 x 149 x 112 | Linen wraps around it. Slides on from below, held by magnets |
 | `bezel_front` | 284 x 200 x 10 | Prints face down. Holds the tablet and the radar |
-| `bezel_tray` | 284 x 200 x 26 | Prints back wall down. Holds the amp, power modules and audio adapter |
+| `bezel_tray` | 284 x 200 x 30 | Prints back wall down. Holds the amp, power modules and audio adapter |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
 Use PETG or ASA for the bezel tray, because it sits behind a charging tablet and an amplifier.
 Do not use carbon-fiber or metal-filled filament for the bezel front: the radar looks through its
 2.4 mm lip.
+
+**Before printing the tray, measure your KABD-430's height.** Dayton's user guide gives 20 mm and
+retail listings give 23 mm, so the script assumes 23 mm. The tray depth follows `AMP_H`. A shorter
+board gives a shallower tray, down to the original 26 mm.
 
 **Before printing the tub, measure your drivers' screw bolt circles.** The tub has blind pilot
 holes for the driver screws, but the bolt circles in the script are estimates. Correct `FR_BC`,
@@ -99,7 +104,8 @@ The script prints part volumes and the acoustic volumes: about 0.58 L per full-r
 6. Bolt the tray to the spine and mount the amp on its standoffs. Stick the PD module, UGREEN adapter,
    5 V buck and ESP32-C3 into their cradles with VHB tape. Fit the radar in the chin pocket.
 7. Connect the audio: right-angle adapter into the tablet, UGREEN adapter into that, PD module into the
-   UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the JAB4 AUX input (J13).
+   UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
+   Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
 8. Put foam on the six tablet back-stop posts, drop in the tablet, and screw the front bezel on with M3 x 25 screws.
 
 The right-angle adapter has to turn the plug back into the tray within 10 mm of the tablet edge.
@@ -145,8 +151,9 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 Do the YouTube TV and Spotify sign-ins while the kiosk lock is paused. Google's login screens
 belong to other packages, and lock task mode blocks them.
 
-The JAB4 still has Bluetooth, and it mixes Bluetooth audio with the AUX input. Anyone in range can
-pair a phone with it. Check whether your board's DSP program lets you turn Bluetooth off.
+The KABD-430 still has Bluetooth, and its default DSP program mixes Bluetooth audio with the AUX
+input. Anyone in range can pair a phone with it. A custom SigmaStudio program, loaded with a Dayton
+ICP1 or KPX programmer, can drop the Bluetooth input.
 
 ### 5. Configure Home Assistant
 
@@ -250,3 +257,4 @@ These items came out of reviewing the Cowork export.
 | Four non-manifold edges in `base_tub` | Fixed. Two brace columns now overlap the side walls instead of touching them |
 | Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
 | Setup script printed the wrong Home Assistant secret names | Fixed |
+| KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth now follows the amp height, 30 mm for a 23 mm board |
