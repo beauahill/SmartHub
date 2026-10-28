@@ -1,0 +1,144 @@
+# Counter display: Home Assistant side.
+# Drop this file in config/packages/ and make sure configuration.yaml has:
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# secrets.yaml needs (setup.sh prints the token and IP):
+#   counter_display_token: "Bearer <token>"
+#   counter_display_api: "http://192.168.0.120:2323/{{ path }}"
+#   counter_display_status: "http://192.168.0.120:2323/status"
+
+rest_command:
+  counter_display:
+    url: !secret counter_display_api
+    method: post
+    headers:
+      Authorization: !secret counter_display_token
+    timeout: 5
+
+rest:
+  - resource: !secret counter_display_status
+    headers:
+      Authorization: !secret counter_display_token
+    scan_interval: 20
+    timeout: 5
+    sensor:
+      - name: Counter display battery
+        unique_id: counter_display_battery
+        value_template: "{{ value_json.battery }}"
+        unit_of_measurement: "%"
+        device_class: battery
+      - name: Counter display battery temperature
+        unique_id: counter_display_battery_temp
+        value_template: "{{ value_json.batteryTempC }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+    binary_sensor:
+      - name: Counter display screen
+        unique_id: counter_display_screen
+        value_template: "{{ value_json.screenOn }}"
+      - name: Counter display on dashboard
+        unique_id: counter_display_on_dashboard
+        value_template: "{{ value_json.launcherInFront and not value_json.ambient }}"
+      - name: Counter display launcher in front
+        unique_id: counter_display_launcher_in_front
+        value_template: "{{ value_json.launcherInFront }}"
+
+script:
+  counter_display:
+    alias: Counter display command
+    description: Send any API path, e.g. screen/on, ambient/on, home, launch?app=Music
+    fields:
+      path:
+        description: API path
+        example: launch?app=Music
+    sequence:
+      - action: rest_command.counter_display
+        data:
+          path: "{{ path }}"
+
+automation:
+  - id: counter_display_wake
+    alias: Counter display, wake when someone walks up
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.counter_presence_presence
+        to: "on"
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: screen/on
+      - action: rest_command.counter_display
+        data:
+          # Dim at night, auto brightness during the day.
+          path: >-
+            {{ 'brightness?value=25' if now().hour >= 22 or now().hour < 6 else 'brightness?value=auto' }}
+
+  - id: counter_display_ambient
+    alias: Counter display, clock after 2 minutes alone
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.counter_presence_presence
+        to: "off"
+        for: "00:02:00"
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.counter_display_launcher_in_front
+        state: "on"
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: ambient/on
+
+  - id: counter_display_off
+    alias: Counter display, panel off after 10 minutes alone
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.counter_presence_presence
+        to: "off"
+        for: "00:10:00"
+    conditions:
+      # Leaves the screen alone while YouTube TV or IPTV is up.
+      - condition: state
+        entity_id: binary_sensor.counter_display_launcher_in_front
+        state: "on"
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: screen/off
+
+  - id: counter_display_return_home
+    alias: Counter display, back to the dashboard after 30 minutes alone
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.counter_presence_presence
+        to: "off"
+        for: "00:30:00"
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.counter_display_launcher_in_front
+        state: "off"
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: home
+      - delay: "00:00:05"
+      - action: rest_command.counter_display
+        data:
+          path: screen/off
+
+  - id: counter_display_battery_guard
+    alias: Counter display, warn if the battery runs hot
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.counter_display_battery_temperature
+        above: 42
+        for: "00:05:00"
+    actions:
+      - action: persistent_notification.create
+        data:
+          title: Counter display
+          message: >-
+            Tablet battery is at {{ states('sensor.counter_display_battery_temperature') }} °C.
+            Check the tray vents and that Battery protection is still set to Maximum.

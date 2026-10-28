@@ -1,0 +1,20 @@
+# Lets the counter display open the dashboard without a login screen or a stored password.
+# Merge this into the homeassistant: block of configuration.yaml, then restart HA.
+#
+# 1. Settings > People > Users: add a user "counter" (not an admin). Copy its user ID from the URL
+#    or from the user's detail page.
+# 2. Give the tablet a fixed DHCP lease on the EdgeRouter and use that IP below.
+# 3. Keep the "homeassistant" provider FIRST so every other device still gets the normal login.
+#
+# Note: HA must see the tablet's real IP. That's true for a bridged VirtualBox network adapter;
+# if the HA VM sits behind NAT, every client looks like the host and this won't match.
+
+homeassistant:
+  auth_providers:
+    - type: homeassistant
+    - type: trusted_networks
+      trusted_networks:
+        - 192.168.0.120/32
+      trusted_users:
+        192.168.0.120/32: PUT_COUNTER_USER_ID_HERE
+      allow_bypass_login: true

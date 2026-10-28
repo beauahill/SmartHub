@@ -1,0 +1,148 @@
+# Counter display presence sensor
+# ESP32-C3 SuperMini + HLK-LD2410C 24 GHz mmWave radar, both inside the bezel.
+#
+# Wiring (solder wires straight to the LD2410C pads, no header pins, so it sits flat in the chin pocket):
+#   LD2410C VCC -> 5V   (from the mini buck in the tray, also feeds the C3's 5V pin)
+#   LD2410C GND -> GND
+#   LD2410C TX  -> C3 GPIO20 (RX)
+#   LD2410C RX  -> C3 GPIO21 (TX)
+#   LD2410C OUT -> not used
+#
+# Flash once over USB, then everything after is OTA.
+
+substitutions:
+  name: counter-presence
+  friendly_name: Counter presence
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+logger:
+  # GPIO20/21 belong to the radar, so send logs over the built-in USB instead.
+  hardware_uart: USB_SERIAL_JTAG
+
+api:
+  encryption:
+    key: !secret counter_presence_api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Counter Presence Fallback"
+
+captive_portal:
+
+uart:
+  id: radar_uart
+  tx_pin: GPIO21
+  rx_pin: GPIO20
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+
+ld2410:
+  id: radar
+  uart_id: radar_uart
+
+binary_sensor:
+  - platform: ld2410
+    ld2410_id: radar
+    has_target:
+      name: Presence            # -> binary_sensor.counter_presence_presence
+    has_moving_target:
+      name: Moving target
+    has_still_target:
+      name: Still target
+
+sensor:
+  - platform: ld2410
+    ld2410_id: radar
+    detection_distance:
+      name: Detection distance
+    moving_distance:
+      name: Moving distance
+    still_distance:
+      name: Still distance
+    moving_energy:
+      name: Moving energy
+    still_energy:
+      name: Still energy
+  - platform: wifi_signal
+    name: WiFi signal
+    update_interval: 120s
+
+# Tuning lives in the radar itself; change these from the HA device page.
+# Starting points for a counter:
+#   Max move / still distance gate: 3   (about 2.25 m, so the far side of the kitchen doesn't wake it)
+#   Gate 0 move and still threshold: 100 (ignores the first 0.75 m, which is where the speaker cones are)
+#   Timeout: 10 s                        (HA adds its own delays on top)
+number:
+  - platform: ld2410
+    ld2410_id: radar
+    timeout:
+      name: Timeout
+    max_move_distance_gate:
+      name: Max move distance gate
+    max_still_distance_gate:
+      name: Max still distance gate
+    g0:
+      move_threshold:
+        name: g0 move threshold
+      still_threshold:
+        name: g0 still threshold
+    g1:
+      move_threshold:
+        name: g1 move threshold
+      still_threshold:
+        name: g1 still threshold
+    g2:
+      move_threshold:
+        name: g2 move threshold
+      still_threshold:
+        name: g2 still threshold
+    g3:
+      move_threshold:
+        name: g3 move threshold
+      still_threshold:
+        name: g3 still threshold
+
+switch:
+  - platform: ld2410
+    ld2410_id: radar
+    engineering_mode:
+      name: Engineering mode
+    bluetooth:
+      name: Radar Bluetooth     # turn off; HA talks to it through the ESP32
+
+select:
+  - platform: ld2410
+    ld2410_id: radar
+    distance_resolution:
+      name: Distance resolution
+
+button:
+  - platform: ld2410
+    ld2410_id: radar
+    restart:
+      name: Radar restart
+    query_params:
+      name: Radar query params
+  - platform: restart
+    name: Restart
+
+text_sensor:
+  - platform: ld2410
+    ld2410_id: radar
+    version:
+      name: Radar firmware
