@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -37,6 +38,8 @@ import java.util.concurrent.Executors
  *   POST /brightness?value=0-255|auto
  *   GET  /config, POST /config      -> read or update settings (JSON body)
  *
+ * It also holds the media volume at or below the configured cap (see [Volume]).
+ *
  * Every request needs the token: header "Authorization: Bearer <token>" or ?token=<token>.
  */
 class ControlService : Service() {
@@ -47,6 +50,14 @@ class ControlService : Service() {
     private var cpuLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
 
+    private val volumeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.getIntExtra(Volume.EXTRA_STREAM, -1) == android.media.AudioManager.STREAM_MUSIC) {
+                Volume.enforce(context, cfg)
+            }
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -55,6 +66,7 @@ class ControlService : Service() {
         goForeground()
         holdLocks()
         startServer()
+        watchVolume()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -63,6 +75,7 @@ class ControlService : Service() {
     }
 
     override fun onDestroy() {
+        try { unregisterReceiver(volumeReceiver) } catch (_: Exception) { }
         try { server?.close() } catch (_: Exception) { }
         pool.shutdownNow()
         cpuLock?.let { if (it.isHeld) it.release() }
@@ -101,6 +114,14 @@ class ControlService : Service() {
             .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "CounterHome:wifi").apply {
                 setReferenceCounted(false); acquire()
             }
+    }
+
+    private fun watchVolume() {
+        val filter = IntentFilter(Volume.ACTION_CHANGED)
+        // System broadcasts still arrive with NOT_EXPORTED; other apps can't poke the receiver.
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(volumeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        else registerReceiver(volumeReceiver, filter)
+        Volume.enforce(this, cfg)
     }
 
     private fun startServer() {
@@ -202,6 +223,7 @@ class ControlService : Service() {
                 return try {
                     val oldPort = cfg.port
                     cfg.apply(JSONObject(body))
+                    Volume.enforce(this, cfg)
                     Bus.post(Command.ConfigChanged)
                     if (cfg.port != oldPort) startServer()
                     200 to ok
@@ -228,6 +250,8 @@ class ControlService : Service() {
             .put("kioskPaused", State.kioskPaused)
             .put("battery", if (level >= 0) level * 100 / scale else -1)
             .put("charging", plugged)
+            .put("volume", Volume.percent(this))
+            .put("maxVolume", cfg.maxVolume)
             .put("batteryTempC", temp)
             .put("ip", ipAddress(this) ?: "")
     }
@@ -271,4 +295,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.0.0" }
+object BuildConfigShim { const val VERSION = "1.1.0" }

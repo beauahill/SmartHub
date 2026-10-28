@@ -65,6 +65,11 @@ class Config(context: Context) {
         get() = prefs.getBoolean(KEY_LOCK, true)
         set(v) = prefs.edit().putBoolean(KEY_LOCK, v).apply()
 
+    /** Media volume cap in percent of the stream maximum (1-100). 100 means no cap. */
+    var maxVolume: Int
+        get() = prefs.getInt(KEY_MAX_VOLUME, DEFAULT_MAX_VOLUME)
+        set(v) = prefs.edit().putInt(KEY_MAX_VOLUME, v.coerceIn(1, 100)).apply()
+
     /** "right", "left" or "bottom". */
     var dockSide: String
         get() = prefs.getString(KEY_DOCK, "right")!!
@@ -86,6 +91,7 @@ class Config(context: Context) {
         put("port", port)
         put("kioskLock", kioskLock)
         put("dockSide", dockSide)
+        put("maxVolume", maxVolume)
         put("tiles", JSONArray(tilesJson))
         if (includeSecrets) { put("token", token); put("pin", pin) }
     }
@@ -96,6 +102,7 @@ class Config(context: Context) {
         if (o.has("port")) port = o.getInt("port")
         if (o.has("kioskLock")) kioskLock = o.getBoolean("kioskLock")
         if (o.has("dockSide")) dockSide = o.getString("dockSide")
+        if (o.has("maxVolume")) maxVolume = o.getInt("maxVolume")
         if (o.has("tiles")) tilesJson = o.getJSONArray("tiles").toString(2)
         if (o.has("pin")) pin = o.getString("pin")
     }
@@ -114,6 +121,9 @@ class Config(context: Context) {
         private const val KEY_DOCK = "dock_side"
         private const val KEY_TILES = "tiles"
         private const val KEY_PROVISIONED = "provisioned"
+        private const val KEY_MAX_VOLUME = "max_volume"
+        /** Roughly 6 to 8 dB below full scale on Android's volume curve. Tune it by ear. */
+        const val DEFAULT_MAX_VOLUME = 80
         const val DEFAULT_URL = "http://homeassistant.local:8123/dashboard-counter/0?kiosk"
 
         val DEFAULT_TILES = """

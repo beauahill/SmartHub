@@ -11,6 +11,9 @@ chin wakes the screen when someone walks up.
 | --- | --- |
 | ![Rear](enclosure/renders/rear.png) | ![Side](enclosure/renders/side.png) |
 
+The renders show the first version of the bezel. The current bezel is 8 mm wider, with 13 mm side
+borders instead of 9 mm, to make room for the USB-C adapter.
+
 The full parts list is in [BOM.md](BOM.md).
 
 ## How it works
@@ -22,23 +25,29 @@ The full parts list is in [BOM.md](BOM.md).
   wake, dim, blank and navigate the display.
 - **Presence.** An ESP32-C3 SuperMini reads an HLK-LD2410C radar and reports presence to Home
   Assistant over ESPHome. Automations wake the screen, fall back to a dim clock, then turn it off.
-- **Sound.** A Wondom JAB4 Bluetooth/DSP amplifier in the bezel tray drives two Dayton ND65 full-range
-  drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105 passive radiator.
+- **Sound.** The tablet's USB-C port goes through a right-angle adapter into a UGREEN 2-in-1 adapter.
+  That adapter splits it into a 3.5 mm audio output and a USB-C charging input. A 3.5 mm cable runs
+  to the AUX input of a Wondom JAB4 DSP amplifier in the bezel tray. The amp drives two Dayton ND65
+  full-range drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105
+  passive radiator.
 - **Power.** One 24 V adapter enters through the rear of the spine. It feeds the amp directly, a
-  USB-C PD module that charges the tablet, and a small 5 V buck for the ESP32 and radar.
+  USB-C PD module that charges the tablet through the UGREEN adapter, and a small 5 V buck for the
+  ESP32 and radar.
+- **Volume cap.** The tablet's media volume sets the amp's input level. Counter Home holds media
+  volume at or below a cap, 80 % by default, so the 15 W full-range drivers are not overdriven.
 
 ## Repository layout
 
 | Path | What it is |
 | --- | --- |
 | [`android/`](android) | Counter Home launcher: Kotlin source, Gradle build, `setup.sh` provisioning script |
-| `android/CounterHome.apk` | Prebuilt v1.0.0 release |
+| `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap, so build v1.1.0 from source |
 | [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
 | [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
 | [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates every STL |
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
-| `enclosure/renders/` | Renders of the assembled and exploded design |
+| `enclosure/renders/` | Renders of the first version of the design |
 | [`BOM.md`](BOM.md) | Bill of materials |
 
 ## Build order
@@ -53,13 +62,19 @@ already oriented for printing.
 | `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers |
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
 | `grille_ring` | 299 x 149 x 112 | Linen wraps around it. Slides on from below, held by magnets |
-| `bezel_front` | 276 x 200 x 10 | Prints face down. Holds the tablet and the radar |
-| `bezel_tray` | 276 x 200 x 26 | Prints back wall down. Holds the amp and power modules |
+| `bezel_front` | 284 x 200 x 10 | Prints face down. Holds the tablet and the radar |
+| `bezel_tray` | 284 x 200 x 26 | Prints back wall down. Holds the amp, power modules and audio adapter |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
+The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
 Use PETG or ASA for the bezel tray, because it sits behind a charging tablet and an amplifier.
 Do not use carbon-fiber or metal-filled filament for the bezel front: the radar looks through its
 2.4 mm lip.
+
+**Before printing the tub, measure your drivers' screw bolt circles.** The tub has blind pilot
+holes for the driver screws, but the bolt circles in the script are estimates. Correct `FR_BC`,
+`WF_BC` and `PR_BC` and regenerate. The pilots stop 1 mm short of each chamber, so a pilot in the
+wrong place leaves no air leak.
 
 To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenerate:
 
@@ -69,18 +84,29 @@ python enclosure/enclosure.py enclosure/out
 ```
 
 The script prints part volumes and the acoustic volumes: about 0.58 L per full-range chamber and
-2.77 L gross for the woofer chamber.
+2.77 L gross for the woofer chamber. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
 
 ### 2. Assemble
 
 1. Press the M3 heat-set inserts into the bezel front (8) and the spine (4).
-2. Glue the magnets into the tub and grille ring pockets. Check polarity before the glue sets.
+2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
+   pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
+   ring magnets sit flush.
 3. Wire the drivers, pass the full-range leads through the chamber holes, and seal them with hot glue.
-   Mount the drivers from the outside on gasket tape. The model has no pilot holes, so mark and drill them.
+   Mount the drivers from the outside on gasket tape, using the pilot holes.
 4. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
 5. Wrap the linen around the grille ring, then slide the ring onto the tub.
-6. Bolt the tray to the spine, mount the amp on its standoffs, and fit the buck, PD module, ESP32-C3 and radar.
-7. Put foam on the six tablet back-stop posts, drop in the tablet, and screw the front bezel on with M3 x 25 screws.
+6. Bolt the tray to the spine and mount the amp on its standoffs. Stick the PD module, UGREEN adapter,
+   5 V buck and ESP32-C3 into their cradles with VHB tape. Fit the radar in the chin pocket.
+7. Connect the audio: right-angle adapter into the tablet, UGREEN adapter into that, PD module into the
+   UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the JAB4 AUX input (J13).
+8. Put foam on the six tablet back-stop posts, drop in the tablet, and screw the front bezel on with M3 x 25 screws.
+
+The right-angle adapter has to turn the plug back into the tray within 10 mm of the tablet edge.
+If yours is bigger, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
+
+If you hear hum or charging noise through the speakers, add a 3.5 mm ground loop isolator in the
+audio cable. The tablet charger and the amp share one supply, which can create a ground loop.
 
 ### 3. Flash the presence sensor
 
@@ -95,9 +121,11 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 
 ### 4. Provision the tablet
 
-1. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on USB debugging.
+1. Build Counter Home v1.1.0, as described in [Building the app](#building-the-app). `setup.sh`
+   installs that build when it exists, and otherwise falls back to the prebuilt v1.0.0 without the volume cap.
+2. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on USB debugging.
    Device owner can only be set while the tablet has no accounts.
-2. On your computer, with Android platform-tools installed:
+3. On your computer, with Android platform-tools installed:
 
    ```
    cd android
@@ -106,14 +134,19 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 
    It installs the APK, makes Counter Home the device owner, removes Samsung extras, and prints the
    tablet IP, the API token and the Home Assistant secrets. Reserve that IP on your router.
-3. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
+4. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
    "Pause kiosk lock and open Android settings". Sign in to Google, install Spotify, YouTube TV,
    IPTV Smarters and the Home Assistant app, set Battery protection to Maximum, and make Home
-   Assistant the default digital assistant. Pair the JAB4 over Bluetooth. Then tap "Resume kiosk lock".
-4. Change the settings PIN. The default PIN is public in this repository.
+   Assistant the default digital assistant. Then tap "Resume kiosk lock".
+5. Change the settings PIN. The default PIN is public in this repository.
+6. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
+   settings screen if the full-range drivers distort or bottom out.
 
 Do the YouTube TV and Spotify sign-ins while the kiosk lock is paused. Google's login screens
 belong to other packages, and lock task mode blocks them.
+
+The JAB4 still has Bluetooth, and it mixes Bluetooth audio with the AUX input. Anyone in range can
+pair a phone with it. Check whether your board's DSP program lets you turn Bluetooth off.
 
 ### 5. Configure Home Assistant
 
@@ -143,7 +176,7 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 
 | Call | Does |
 | --- | --- |
-| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, ip |
+| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, ip |
 | `POST /screen/on`, `/screen/off`, `/screen/toggle` | Panel power |
 | `POST /ambient/on`, `/ambient/off` | Dim clock overlay, tap to dismiss |
 | `POST /home` | Back to the dashboard from any app |
@@ -152,7 +185,9 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | `POST /navigate?url=...` | Load any URL in the dashboard view, such as a camera page when the doorbell rings |
 | `POST /brightness?value=0-255` or `?value=auto` | Backlight |
 | `POST /reload` | Reload the dashboard |
-| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, tiles, dockSide, kioskLock, pin, port |
+| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, tiles, dockSide, kioskLock, maxVolume, pin, port |
+
+`volume` and `maxVolume` are percentages of the tablet's media volume range.
 
 Quick test from any machine on the LAN:
 
@@ -201,19 +236,17 @@ for example in `~/.gradle/gradle.properties`.
 Open the settings screen and choose "Release device owner". The tablet goes back to being a normal
 Android tablet. A factory reset also clears it.
 
-## Design review notes
+## Design review status
 
-These came out of reviewing the Cowork artifact. Check them before you print or buy parts.
+These items came out of reviewing the Cowork export.
 
-- **Magnets.** The pockets in the tub and grille ring total 3.2 mm, so a single 6 x 3 mm magnet
-  cannot sit on both sides. Use a 6 x 2 mm magnet in the tub and a 6 x 1 mm magnet in the ring at
-  each of the 12 positions. BOM.md lists them that way.
-- **Tablet USB-C.** The bezel leaves 6 mm past the tablet's port edge, and the notch turns back into
-  the tray. Check that your right-angle USB-C adapter or plug fits in 6 mm before printing the bezel.
-- **Tray mounts.** Only the JAB4 has standoffs. Fix the ESP32-C3, buck and PD module with VHB tape.
-  The JAB4 standoff pattern is 84 x 61 mm; confirm it against your board.
-- **Driver power.** The ND65 full-range drivers are rated 15 W, and the JAB4 can deliver more at 24 V.
-  Cap the volume, or program a high-pass and limiter into the JAB4 DSP with a Wondom ICP5.
-- **Bed size.** The tub, lid and grille ring are 300 mm long. They will not fit a 256 mm bed, even diagonally.
-- **Mesh.** `base_tub.stl` has four non-manifold edges where brace columns meet the walls. Slicers
-  repair this automatically.
+| Item | Status |
+| --- | --- |
+| Magnet pockets too shallow for one 3 mm magnet each side | Fixed. Pockets now fit a 6 x 2 mm tub magnet and a 6 x 1 mm ring magnet |
+| No room for a USB-C plug past the tablet edge | Fixed. Side borders are 13 mm, leaving 10 mm for a right-angle adapter |
+| No mounts for the small boards in the tray | Fixed. Cradles for the PD module, UGREEN adapter, 5 V buck and ESP32-C3 |
+| No pilot holes for the driver screws | Fixed with blind pilots. Measure your bolt circles first; the defaults are estimates |
+| Full-range drivers can be overdriven | Fixed in the app with a media volume cap, 80 % by default. Tune it by ear |
+| Four non-manifold edges in `base_tub` | Fixed. Two brace columns now overlap the side walls instead of touching them |
+| Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
+| Setup script printed the wrong Home Assistant secret names | Fixed |

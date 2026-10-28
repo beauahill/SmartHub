@@ -17,8 +17,16 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 PKG=com.counterdisplay.launcher
-APK=${APK:-CounterHome.apk}
-[ -f "$APK" ] || APK=app/build/outputs/apk/release/app-release.apk
+# Prefer a fresh build (v1.1.0+, with the media volume cap). Fall back to the prebuilt v1.0.0.
+BUILT=app/build/outputs/apk/release/app-release.apk
+if [ -z "${APK:-}" ]; then
+  if [ -f "$BUILT" ]; then APK=$BUILT
+  else
+    APK=CounterHome-1.0.0.apk
+    echo "!! Using the prebuilt $APK. It has no media volume cap; build v1.1.0 to protect the speakers."
+  fi
+fi
+[ -f "$APK" ] || { echo "APK not found: $APK"; exit 1; }
 URL=${1:-}
 
 command -v adb >/dev/null || { echo "adb not found. Install Android platform-tools first."; exit 1; }

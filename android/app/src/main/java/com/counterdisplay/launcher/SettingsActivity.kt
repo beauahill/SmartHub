@@ -46,6 +46,7 @@ class SettingsActivity : Activity() {
         val port = field(col, "API port", cfg.port.toString(), number = true)
         val token = field(col, "API token (Home Assistant needs this)", cfg.token, mono = true)
         val pin = field(col, "Settings PIN", cfg.pin, number = true)
+        val maxVol = field(col, "Max media volume, % (protects the speakers; 100 = no cap)", cfg.maxVolume.toString(), number = true)
         val lock = CheckBox(this).apply {
             text = "Kiosk lock (pin the launcher; needs device owner)"
             isChecked = cfg.kioskLock
@@ -63,6 +64,8 @@ class SettingsActivity : Activity() {
                 cfg.token = token.text.toString()
                 cfg.pin = pin.text.toString().ifBlank { "2580" }
                 cfg.kioskLock = lock.isChecked
+                cfg.maxVolume = maxVol.text.toString().toIntOrNull() ?: Config.DEFAULT_MAX_VOLUME
+                Volume.enforce(this, cfg)
                 if (cfg.port != oldPort) ControlService.restartServer(this)
                 Bus.post(Command.ConfigChanged)
                 toast("Saved")

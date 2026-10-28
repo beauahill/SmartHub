@@ -45,18 +45,38 @@ WF_CUT, WF_FLANGE = 93.0, 107.0        # Dayton ND105-4: 93 mm cutout
 PR_CUT, PR_FLANGE = 93.0, 107.0        # Dayton ND105-PR (verify cutout before printing)
 FLANGE_DEPTH = 4.0
 DRV_Z = (FLOOR + TUB_H) / 2.0          # driver center height
+# Blind pilot holes for the driver screws, 4 per driver on a 45 deg pattern. They stop short of the
+# chamber, so a pilot that misses your driver's holes leaves no air leak.
+# Bolt circles are ESTIMATES: measure your drivers and correct these before printing.
+DRIVER_PILOTS = True
+FR_BC, WF_BC, PR_BC = 58.0, 99.0, 99.0   # bolt circle diameters (ND65, ND105-4, ND105-PR)
+PILOT_D = 2.5                            # for M3 thread-forming or #4 screws
+PILOT_ANGLE = 45.0
 
 # Tablet (Galaxy Tab A9+ : 257.1 x 168.7 x 6.9)
 TAB_W, TAB_H, TAB_T, TAB_R = 257.1, 168.7, 6.9, 10.0
 TAB_CLR = 0.4
 WIN_W, WIN_H, WIN_R = 238.0, 149.5, 3.0     # visible window (11" 16:10 active area is ~237 x 148)
-FRAME = 9.0                                  # bezel border width around pocket
+FRAME = 9.0                                  # bezel border width above and below the pocket
+FRAME_SIDE = 13.0                            # bezel border width left and right of the pocket
+USB_CLEAR = 10.0                             # room past the tablet's USB-C edge for a right-angle adapter
 CHIN = 12.0                                  # extra bottom border that houses the mmWave sensor
 RADAR_W, RADAR_H = 23.0, 17.0                # pocket for HLK-LD2410C (22 x 16 mm board)
 LIP = 2.4
+USB_NOTCH_H = 22.0                           # height of the USB-C notch, centered on the tablet
 POCKET_D = TAB_T + 0.4
 TRAY_D = 26.0
 TRAY_WALL = 2.4
+# Cradles on the inside of the tray back wall: (name, x, z, width, height) of the board itself, in
+# bezel coordinates (z from the bezel bottom edge). Low walls locate each part; VHB tape holds it.
+# Set the PD module size to the module you buy.
+CRADLE_WALL, CRADLE_H, CRADLE_CLR = 1.6, 3.0, 0.4
+CRADLES = [
+    ("pd_module",      85.0,  75.0, 40.0, 25.0),   # 24 V -> USB-C PD output
+    ("audio_adapter",  85.0, 120.0, 45.0, 30.0),   # UGREEN 2-in-1 USB-C to 3.5 mm + PD body
+    ("buck_5v",        40.0, 120.0, 22.0, 17.0),   # MP1584EN
+    ("esp32_c3",       45.0,  80.0, 22.5, 18.0),   # ESP32-C3 SuperMini
+]
 CAMERA_HOLE = True
 USB_SIDE = +1                                # +1 = tablet USB-C at right end, -1 = left
 TILT = 15.0                                  # screen tilt back, degrees
@@ -65,7 +85,13 @@ BEZ_GAP = 4.0                                # air gap between lid and lowest be
 
 # Hardware
 M3_CLR, M3_INSERT, INSERT_DEPTH = 3.4, 4.0, 6.0
-MAG_D, MAG_TUB, MAG_FRAME = 6.4, 2.2, 1.0    # pocket depths; use a 6x2 mm magnet in the tub + 6x1 mm in the frame (see BOM.md)
+# Magnet pairs: a 6x2 mm disc in the tub and a 6x1 mm disc in the grille ring at each position.
+MAG_D = 6.4                                  # pocket diameter for 6 mm discs
+MAG_T_TUB, MAG_T_FRAME = 2.0, 1.0            # magnet thicknesses
+MAG_GLUE = 0.2                               # tub magnet sits this far below the surface
+RING_GAP = 0.15                              # clearance between the grille ring and the tub recess
+MAG_TUB = MAG_T_TUB + MAG_GLUE               # pocket depth into the tub
+MAG_FRAME = MAG_T_FRAME + RING_GAP           # pocket cut, measured from the tub surface; flush in the ring
 # ---------------------------------------------
 
 def rrect(x0, x1, y0, y1, rf, rr, n=24):
@@ -121,7 +147,9 @@ for s in (-1, 1):
     tub = tub + box(xb0, xb1, FR_CH_Y1 - CHAMBER_WALL, FR_CH_Y1, FLOOR - 1, TUB_H)
 
 # brace columns, which also take the lid locating pins
-BOSSES = [(-135, 22), (135, 22), (-138, 100), (138, 100), (-130, 128), (130, 128)]
+# (+-139, 100) overlaps the side wall by 1 mm. At 138 the column only touched the wall along a line,
+# which made the mesh non-manifold.
+BOSSES = [(-135, 22), (135, 22), (-139, 100), (139, 100), (-130, 128), (130, 128)]
 for (x, y) in BOSSES:
     tub = tub + (cyl_z(x, y, FLOOR - 1, TUB_H, 10) ^ extrude(inner.offset(1, m3.JoinType.Round), 0, TUB_H))
 for (x, y) in BOSSES:
@@ -133,6 +161,23 @@ def front_driver(x, cut, flange):
 tub = tub - front_driver(-FR_X, FR_CUT, FR_FLANGE) - front_driver(FR_X, FR_CUT, FR_FLANGE) \
           - front_driver(0, WF_CUT, WF_FLANGE)
 tub = tub - cyl_y(0, DRV_Z, IY1 - 5, BD + 5, PR_CUT) - cyl_y(0, DRV_Z, BD - RECESS - FLANGE_DEPTH, BD + 5, PR_FLANGE)
+
+if DRIVER_PILOTS:
+    def pilots(x, bc, y0, y1):
+        out = []
+        for k in range(4):
+            a = math.radians(PILOT_ANGLE + 90 * k)
+            out.append(cyl_y(x + bc / 2 * math.cos(a), DRV_Z + bc / 2 * math.sin(a), y0, y1, PILOT_D))
+        return out
+    seat_f = RECESS + FLANGE_DEPTH                 # front flange seat
+    seat_r = BD - RECESS - FLANGE_DEPTH            # rear flange seat
+    front_depth = (IY0 - seat_f) - 1.0             # leave 1 mm before the chamber
+    rear_depth = (seat_r - IY1) - 1.0
+    for x, bc in ((-FR_X, FR_BC), (FR_X, FR_BC), (0, WF_BC)):
+        for c in pilots(x, bc, seat_f - 1, seat_f + front_depth):
+            tub = tub - c
+    for c in pilots(0, PR_BC, seat_r - rear_depth, seat_r + 1):
+        tub = tub - c
 
 # wire pass-through holes into each full range chamber (seal with hot glue)
 tub = tub - cyl_x(FR_CH_Y1 - 12, TUB_H - 14, FR_CH_X0 - 6, FR_CH_X0 + 10, 4)
@@ -177,7 +222,7 @@ lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, 12)
 # ======================= GRILLE RING =======================
 frame_outer = inset.offset(RECESS - FABRIC, m3.JoinType.Round)
 GZ0, GZ1 = 0.5, REC_Z1 - 0.5
-gf = extrude(frame_outer, GZ0, GZ1) - extrude(inset.offset(0.15, m3.JoinType.Round), -1, 200)
+gf = extrude(frame_outer, GZ0, GZ1) - extrude(inset.offset(RING_GAP, m3.JoinType.Round), -1, 200)
 WZ0, WZ1 = 18.0, GZ1 - 14.0
 FW = 150 - R_FRONT - 2      # flat part of front face
 win = box(-FW, -60.5, -20, 40, WZ0, WZ1) + box(-55.5, 55.5, -20, 40, WZ0, WZ1) + box(60.5, FW, -20, 40, WZ0, WZ1)
@@ -192,7 +237,8 @@ fabric = extrude(outline, GZ0, GZ1) - extrude(inset, -1, 200)
 # ======================= BEZEL (built in local frame) =======================
 # local: x = X, y = a (depth, 0 at front face, + backward), z = h (up the face, 0 at bottom edge)
 PW, PH = TAB_W + 2 * TAB_CLR, TAB_H + 2 * TAB_CLR
-EW, EH = PW + 2 * FRAME, PH + 2 * FRAME + CHIN
+EW, EH = PW + 2 * FRAME_SIDE, PH + 2 * FRAME + CHIN
+assert USB_CLEAR <= FRAME_SIDE - TRAY_WALL - 0.4, "USB_CLEAR needs a wider FRAME_SIDE"
 ER = TAB_R + FRAME
 T_FRONT = LIP + POCKET_D
 T = T_FRONT + TRAY_D
@@ -220,9 +266,9 @@ if CAMERA_HOLE:
 # mic slots through the top of the frame into the pocket
 for x in (-60, -20, 20, 60):
     bf = bf - lbox(x - 6, x + 6, LIP + 1.5, LIP + 4.5, TAB_CZ + PH / 2 - 1, EH + 1)
-# USB-C plug notch at the port end
-ux0, ux1 = sorted((USB_SIDE * PW/2 - USB_SIDE * 1, USB_SIDE * (PW/2 + 6.0)))
-bf = bf - lbox(ux0, ux1, LIP + 0.2, T_FRONT + 1, TAB_CZ - 10, TAB_CZ + 10)
+# USB-C notch at the port end. A right-angle adapter turns the plug back into the tray.
+ux0, ux1 = sorted((USB_SIDE * PW/2 - USB_SIDE * 1, USB_SIDE * (PW/2 + USB_CLEAR)))
+bf = bf - lbox(ux0, ux1, LIP + 0.2, T_FRONT + 1, TAB_CZ - USB_NOTCH_H / 2, TAB_CZ + USB_NOTCH_H / 2)
 # mmWave radar pocket in the chin, open to the tray; the radar looks out through the 2.4 mm lip
 RADAR_Z = (FRAME + CHIN) / 2
 bf = bf - lbox(-RADAR_W / 2, RADAR_W / 2, LIP, T_FRONT + 1, RADAR_Z - RADAR_H / 2, RADAR_Z + RADAR_H / 2)
@@ -250,7 +296,18 @@ for dx in (-42, 42):
         tr = tr + lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - 4, T - 0.01, 7.0)
         tr = tr - lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - 5, T - 1.0, 2.6)
 # USB notch continuation
-tr = tr - lbox(ux0, ux1, T_FRONT - 1, T_FRONT + 3, TAB_CZ - 10, TAB_CZ + 10)
+tr = tr - lbox(ux0, ux1, T_FRONT - 1, T_FRONT + 3, TAB_CZ - USB_NOTCH_H / 2, TAB_CZ + USB_NOTCH_H / 2)
+# cradles for the small boards, standing off the inside of the back wall
+BACK_IN = T - TRAY_WALL
+for (_, cx, cz, w, h) in CRADLES:
+    iw, ih = w + 2 * CRADLE_CLR, h + 2 * CRADLE_CLR
+    ring = lbox(cx - iw/2 - CRADLE_WALL, cx + iw/2 + CRADLE_WALL, BACK_IN - CRADLE_H, BACK_IN + 0.01,
+                cz - ih/2 - CRADLE_WALL, cz + ih/2 + CRADLE_WALL) \
+         - lbox(cx - iw/2, cx + iw/2, BACK_IN - CRADLE_H - 1, BACK_IN + 1, cz - ih/2, cz + ih/2)
+    gap = min(8.0, ih / 2)                   # wire exits on both short sides
+    ring = ring - lbox(cx - iw/2 - CRADLE_WALL - 1, cx + iw/2 + CRADLE_WALL + 1, BACK_IN - CRADLE_H - 1, BACK_IN - 0.6,
+                       cz - gap/2, cz + gap/2)
+    tr = tr + ring
 # vents in the back wall
 for i in range(9):
     x = -112 + i * 28
