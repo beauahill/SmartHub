@@ -39,20 +39,38 @@ CHAMBER_WALL = 4.0
 FR_CH_X0 = 58.0                # full range chamber inner wall starts at |X| = 58
 FR_CH_Y1 = 80.0                # full range chamber back wall outer face
 
-# Drivers (check against your parts!)
-FR_X = 96.0                   # full range centers at +/-X
-FR_CUT, FR_FLANGE = 52.0, 66.0         # Dayton ND65: 2.05" cutout, 2.52" OD (+clearance)
-WF_CUT, WF_FLANGE = 93.0, 107.0        # Dayton ND105-4: 93 mm cutout
-PR_CUT, PR_FLANGE = 93.0, 107.0        # Dayton ND105-PR (verify cutout before printing)
-FLANGE_DEPTH = 4.0
+# Drivers, from the Dayton Audio spec sheets and the ND65 3D model.
+# Each frame is a round body with four mounting ears on the diagonals:
+#   body_r     radius of the round part of the frame
+#   ear_c, ear_r   ear tip modeled as a circle of radius ear_r centered ear_c from the axis
+#   flange_t   frame flange thickness
+#   proud      how far the surround stands in front of the mounting face, at rest
+#   cut        baffle cutout
+#   tab_notch  (half width, reach from the axis, depth behind the mounting face where it starts):
+#              relief on the top side for solder tabs that stick out past the cutout
+#   bc         screw bolt circle (4 x 4.2 mm holes at 45 deg)
+#   fabric_clear   gap from the surround (at rest) to the fabric, for cone excursion
+#   well_clr   clearance around the frame in its recess
+DRIVERS = {
+    # ND65-4: 64 mm frame, 52 mm cutout, 48 mm deep (43 behind the mounting face), Xmax 3.5 mm.
+    # Outline, proud height and solder tabs measured from Dayton's STEP/STL. The tabs reach 27 mm from
+    # the axis within +-15.7 mm, from 2.5 mm behind the flange. Mount the ND65s with the tabs up.
+    "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.5, 28.0, 2.0),
+                   bc=66.0, fabric_clear=4.0, well_clr=0.5),
+    # ND105-4: 105 mm frame, ears to 120 mm, 93 mm cutout, 67 mm deep (57 behind the mounting face),
+    # Xmax 4 mm. Ear shape inferred from the drawing, so the recess has extra clearance.
+    "nd105":  dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
+                   bc=108.5, fabric_clear=5.0, well_clr=1.0),
+    # ND105-PR: same frame as the ND105-4, 40.5 mm deep (30.5 behind the mounting face), Xmax 11 mm.
+    "nd105pr": dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
+                   bc=108.5, fabric_clear=9.0, well_clr=1.0),
+}
+FR_X = 96.0                            # full range centers at +/-X
 DRV_Z = (FLOOR + TUB_H) / 2.0          # driver center height
-# Blind pilot holes for the driver screws, 4 per driver on a 45 deg pattern. They stop short of the
-# chamber, so a pilot that misses your driver's holes leaves no air leak.
-# Bolt circles are ESTIMATES: measure your drivers and correct these before printing.
-DRIVER_PILOTS = True
-FR_BC, WF_BC, PR_BC = 58.0, 99.0, 99.0   # bolt circle diameters (ND65, ND105-4, ND105-PR)
-PILOT_D = 2.5                            # for M3 thread-forming or #4 screws
-PILOT_ANGLE = 45.0
+MOUNT_MEAT = 7.0                       # baffle material behind each mounting face, for the screws
+GASKET_T = 1.0                         # foam gasket under each flange (compressed); seats sit this much deeper
+PILOT_D = 2.5                          # blind pilots for M3 thread-forming or #4 screws
+PILOT_DEPTH = 6.0                      # leaves 1 mm before the chamber
 
 # Tablet (Galaxy Tab A9+ : 257.1 x 168.7 x 6.9)
 TAB_W, TAB_H, TAB_T, TAB_R = 257.1, 168.7, 6.9, 10.0
@@ -172,33 +190,64 @@ for (x, y) in BOSSES:
 for (x, y) in BOSSES:
     tub = tub - cyl_z(x, y, TUB_H - 4, TUB_H + 1, 4.3)
 
-# driver cutouts + flange counterbores
-def front_driver(x, cut, flange):
-    return cyl_y(x, DRV_Z, -5, IY0 + 5, cut) + cyl_y(x, DRV_Z, -5, RECESS + FLANGE_DEPTH, flange)
-tub = tub - front_driver(-FR_X, FR_CUT, FR_FLANGE) - front_driver(FR_X, FR_CUT, FR_FLANGE) \
-          - front_driver(0, WF_CUT, WF_FLANGE)
-tub = tub - cyl_y(0, DRV_Z, IY1 - 5, BD + 5, PR_CUT) - cyl_y(0, DRV_Z, BD - RECESS - FLANGE_DEPTH, BD + 5, PR_FLANGE)
+# Driver mounts. Each driver sits in a recessed well deep enough that its surround clears the fabric
+# by fabric_clear, on a mounting ring that thickens the baffle behind it for the screws.
+def frame_outline(d, grow=0.0):
+    ears = [CS.circle(d["ear_r"] + grow, 48).translate([d["ear_c"] * math.cos(math.radians(a)),
+                                                        d["ear_c"] * math.sin(math.radians(a))])
+            for a in (45, 135, 225, 315)]
+    return CS.batch_hull([CS.circle(d["body_r"] + grow, SEG)] + ears)
 
-if DRIVER_PILOTS:
-    def pilots(x, bc, y0, y1):
-        out = []
-        for k in range(4):
-            a = math.radians(PILOT_ANGLE + 90 * k)
-            out.append(cyl_y(x + bc / 2 * math.cos(a), DRV_Z + bc / 2 * math.sin(a), y0, y1, PILOT_D))
-        return out
-    seat_f = RECESS + FLANGE_DEPTH                 # front flange seat
-    seat_r = BD - RECESS - FLANGE_DEPTH            # rear flange seat
-    front_depth = (IY0 - seat_f) - 1.0             # leave 1 mm before the chamber
-    rear_depth = (seat_r - IY1) - 1.0
-    for x, bc in ((-FR_X, FR_BC), (FR_X, FR_BC), (0, WF_BC)):
-        for c in pilots(x, bc, seat_f - 1, seat_f + front_depth):
-            tub = tub - c
-    for c in pilots(0, PR_BC, seat_r - rear_depth, seat_r + 1):
-        tub = tub - c
+def prism_y(cs, x, z, y0, y1):
+    """extrude an X-Z profile (drawn in X-Y) along +Y from y0 to y1, centered at (x, z)"""
+    return cs.extrude(y1 - y0).rotate([-90, 0, 0]).translate([x, y0, z])
+
+INTERIOR = box(-IX, IX, IY0 - 1, IY1 + 1, FLOOR - 1, TUB_H)
+SEATS = {}
+
+def mount_driver(tub, name, x, rear=False):
+    d = DRIVERS[name]
+    sgn = 1 if rear else -1                                   # direction the driver faces, along Y
+    fabric_in = BD - FABRIC if rear else FABRIC               # inside face of the fabric
+    surface = BD - RECESS if rear else RECESS                 # recessed tub surface under the fabric
+    seat = fabric_in - sgn * (d["fabric_clear"] + d["proud"] + GASKET_T)   # baffle face under the gasket
+    back = seat - sgn * MOUNT_MEAT                            # back of the mounting ring
+    SEATS[name + ("" if x >= 0 else "_l")] = seat
+    # the ring runs from the baffle to the back of the mounting face, so the well gets solid walls
+    baffle = BD - WALL_REAR + 1 if rear else IY0 - 1
+    lo, hi = sorted((baffle, back))
+    ring = prism_y(frame_outline(d, 4.0), x, DRV_Z, lo, hi) ^ INTERIOR
+    tub = tub + ring
+    # well: from the recessed surface down to the mounting face. Keep the skin above the fabric line.
+    w0, w1 = sorted((surface - sgn * 0.3, seat))
+    tub = tub - prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, w0, w1)
+    e0, e1 = sorted((surface + sgn * 1.0, surface - sgn * 0.3))
+    tub = tub - (prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, e0, e1) ^ box(-BW, BW, -10, BD + 10, -10, REC_Z1 - 0.01))
+    # cutout through the ring, plus the solder-tab relief on the top side
+    c0, c1 = sorted((seat + sgn * 1.0, back - sgn * 5.0))
+    tub = tub - cyl_y(x, DRV_Z, c0, c1, d["cut"])
+    if d["tab_notch"]:
+        hw, reach, depth = d["tab_notch"]
+        n0, n1 = sorted((seat - sgn * depth, back - sgn * 5.0))
+        tub = tub - box(x - hw, x + hw, n0, n1, DRV_Z + d["cut"] / 2 - 2.0, DRV_Z + reach)
+    # blind pilot holes on the bolt circle
+    for k in range(4):
+        a = math.radians(45 + 90 * k)
+        px, pz = x + d["bc"] / 2 * math.cos(a), DRV_Z + d["bc"] / 2 * math.sin(a)
+        p0, p1 = sorted((seat + sgn * 0.5, seat - sgn * PILOT_DEPTH))
+        tub = tub - cyl_y(px, pz, p0, p1, PILOT_D)
+    return tub
+
+tub = mount_driver(tub, "nd65", -FR_X)
+tub = mount_driver(tub, "nd65", FR_X)
+tub = mount_driver(tub, "nd105", 0)
+tub = mount_driver(tub, "nd105pr", 0, rear=True)
 
 # wire pass-through holes into each full range chamber (seal with hot glue)
-tub = tub - cyl_x(FR_CH_Y1 - 12, TUB_H - 14, FR_CH_X0 - 6, FR_CH_X0 + 10, 4)
-tub = tub - cyl_x(FR_CH_Y1 - 12, TUB_H - 14, -FR_CH_X0 - 10, -FR_CH_X0 + 6, 4)
+PASS_THROUGHS = [cyl_x(FR_CH_Y1 - 12, TUB_H - 14, FR_CH_X0 - 6, FR_CH_X0 + 10, 4),
+                 cyl_x(FR_CH_Y1 - 12, TUB_H - 14, -FR_CH_X0 - 10, -FR_CH_X0 + 6, 4)]
+for c in PASS_THROUGHS:
+    tub = tub - c
 
 # magnet pockets (front / rear: (x, z); sides: (y, z))
 MAG_FRONT = [(-58, 9), (58, 9), (-58, 106), (58, 106)]
@@ -425,10 +474,10 @@ export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
 export(dc_plate, "print_dc_plate")                             # outside face down
 
-# acoustic volumes
-fr_ch = (IX - (FR_CH_X0 + CHAMBER_WALL)) * (FR_CH_Y1 - CHAMBER_WALL - IY0) * (TUB_H - FLOOR) / 1e6
-gross = (inner.area() * (TUB_H - FLOOR)) / 1e6
-wf_gross = gross - 2 * (IX - FR_CH_X0) * (FR_CH_Y1 - IY0) * (TUB_H - FLOOR) / 1e6
-print(f"interior gross {gross:.2f} L, each FR chamber {fr_ch:.2f} L, woofer chamber gross {wf_gross:.2f} L")
+# acoustic volumes: air inside the closed tub (lid on), by chamber. Driver bodies are not subtracted.
+air = extrude(inner, FLOOR, TUB_H) - tub - union(PASS_THROUGHS)   # pass-throughs hot-glued shut
+chambers = sorted((c.volume() / 1e6 for c in air.decompose()), reverse=True)
+print("chamber air volumes (L, driver bodies not subtracted):", [round(v, 3) for v in chambers[:3]])
+print("mounting faces (Y):", {k: round(v, 1) for k, v in SEATS.items()})
 print("bezel thickness", T, "bezel outer", EW, EH, "Z0", Z0, "top Z", to_world(0, 0, EH)[2], "top-back", to_world(0, T, EH))
 print("lowest bezel corner Z", to_world(0, T, 0)[2], "Yb0", Yb0)

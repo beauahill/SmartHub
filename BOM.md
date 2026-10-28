@@ -31,18 +31,18 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
-| S1 | 2 | Dayton Audio ND65-4, 2-1/2" aluminum full-range, 4 Ω | 52 mm cutout, 64 mm OD, 48 mm deep, 15 W rated. Left and right, each in a sealed 0.58 L chamber | `FR_CUT`, `FR_FLANGE`, `FR_BC` |
-| S2 | 1 | Dayton Audio ND105-4, 4" aluminum midbass, 4 Ω | 93 mm cutout, 105 mm OD, 67 mm deep. Front center | `WF_CUT`, `WF_FLANGE`, `WF_BC` |
-| S3 | 1 | Dayton Audio ND105-PR, 4" passive radiator | 93 mm cutout, 105 mm OD, 67 mm deep, Fs 51.5 Hz. Rear center | `PR_CUT`, `PR_FLANGE`, `PR_BC` |
-| S4 | 16 | Driver mounting screws, M3 x 10 thread-forming or #4 x 1/2" pan head | 4 per driver, into 2.5 mm blind pilot holes | |
-| S5 | 1 roll | Closed-cell foam gasket tape, about 3 mm wide | Seals each driver flange to the baffle | |
+| S1 | 2 | Dayton Audio ND65-4, 2-1/2" aluminum full-range, 4 Ω | 64 mm frame with corner ears, 4.2 mm holes on a 66 mm bolt circle, 52 mm cutout. 48 mm deep, 43 mm behind the mounting face. 1 mm flange; surround 3.1 mm proud of it. Xmax 3.5 mm, 15 W. Left and right, each in a sealed 0.55 L chamber. Solder tabs face up | `DRIVERS["nd65"]` |
+| S2 | 1 | Dayton Audio ND105-4, 4" aluminum midbass, 4 Ω | 105 mm frame with ears to 120 mm, 4.2 mm holes on a 108.5 mm bolt circle, 93 mm cutout. 67 mm deep, 57 mm behind the mounting face. Xmax 4 mm, 30 W. Front center | `DRIVERS["nd105"]` |
+| S3 | 1 | Dayton Audio ND105-PR, 4" passive radiator | Same frame and bolt circle as the ND105-4, 93 mm cutout. 40.5 mm deep, 30.5 mm behind the mounting face. Fs 51.5 Hz, Vas 2.6 L, Xmax 11 mm. Rear center | `DRIVERS["nd105pr"]` |
+| S4 | 16 | M3 x 6 pan head thread-forming screws, or #4 x 1/4" | 4 per driver, through the 4.2 mm frame holes into 6 mm deep, 2.5 mm blind pilots | `PILOT_D`, `PILOT_DEPTH` |
+| S5 | 1 roll | Closed-cell foam gasket tape, about 3 mm wide, 1 mm thick when compressed | Seals each driver flange to the baffle. A thicker gasket eats into the fabric clearance | `GASKET_T` |
 | S6 | 1 bag | Polyfill or acoustic wool | Light fill in the full-range chambers, lining in the woofer chamber | |
 
-The woofer and passive radiator face each other front to back. With the listed depths they clear by
-about 10 mm.
+The woofer and passive radiator face each other front to back. With Dayton's depths, the woofer
+motor and the back of the radiator clear by about 25 mm.
 
-The pilot holes sit on estimated bolt circles: 58 mm for the ND65 and 99 mm for the ND105 pair.
-Measure your drivers and correct `FR_BC`, `WF_BC` and `PR_BC` before printing the tub.
+Dimensions come from Dayton's spec sheets, and the ND65 outline from its STEP/STL model. The ND105
+ear shape is inferred from the drawing, so test-fit one driver in the printed tub before gluing the lid.
 
 ## 4. Hardware
 
@@ -74,7 +74,7 @@ Measure your drivers and correct `FR_BC`, `WF_BC` and `PR_BC` before printing th
 
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
-| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 850 cm³ |
+| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 902 cm³ |
 | P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 353 cm³ |
 | P3 | 1 | `grille_ring.stl` | 299 x 149 x 112 | 92 cm³ |
 | P4 | 1 | `bezel_front.stl` | 284 x 200 x 10 | 136 cm³ |
@@ -92,7 +92,7 @@ Measure your drivers and correct `FR_BC`, `WF_BC` and `PR_BC` before printing th
 
 - 3D printer with at least a 300 mm bed axis. A 320 mm or larger bed is recommended.
 - Soldering iron with a heat-set insert tip.
-- Calipers, to measure the driver bolt circles and the adapter sizes before printing.
+- Calipers, to check the amp height and the adapter sizes before printing.
 - USB-C data cable for flashing the ESP32-C3 and for `adb`.
 - Android platform-tools (`adb`) on a computer, to run `android/setup.sh`.
 - JDK 17 and the Android SDK, to build Counter Home v1.1.0.

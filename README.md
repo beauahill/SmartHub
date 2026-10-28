@@ -77,10 +77,13 @@ Do not use carbon-fiber or metal-filled filament for the bezel front: the radar 
 retail listings give 23 mm, so the script assumes 23 mm. The tray depth follows `AMP_H`. A shorter
 board gives a shallower tray, down to the original 26 mm.
 
-**Before printing the tub, measure your drivers' screw bolt circles.** The tub has blind pilot
-holes for the driver screws, but the bolt circles in the script are estimates. Correct `FR_BC`,
-`WF_BC` and `PR_BC` and regenerate. The pilots stop 1 mm short of each chamber, so a pilot in the
-wrong place leaves no air leak.
+**Driver mounts follow Dayton's drawings and the ND65 3D model.** Each driver sits in a recess
+shaped to its frame, deep enough that the surround clears the fabric with room for excursion: 4 mm
+for the ND65s, 5 mm for the woofer and 9 mm for the passive radiator. A thickened ring behind each
+recess carries blind pilot holes on the published bolt circles. The ND65 recesses have a notch on
+the top side for the solder tabs, so mount the ND65s with their tabs up. Each recess allows for a
+1 mm compressed gasket under the flange (`GASKET_T`). The ND105 ear shape is inferred from the
+drawing, so its recesses have 1 mm of extra clearance.
 
 To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenerate:
 
@@ -89,8 +92,8 @@ pip install -r enclosure/requirements.txt
 python enclosure/enclosure.py enclosure/out
 ```
 
-The script prints part volumes and the acoustic volumes: about 0.58 L per full-range chamber and
-2.77 L gross for the woofer chamber. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
+The script prints part volumes and the air volume of each chamber: about 0.55 L per full-range
+chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
 
 ### 2. Assemble
 
@@ -100,7 +103,8 @@ The script prints part volumes and the acoustic volumes: about 0.58 L per full-r
    pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
    ring magnets sit flush.
 3. Wire the drivers, pass the full-range leads through the chamber holes, and seal them with hot glue.
-   Mount the drivers from the outside on gasket tape, using the pilot holes.
+   Mount the drivers from the outside on 1 mm gasket tape with M3 x 6 screws in the pilot holes.
+   Turn the ND65 solder tabs up, into the notch.
 4. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
 5. Wrap the linen around the grille ring, then slide the ring onto the tub.
 6. Nut the DC-099 jack onto the jack plate and solder 18 AWG leads to it. Feed the leads through the
@@ -257,7 +261,8 @@ These items came out of reviewing the Cowork export.
 | Magnet pockets too shallow for one 3 mm magnet each side | Fixed. Pockets now fit a 6 x 2 mm tub magnet and a 6 x 1 mm ring magnet |
 | No room for a USB-C plug past the tablet edge | Fixed. Side borders are 13 mm, leaving 10 mm for a right-angle adapter |
 | No mounts for the small boards in the tray | Fixed. Cradles for the PD module, UGREEN adapter, 5 V buck and ESP32-C3 |
-| No pilot holes for the driver screws | Fixed with blind pilots. Measure your bolt circles first; the defaults are estimates |
+| No pilot holes for the driver screws | Fixed. Blind pilots on Dayton's published bolt circles: 66 mm for the ND65, 108.5 mm for the ND105 pair |
+| Woofer and passive radiator surrounds stood 3 to 4 mm proud of the fabric | Fixed. Every driver sits in a recess shaped to its frame, with excursion clearance to the fabric |
 | Full-range drivers can be overdriven | Fixed in the app with a media volume cap, 80 % by default. Tune it by ear |
 | Four non-manifold edges in `base_tub` | Fixed. Two brace columns now overlap the side walls instead of touching them |
 | Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
