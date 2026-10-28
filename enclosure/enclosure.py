@@ -7,6 +7,7 @@ Parts exported (world position as <name>.stl, print orientation as print_<name>.
   lid_spine      top plate (seals all three chambers) printed in one piece with the tilted
                  spine that joins it to the bezel tray and carries the cable channel
   grille_ring    ring frame that the linen wraps around, slides on from below, magnets to the tub
+  grille_shell   fabric-free alternative to grille_ring + linen: printed honeycomb grille, same fit
   bezel_front    tablet frame, front lip + pocket
   bezel_tray     back housing for the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
   dc_plate       flush plate that carries the 24 V panel jack, screws into the spine's rear face
@@ -36,6 +37,14 @@ FRONT_INNER_Y = 12.0           # front baffle inner face (outer face at Y=0, rec
 RECESS = 3.0                   # grille recess depth (2.4 frame + 0.6 fabric)
 REC_Z1 = 113.0                 # linen band runs from the counter up to here
 FABRIC = 0.6
+# Fabric-free alternative: a printed grille shell replaces the grille ring and linen. Same tub, same
+# magnets. Honeycomb of pointy-top hexagon holes (prints cleanly in a vertical wall), ~52% open.
+SHELL_HEX = 2.6                # hole size across flats
+SHELL_WEB = 1.0                # web between holes
+SHELL_Z = (15.0, 100.0)        # perforated band, clear of the magnets at z = 9 and 106
+SHELL_FIELD_R = 8.0            # corner radius of each perforated field
+SHELL_SIDES = False            # also perforate the side faces
+SHELL_TOP_GAP = 0.3            # reveal line between the shell and the tub's top band
 CHAMBER_WALL = 4.0
 FR_CH_X0 = 58.0                # full range chamber inner wall starts at |X| = 58
 FR_CH_Y1 = 80.0                # full range chamber back wall outer face
@@ -50,21 +59,23 @@ FR_CH_Y1 = 80.0                # full range chamber back wall outer face
 #   tab_notch  (half width, reach from the axis, depth behind the mounting face where it starts):
 #              relief on the top side for solder tabs that stick out past the cutout
 #   bc         screw bolt circle (4 x 4.2 mm holes at 45 deg)
-#   fabric_clear   gap from the surround (at rest) to the fabric, for cone excursion
+#   cover_clear    gap from the surround (at rest) to the inside of the covering, for cone excursion.
+#                  Measured to the inner face of the grille ring / grille shell (RECESS - RING_GAP from
+#                  the outside), which is closer than the linen, so it holds for both base versions.
 #   well_clr   clearance around the frame in its recess
 DRIVERS = {
     # ND65-4: 64 mm frame, 52 mm cutout, 48 mm deep (43 behind the mounting face), Xmax 3.5 mm.
     # Outline, proud height and solder tabs measured from Dayton's STEP/STL. The tabs reach 27 mm from
     # the axis within +-15.7 mm, from 2.5 mm behind the flange. Mount the ND65s with the tabs up.
     "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.5, 28.0, 2.0),
-                   bc=66.0, fabric_clear=4.0, well_clr=0.5),
+                   bc=66.0, cover_clear=4.0, well_clr=0.5),
     # ND105-4: 105 mm frame, ears to 120 mm, 93 mm cutout, 67 mm deep (57 behind the mounting face),
     # Xmax 4 mm. Ear shape inferred from the drawing, so the recess has extra clearance.
     "nd105":  dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, fabric_clear=5.0, well_clr=1.0),
+                   bc=108.5, cover_clear=5.0, well_clr=1.0),
     # ND105-PR: same frame as the ND105-4, 40.5 mm deep (30.5 behind the mounting face), Xmax 11 mm.
     "nd105pr": dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, fabric_clear=9.0, well_clr=1.0),
+                   bc=108.5, cover_clear=9.0, well_clr=1.0),
 }
 FR_X = 96.0                            # full range centers at +/-X
 DRV_Z = (FLOOR + TUB_H) / 2.0          # driver center height
@@ -226,7 +237,7 @@ for (x, y) in BOSSES:
     tub = tub - cyl_z(x, y, TUB_H - 4, TUB_H + 1, 4.3)
 
 # Driver mounts. Each driver sits in a recessed well deep enough that its surround clears the fabric
-# by fabric_clear, on a mounting ring that thickens the baffle behind it for the screws.
+# by cover_clear, on a mounting ring that thickens the baffle behind it for the screws.
 def frame_outline(d, grow=0.0):
     ears = [CS.circle(d["ear_r"] + grow, 48).translate([d["ear_c"] * math.cos(math.radians(a)),
                                                         d["ear_c"] * math.sin(math.radians(a))])
@@ -243,9 +254,9 @@ SEATS = {}
 def mount_driver(tub, name, x, rear=False):
     d = DRIVERS[name]
     sgn = 1 if rear else -1                                   # direction the driver faces, along Y
-    fabric_in = BD - FABRIC if rear else FABRIC               # inside face of the fabric
+    cover_in = BD - (RECESS - RING_GAP) if rear else RECESS - RING_GAP   # inside face of ring / shell
     surface = BD - RECESS if rear else RECESS                 # recessed tub surface under the fabric
-    seat = fabric_in - sgn * (d["fabric_clear"] + d["proud"] + GASKET_T)   # baffle face under the gasket
+    seat = cover_in - sgn * (d["cover_clear"] + d["proud"] + GASKET_T)    # baffle face under the gasket
     back = seat - sgn * MOUNT_MEAT                            # back of the mounting ring
     SEATS[name + ("" if x >= 0 else "_l")] = seat
     # the ring runs from the baffle to the back of the mounting face, so the well gets solid walls
@@ -334,6 +345,53 @@ gf = gf - win
 for c in mag_cuts(MAG_TUB, MAG_FRAME, True):
     gf = gf - c
 fabric = extrude(outline, GZ0, GZ1) - extrude(inset, -1, 200)
+
+# ======================= GRILLE SHELL (fabric-free alternative) =======================
+# Flush with the tub's top band on the outside, same inner clearance and magnet pockets as the ring.
+SZ0, SZ1 = GZ0, REC_Z1 - SHELL_TOP_GAP
+shell = extrude(outline, SZ0, SZ1) - extrude(inset.offset(RING_GAP, m3.JoinType.Round), -1, 200)
+for c in mag_cuts(MAG_TUB, MAG_FRAME, True):
+    shell = shell - c
+
+def hex_field(u0, u1, z0, z1, place_hole):
+    """Honeycomb hole centers inside a rounded rectangle (u = along the face, z = height)."""
+    pitch = SHELL_HEX + SHELL_WEB
+    row = pitch * math.sqrt(3) / 2
+    field = rrect(u0, u1, z0, z1, SHELL_FIELD_R, SHELL_FIELD_R)
+    r_hex = SHELL_HEX / math.sqrt(3)           # circumradius of the hexagon
+    holes = []
+    nrows = int((z1 - z0) / row) + 1
+    zc0 = (z0 + z1) / 2 - (nrows - 1) * row / 2
+    for i in range(nrows):
+        z = zc0 + i * row
+        off = pitch / 2 if i % 2 else 0.0
+        ncols = int((u1 - u0) / pitch) + 2
+        uc0 = (u0 + u1) / 2 - (ncols - 1) * pitch / 2 + off
+        for j in range(ncols):
+            u = uc0 + j * pitch
+            # keep holes whose whole hexagon sits inside the field
+            probe = CS.circle(r_hex, 6).translate([u, z])
+            if (probe - field).area() < 1e-6:
+                holes.append(place_hole(u, z, r_hex))
+    return holes
+
+def hex_hole_y(x, z, r, y0, y1):
+    # 6-sided cylinder along Y with a vertex pointing up (rotated 30 deg about its own axis)
+    return M.cylinder(y1 - y0, r, r, 6).rotate([0, 0, 30]).rotate([-90, 0, 0]).translate([x, y0, z])
+
+def hex_hole_x(y, z, r, x0, x1):
+    return M.cylinder(x1 - x0, r, r, 6).rotate([0, 0, 30]).rotate([0, 90, 0]).translate([x0, y, z])
+
+FRONT_FLAT = BW / 2 - R_FRONT - 4.0
+REAR_FLAT = BW / 2 - R_REAR - 4.0
+SIDE_FLAT = (R_FRONT + 4.0, BD - R_REAR - 4.0)
+holes = hex_field(-FRONT_FLAT, FRONT_FLAT, *SHELL_Z, lambda u, z, r: hex_hole_y(u, z, r, -1, RECESS + 1))
+holes += hex_field(-REAR_FLAT, REAR_FLAT, *SHELL_Z, lambda u, z, r: hex_hole_y(u, z, r, BD - RECESS - 1, BD + 1))
+if SHELL_SIDES:
+    for sx in (-1, 1):
+        x0, x1 = sorted((sx * (BW / 2 + 1), sx * (BW / 2 - RECESS - 1)))
+        holes += hex_field(*SIDE_FLAT, *SHELL_Z, lambda u, z, r, x0=x0, x1=x1: hex_hole_x(u, z, r, x0, x1))
+shell = shell - union(holes)
 
 # ======================= BEZEL (built in local frame) =======================
 # local: x = X, y = a (depth, 0 at front face, + backward), z = h (up the face, 0 at bottom edge)
@@ -532,7 +590,7 @@ def export(man, name):
     return tm
 
 parts_world = {
-    "base_tub": tub, "lid_spine": lid_spine, "grille_ring": gf,
+    "base_tub": tub, "lid_spine": lid_spine, "grille_ring": gf, "grille_shell": shell,
     "bezel_front": bezel_front_w, "bezel_tray": bezel_tray_w, "dc_plate": dc_plate_w,
 }
 meshes = {k: export(v, k) for k, v in parts_world.items()}
@@ -544,6 +602,7 @@ export(tablet, "_render_tablet")
 export(bf.rotate([90, 0, 0]), "print_bezel_front")          # face down
 export(tr.rotate([-90, 0, 0]), "print_bezel_tray")             # back wall down
 export(gf.rotate([180, 0, 0]), "print_grille_ring")          # top edge down
+export(shell.rotate([180, 0, 0]), "print_grille_shell")       # top edge down
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
 export(dc_plate, "print_dc_plate")                             # outside face down

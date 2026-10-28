@@ -35,7 +35,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | S2 | 1 | Dayton Audio ND105-4, 4" aluminum midbass, 4 Ω | 105 mm frame with ears to 120 mm, 4.2 mm holes on a 108.5 mm bolt circle, 93 mm cutout. 67 mm deep, 57 mm behind the mounting face. Xmax 4 mm, 30 W. Front center | `DRIVERS["nd105"]` |
 | S3 | 1 | Dayton Audio ND105-PR, 4" passive radiator | Same frame and bolt circle as the ND105-4, 93 mm cutout. 40.5 mm deep, 30.5 mm behind the mounting face. Fs 51.5 Hz, Vas 2.6 L, Xmax 11 mm. Rear center | `DRIVERS["nd105pr"]` |
 | S4 | 16 | M3 x 6 pan head thread-forming screws, or #4 x 1/4" | 4 per driver, through the 4.2 mm frame holes into 6 mm deep, 2.5 mm blind pilots | `PILOT_D`, `PILOT_DEPTH` |
-| S5 | 1 roll | Closed-cell foam gasket tape, about 3 mm wide, 1 mm thick when compressed | Seals each driver flange to the baffle. A thicker gasket eats into the fabric clearance | `GASKET_T` |
+| S5 | 1 roll | Closed-cell foam gasket tape, about 3 mm wide, 1 mm thick when compressed | Seals each driver flange to the baffle. A thicker gasket eats into the excursion clearance | `GASKET_T` |
 | S6 | 1 bag | Polyfill or acoustic wool | Light fill in the full-range chambers, lining in the woofer chamber | |
 
 The woofer and passive radiator face each other front to back. With Dayton's depths, the woofer
@@ -55,7 +55,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | H4 | 4 | M3 x 6 thread-forming screws | KABD-430 into its 2.6 mm standoff pilots, which are about 4.9 mm deep. Longer screws bottom out | Amp standoffs |
 | H5 | 6 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm | `BOSSES` |
 | H6 | 12 | Neodymium disc magnets, 6 x 2 mm, N52 | One per tub pocket. Sits 0.2 mm below the surface | `MAG_T_TUB` |
-| H7 | 12 | Neodymium disc magnets, 6 x 1 mm, N52 | One per grille ring pocket, flush. Opposite polarity to H6 | `MAG_T_FRAME` |
+| H7 | 12 | Neodymium disc magnets, 6 x 1 mm, N52 | One per grille ring or grille shell pocket, flush. Opposite polarity to H6 | `MAG_T_FRAME` |
 | H8 | 4 | Silicone bumper feet, 10 mm diameter, about 3 mm tall | Lift the fabric edge off the counter | 10.5 mm recesses |
 | H9 | 1 sheet | Adhesive foam, 1.5 mm | Pads on the six tablet back-stop posts, 8 mm diameter | Tray posts |
 | H10 | 1 roll | VHB double-sided tape | Holds the PD module, UGREEN adapter, buck and ESP32-C3 in their cradles | `CRADLES` |
@@ -74,18 +74,19 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
-| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 902 cm³ |
+| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 910 cm³ |
 | P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 353 cm³ |
-| P3 | 1 | `grille_ring.stl` | 299 x 149 x 112 | 92 cm³ |
+| P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 112 | 92 cm³ |
+| P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 214 cm³ |
 | P4 | 1 | `bezel_front.stl` | 284 x 203 x 10 | 137 cm³ |
 | P5 | 1 | `bezel_tray.stl` | 284 x 203 x 30 | 209 cm³ |
 | P6 | 1 | `dc_plate.stl` | 40 x 24 x 3 | 2.5 cm³ |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| M1 | 2 kg | PETG, PLA or ASA filament | About 1.6 L of solid volume in total, which is 2 kg of PLA at 100 % infill. Print the tray in PETG or ASA. Avoid carbon or metal-filled filament on the bezel front |
-| M2 | 1 piece | Acoustically transparent linen or speaker grille cloth, about 950 x 160 mm | Wraps the grille ring. The perimeter is about 870 mm and the band is 112 mm tall |
-| M3 | 1 can | Spray adhesive or thin double-sided tape | Fixes the fabric to the grille ring |
+| M1 | 2 kg | PETG, PLA or ASA filament | About 1.6 L of solid volume in total (1.75 L with the grille shell), which is 2 to 2.2 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the tray in PETG or ASA. Avoid carbon or metal-filled filament on the bezel front |
+| M2 | 1 piece | Linen version only. Acoustically transparent linen or speaker grille cloth, about 950 x 160 mm | Wraps the grille ring. The perimeter is about 870 mm and the band is 112 mm tall |
+| M3 | 1 can | Linen version only. Spray adhesive or thin double-sided tape | Fixes the fabric to the grille ring |
 | M4 | 1 tube | Two-part epoxy | Glues the lid to the tub. The seal must be airtight |
 
 ## 7. Tools and software

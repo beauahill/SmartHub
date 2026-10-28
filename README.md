@@ -1,16 +1,18 @@
 # SmartHub: Counter Display
 
 An open source kitchen-counter smart display and sound system. A Samsung Galaxy Tab A9+ sits in a
-tilted 3D-printed bezel on top of a linen-wrapped speaker base. A custom Android home app shows a
+tilted 3D-printed bezel on top of a speaker base, which can be wrapped in linen or fitted with a
+printed honeycomb grille. A custom Android home app shows a
 Home Assistant dashboard full screen with a dock of app tiles. A 24 GHz mmWave radar in the bezel
 chin wakes the screen when someone walks up.
 
 ![Counter display, current design](enclosure/renders/current_hero.png)
 
-| ![Rear, current design](enclosure/renders/current_rear.png) | ![Bezel corner, current design](enclosure/renders/current_corner.png) |
+| ![Fabric-free version with the printed grille shell](enclosure/renders/current_shell_hero.png) | ![Grille shell close-up](enclosure/renders/current_shell_grille.png) |
 | --- | --- |
+| ![Rear, current design](enclosure/renders/current_rear.png) | ![Bezel corner, current design](enclosure/renders/current_corner.png) |
 
-The `current_*` renders show the current STLs. The bezel has 28 mm corners, a 4 mm front round-over,
+The `current_*` renders show the current STLs, with the linen base and with the fabric-free grille shell. The bezel has 28 mm corners, a 4 mm front round-over,
 a 6 mm back round-over and a chamfered screen window.
 
 The original Cowork renders show the first version and are kept for reference:
@@ -65,7 +67,8 @@ already oriented for printing.
 | --- | --- | --- |
 | `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers |
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
-| `grille_ring` | 299 x 149 x 112 | Linen wraps around it. Slides on from below, held by magnets |
+| `grille_ring` | 299 x 149 x 112 | Linen version. Linen wraps around it. Slides on from below, held by magnets |
+| `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints top edge down |
 | `bezel_front` | 284 x 203 x 10 | Prints face down. Holds the tablet and the radar |
 | `bezel_tray` | 284 x 203 x 30 | Prints back wall down. Holds the amp, power modules and audio adapter |
 | `dc_plate` | 40 x 24 x 3 | Prints face down. Carries the 24 V panel jack |
@@ -80,9 +83,18 @@ Do not use carbon-fiber or metal-filled filament for the bezel front: the radar 
 retail listings give 23 mm, so the script assumes 23 mm. The tray depth follows `AMP_H`. A shorter
 board gives a shallower tray, down to the original 26 mm.
 
+**Two base finishes, same tub.** Print either the grille ring and wrap it in linen, or print the
+grille shell. The shell is a 2.85 mm printed skin, flush with the tub's top band, with a honeycomb
+of 2.6 mm hexagonal holes over the front and rear faces, about 52 % open. The holes point up and
+down, so they print cleanly in a vertical wall. The shell uses the same magnets and slides on the
+same way as the ring. Set `SHELL_SIDES = True` to perforate the sides too, or change the hole size
+and web with `SHELL_HEX` and `SHELL_WEB`.
+
 **Driver mounts follow Dayton's drawings and the ND65 3D model.** Each driver sits in a recess
-shaped to its frame, deep enough that the surround clears the fabric with room for excursion: 4 mm
-for the ND65s, 5 mm for the woofer and 9 mm for the passive radiator. A thickened ring behind each
+shaped to its frame, deep enough that the surround clears the inside of the covering with room for
+excursion: 4 mm for the ND65s, 5 mm for the woofer and 9 mm for the passive radiator. Clearance is
+measured to the inner face of the ring or shell, which is closer than the linen, so it holds for
+both finishes. A thickened ring behind each
 recess carries blind pilot holes on the published bolt circles. The ND65 recesses have a notch on
 the top side for the solder tabs, so mount the ND65s with their tabs up. Each recess allows for a
 1 mm compressed gasket under the flange (`GASKET_T`). The ND105 ear shape is inferred from the
@@ -116,13 +128,14 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
 1. Press the M3 heat-set inserts into the bezel front (8), the spine's tray bolt holes (4) and the
    jack pocket on the spine's rear face (2).
 2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
-   pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
+   or shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
    ring magnets sit flush.
 3. Wire the drivers, pass the full-range leads through the chamber holes, and seal them with hot glue.
    Mount the drivers from the outside on 1 mm gasket tape with M3 x 6 screws in the pilot holes.
    Turn the ND65 solder tabs up, into the notch.
 4. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
-5. Wrap the linen around the grille ring, then slide the ring onto the tub.
+5. Linen version: wrap the linen around the grille ring, then slide the ring onto the tub.
+   Fabric-free version: slide the grille shell onto the tub from below.
 6. Nut the DC-099 jack onto the jack plate and solder 18 AWG leads to it. Feed the leads through the
    pocket cavity and up the cable channel into the tray, then screw the plate flush with two
    M3 x 8 countersunk screws.
@@ -278,7 +291,8 @@ These items came out of reviewing the Cowork export.
 | No room for a USB-C plug past the tablet edge | Fixed. Side borders are 13 mm, leaving 10 mm for a right-angle adapter |
 | No mounts for the small boards in the tray | Fixed. Cradles for the PD module, UGREEN adapter, 5 V buck and ESP32-C3 |
 | No pilot holes for the driver screws | Fixed. Blind pilots on Dayton's published bolt circles: 66 mm for the ND65, 108.5 mm for the ND105 pair |
-| Woofer and passive radiator surrounds stood 3 to 4 mm proud of the fabric | Fixed. Every driver sits in a recess shaped to its frame, with excursion clearance to the fabric |
+| Woofer and passive radiator surrounds stood 3 to 4 mm proud of the fabric | Fixed. Every driver sits in a recess shaped to its frame, with excursion clearance to the covering |
+| Driver clearance was measured to the linen, but the grille ring's rails sit 2.25 mm closer | Fixed. Clearance is measured to the inner face of the ring or shell |
 | Full-range drivers can be overdriven | Fixed in the app with a media volume cap, 80 % by default. Tune it by ear |
 | Four non-manifold edges in `base_tub` | Fixed. Two brace columns now overlap the side walls instead of touching them |
 | Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
