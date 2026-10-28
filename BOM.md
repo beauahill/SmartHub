@@ -77,8 +77,8 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 902 cm³ |
 | P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 353 cm³ |
 | P3 | 1 | `grille_ring.stl` | 299 x 149 x 112 | 92 cm³ |
-| P4 | 1 | `bezel_front.stl` | 284 x 200 x 10 | 136 cm³ |
-| P5 | 1 | `bezel_tray.stl` | 284 x 200 x 30 | 207 cm³ |
+| P4 | 1 | `bezel_front.stl` | 284 x 203 x 10 | 137 cm³ |
+| P5 | 1 | `bezel_tray.stl` | 284 x 203 x 30 | 209 cm³ |
 | P6 | 1 | `dc_plate.stl` | 40 x 24 x 3 | 2.5 cm³ |
 
 | # | Qty | Material | Notes |

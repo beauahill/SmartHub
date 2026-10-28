@@ -5,15 +5,18 @@ tilted 3D-printed bezel on top of a linen-wrapped speaker base. A custom Android
 Home Assistant dashboard full screen with a dock of app tiles. A 24 GHz mmWave radar in the bezel
 chin wakes the screen when someone walks up.
 
-![Counter display](enclosure/renders/hero.png)
+![Counter display, current design](enclosure/renders/current_hero.png)
 
-| ![Exploded view](enclosure/renders/exploded.png) | ![Speaker base internals](enclosure/renders/internals.png) |
+| ![Rear, current design](enclosure/renders/current_rear.png) | ![Bezel corner, current design](enclosure/renders/current_corner.png) |
 | --- | --- |
-| ![Rear](enclosure/renders/rear.png) | ![Side](enclosure/renders/side.png) |
 
-The renders show the first version of the bezel. The current bezel is 8 mm wider, with 13 mm side
-borders instead of 9 mm, to make room for the USB-C adapter. Its tray is also 4 mm deeper, to fit
-the KABD-430 amplifier.
+The `current_*` renders show the current STLs. The bezel has 28 mm corners, a 4 mm front round-over,
+a 6 mm back round-over and a chamfered screen window.
+
+The original Cowork renders show the first version and are kept for reference:
+
+| ![Original hero](enclosure/renders/hero.png) | ![Exploded view](enclosure/renders/exploded.png) | ![Speaker base internals](enclosure/renders/internals.png) |
+| --- | --- | --- |
 
 The full parts list is in [BOM.md](BOM.md).
 
@@ -48,7 +51,7 @@ The full parts list is in [BOM.md](BOM.md).
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
 | [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates every STL |
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
-| `enclosure/renders/` | Renders of the first version of the design |
+| `enclosure/renders/` | `current_*` renders of the current design, plus the original Cowork renders |
 | [`BOM.md`](BOM.md) | Bill of materials |
 
 ## Build order
@@ -63,8 +66,8 @@ already oriented for printing.
 | `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers |
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
 | `grille_ring` | 299 x 149 x 112 | Linen wraps around it. Slides on from below, held by magnets |
-| `bezel_front` | 284 x 200 x 10 | Prints face down. Holds the tablet and the radar |
-| `bezel_tray` | 284 x 200 x 30 | Prints back wall down. Holds the amp, power modules and audio adapter |
+| `bezel_front` | 284 x 203 x 10 | Prints face down. Holds the tablet and the radar |
+| `bezel_tray` | 284 x 203 x 30 | Prints back wall down. Holds the amp, power modules and audio adapter |
 | `dc_plate` | 40 x 24 x 3 | Prints face down. Carries the 24 V panel jack |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
@@ -91,6 +94,12 @@ spot for the right-angle adapter. `LD2410C` sits beside the radar pocket on the 
 The labels stand 0.6 mm proud and face up in both print orientations. Change them in `CRADLES`, or
 turn them off with `LABELS = False`. The script draws them with the DejaVu Sans font bundled with
 matplotlib, so the STLs come out the same on every machine.
+
+**Bezel styling is parametric.** `BEZEL_R` sets the corner radius, and `BEZEL_FRONT_FILLET` and
+`BEZEL_BACK_FILLET` set the edge round-overs. `WINDOW_CHAMFER` sets the screen window chamfer. On
+the edge that sits on the print bed, each round-over turns into a 45° chamfer for its last part, so
+it prints cleanly face down. The tray's inner shell follows the outer curve, so its wall stays
+2.4 mm all the way round.
 
 To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenerate:
 
