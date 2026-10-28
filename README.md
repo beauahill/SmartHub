@@ -10,7 +10,7 @@ chin wakes the screen when someone walks up.
 
 | ![Fabric-free version with the printed grille shell](enclosure/renders/current_shell_hero.png) | ![Grille shell close-up](enclosure/renders/current_shell_grille.png) |
 | --- | --- |
-| ![Rear, current design](enclosure/renders/current_rear.png) | ![Bezel corner, current design](enclosure/renders/current_corner.png) |
+| ![Rear, current design](enclosure/renders/current_rear.png) | ![USB-C power port](enclosure/renders/current_power.png) |
 
 The `current_*` renders show the current STLs, with the linen base and with the fabric-free grille shell. The bezel has 28 mm corners, a 4 mm front round-over,
 a 6 mm back round-over and a chamfered screen window.
@@ -36,9 +36,10 @@ The full parts list is in [BOM.md](BOM.md).
   to the AUX input of a Dayton Audio KABD-430 DSP amplifier in the bezel tray. The amp drives two Dayton ND65
   full-range drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105
   passive radiator.
-- **Power.** One 24 V adapter plugs into a flush panel-mount barrel jack on the rear of the spine. It feeds the amp directly, a
-  USB-C PD module that charges the tablet through the UGREEN adapter, and a small 5 V buck for the
-  ESP32 and radar.
+- **Power.** A small single-port USB-C charger at the wall feeds one thin USB-C cable into a flush
+  port on the rear of the spine. Behind the port, an Adafruit HUSB238 PD trigger set to 20 V asks
+  the charger for 20 V. That feeds the amp directly, a USB-C PD module that charges the tablet
+  through the UGREEN adapter, and a small 5 V buck for the ESP32 and radar.
 - **Volume cap.** The tablet's media volume sets the amp's input level. Counter Home holds media
   volume at or below a cap, 80 % by default, so the 15 W full-range drivers are not overdriven.
 
@@ -71,7 +72,7 @@ already oriented for printing.
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints top edge down |
 | `bezel_front` | 284 x 203 x 10 | Prints face down. Holds the tablet and the radar |
 | `bezel_tray` | 284 x 203 x 30 | Prints back wall down. Holds the amp, power modules and audio adapter |
-| `dc_plate` | 40 x 24 x 3 | Prints face down. Carries the 24 V panel jack |
+| `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
@@ -82,6 +83,12 @@ Do not use carbon-fiber or metal-filled filament for the bezel front: the radar 
 **Before printing the tray, measure your KABD-430's height.** Dayton's user guide gives 20 mm and
 retail listings give 23 mm, so the script assumes 23 mm. The tray depth follows `AMP_H`. A shorter
 board gives a shallower tray, down to the original 26 mm.
+
+**USB-C power plate.** The PD trigger mounts on a sled molded onto the back of the plate, using its
+own four mounting holes. The board geometry comes from Adafruit's published PCB files. The socket
+sits just behind a 14.4 x 8.8 mm chamfered opening that the plug's molded body passes through, so
+the plug seats fully. A cavity in the spine clears the board and its screw terminal and opens into
+the cable channel. If you use a different trigger board, change the `TRIG_*` parameters.
 
 **Two base finishes, same tub.** Print either the grille ring and wrap it in linen, or print the
 grille shell. The shell is a 2.85 mm printed skin, flush with the tub's top band, with a honeycomb
@@ -126,7 +133,7 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
 ### 2. Assemble
 
 1. Press the M3 heat-set inserts into the bezel front (8), the spine's tray bolt holes (4) and the
-   jack pocket on the spine's rear face (2).
+   power plate pocket on the spine's rear face (2).
 2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
    or shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
    ring magnets sit flush.
@@ -136,9 +143,11 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
 4. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
 5. Linen version: wrap the linen around the grille ring, then slide the ring onto the tub.
    Fabric-free version: slide the grille shell onto the tub from below.
-6. Nut the DC-099 jack onto the jack plate and solder 18 AWG leads to it. Feed the leads through the
-   pocket cavity and up the cable channel into the tray, then screw the plate flush with two
-   M3 x 8 countersunk screws.
+6. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
+   plate's sled with four M2.5 x 6 thread-forming screws, USB-C socket toward the opening. Put 18 AWG
+   leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
+   then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
+   the charger and check for 20 V at the leads.
 7. Bolt the tray to the spine and mount the amp on its standoffs. Stick the PD module, UGREEN adapter,
    5 V buck and ESP32-C3 into their cradles with VHB tape. Fit the radar in the chin pocket.
 8. Connect the audio: right-angle adapter into the tablet, UGREEN adapter into that, PD module into the
@@ -298,4 +307,4 @@ These items came out of reviewing the Cowork export.
 | Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
 | Setup script printed the wrong Home Assistant secret names | Fixed |
 | KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth now follows the amp height, 30 mm for a 23 mm board |
-| 24 V entered through a pigtail hole | Changed to a flush panel-mount DC-099 jack on a screw-in plate |
+| 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |

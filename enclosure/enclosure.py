@@ -10,7 +10,7 @@ Parts exported (world position as <name>.stl, print orientation as print_<name>.
   grille_shell   fabric-free alternative to grille_ring + linen: printed honeycomb grille, same fit
   bezel_front    tablet frame, front lip + pocket
   bezel_tray     back housing for the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
-  dc_plate       flush plate that carries the 24 V panel jack, screws into the spine's rear face
+  power_plate    flush USB-C power plate with a sled for the PD trigger board, screws into the spine
   _render_fabric linen skin, for renders only
   _render_tablet tablet placeholder, for renders only
 Measure your tablet and drivers and edit the PARAMETERS block before printing.
@@ -111,7 +111,7 @@ TRAY_D = max(26.0, math.ceil(TRAY_WALL + AMP_STANDOFF + AMP_H + AMP_CLEAR))
 CRADLE_WALL, CRADLE_H, CRADLE_CLR = 1.6, 3.0, 0.4
 # Each cradle also gets a raised label, printed above or below it.
 CRADLES = [
-    ("pd_module",      85.0,  75.0, 40.0, 25.0, "PD MODULE",     "below"),   # 24 V -> USB-C PD output
+    ("pd_module",      85.0,  75.0, 40.0, 25.0, "PD MODULE",     "below"),   # 20 V -> USB-C PD output
     ("audio_adapter",  85.0, 120.0, 45.0, 30.0, "AUDIO ADAPTER", "above"),   # UGREEN 2-in-1 USB-C to 3.5 mm + PD body
     ("buck_5v",        40.0, 120.0, 22.0, 17.0, "5V BUCK",       "above"),   # MP1584EN
     ("esp32_c3",       45.0,  80.0, 22.5, 18.0, "ESP32-C3",      "below"),   # ESP32-C3 SuperMini
@@ -136,15 +136,26 @@ BEZ_GAP = 4.0                                # air gap between lid and lowest be
 
 # Hardware
 M3_CLR, M3_INSERT, INSERT_DEPTH = 3.4, 4.0, 6.0
-# 24 V input: a panel-mount DC-099 barrel jack (5.5 x 2.1 mm, 11 mm hole, 6 mm max panel, hex nut).
-# The jack nuts onto a small printed plate, which sits flush in a pocket on the spine's rear face and
-# is held by two M3 countersunk screws in heat-set inserts. The cavity behind it clears the nut.
-DC_JACK_HOLE = 11.3                          # 11 mm nominal; printed holes run small
-DC_JACK_Z = 16.0                             # jack center above the lid top
-DC_PLATE_W, DC_PLATE_H, DC_PLATE_T, DC_PLATE_R = 40.0, 24.0, 3.0, 3.0
-DC_PLATE_CLR = 0.2                           # pocket clearance per side
-DC_CAVITY_D = 19.0                           # clears a 14 mm hex nut across its corners
-DC_SCREW_X = 15.0                            # plate screws at +-X
+# Power input: USB-C PD. An Adafruit HUSB238 PD trigger (product 5991, set to 20 V on its DIP switch)
+# screws to a sled on the back of a small printed plate. The plate sits flush in a pocket on the spine's
+# rear face, held by two M3 countersunk screws in heat-set inserts. Board geometry is from Adafruit's
+# PCB files: 20.32 x 27.81 mm, 2.5 mm holes, mid-mount USB-C socket overhanging the top edge by 1.14 mm.
+# The opening clears the plug's overmold, so the plug seats fully. It takes a 13 x 7 mm overmold with
+# the socket up to 0.9 mm off center (the socket's exact height on the PCB isn't in the board files).
+PWR_Z = 16.0                                 # socket center above the lid top
+PWR_PLATE_W, PWR_PLATE_H, PWR_PLATE_T, PWR_PLATE_R = 44.0, 26.0, 3.0, 3.0
+PWR_PLATE_CLR = 0.2                          # pocket clearance per side
+PWR_SCREW_X = 17.0                           # plate screws at +-X
+PWR_OPENING = (14.4, 8.8, 2.4)               # rounded rectangle (w, h, corner r) the plug overmold passes through
+PWR_OPENING_CHAMFER = 0.6
+TRIG_W, TRIG_L, TRIG_T = 20.32, 27.81, 1.6   # PD trigger PCB
+TRIG_USB_OVERHANG = 1.14                     # socket mouth beyond the PCB edge
+TRIG_USB_OFFSET = 0.0                        # socket center above the PCB mid-plane
+TRIG_HOLES = [(2.413, 25.273), (17.653, 25.273), (2.54, 2.54), (17.78, 2.54)]   # board coords, USB edge at y = 27.81
+TRIG_PAD, TRIG_PAD_H = 5.0, 2.2              # standoff pads under the mounting holes
+TRIG_PILOT = 2.1                             # for M2.5 thread-forming screws
+TRIG_SLED_T = 2.5
+TRIG_TALL = 9.5                              # tallest part above the PCB (the screw terminal)
 # Magnet pairs: a 6x2 mm disc in the tub and a 6x1 mm disc in the grille ring at each position.
 MAG_D = 6.4                                  # pocket diameter for 6 mm discs
 MAG_T_TUB, MAG_T_FRAME = 2.0, 1.0            # magnet thicknesses
@@ -535,7 +546,7 @@ HS = 115.0
 bps = to_world(0, T, HS)
 Yb0 = bp0[1]
 REAR_Y = Yb0 + 50
-REAR_FACE_H = max(8.0, DC_JACK_Z + DC_PLATE_H / 2 + 3.0)   # flat rear face tall enough for the jack plate
+REAR_FACE_H = max(8.0, PWR_Z + PWR_PLATE_H / 2 + 3.0)    # flat rear face tall enough for the power plate
 prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + REAR_FACE_H), (bps[1], bps[2]), (bp0[1], bp0[2]), (Yb0 - 6, bp0[2])]])
 SW = 60.0
 spine = prof.extrude(SW).rotate([90, 0, 90]).translate([-SW/2, 0, 0])   # profile (Y,Z) extruded along X
@@ -550,28 +561,54 @@ p_low = np.array([0, WIRE_HOLE[1], TOPZ - 2])
 p_high = to_world(0, T - 6, CH_H)
 chan = M.batch_hull([M.sphere(6, 48).translate(p_low.tolist()), M.sphere(6, 48).translate(p_high.tolist())])
 spine = spine - chan
-# 24 V jack: flush pocket for the plate, cavity for the jack body and nut, inserts for the plate screws
+# USB-C power: flush pocket for the plate, cavity for the PD trigger on its sled, inserts for the plate
 def plate_cs(w, h, r):
     return rrect(-w/2, w/2, -h/2, h/2, r, r)
 def along_y(cs, y0, y1, z):
     """extrude an X-Z profile (drawn as X-Y) along +Y from y0 to y1, centered at height z"""
     return cs.extrude(y1 - y0).rotate([-90, 0, 0]).translate([0, y0, z])
 REAR_FACE = REAR_Y - 0.6
-DC_Z = TOPZ + DC_JACK_Z
-POCKET_FLOOR = REAR_FACE - DC_PLATE_T
-spine = spine - along_y(plate_cs(DC_PLATE_W + 2 * DC_PLATE_CLR, DC_PLATE_H + 2 * DC_PLATE_CLR, DC_PLATE_R + DC_PLATE_CLR),
-                        POCKET_FLOOR, REAR_FACE + 1, DC_Z)
-spine = spine - cyl_y(0, DC_Z, WIRE_HOLE[1] - 8, POCKET_FLOOR + 0.01, DC_CAVITY_D)   # runs into the cable channel
-for sx in (-DC_SCREW_X, DC_SCREW_X):
-    spine = spine - cyl_y(sx, DC_Z, POCKET_FLOOR - INSERT_DEPTH, POCKET_FLOOR + 0.01, M3_INSERT)
+PWR_ZW = TOPZ + PWR_Z
+POCKET_FLOOR = REAR_FACE - PWR_PLATE_T
 
-# jack plate, built face down: z = 0 is the outside face
-dc_plate = plate_cs(DC_PLATE_W, DC_PLATE_H, DC_PLATE_R).extrude(DC_PLATE_T)
-dc_plate = dc_plate - cyl_z(0, 0, -1, DC_PLATE_T + 1, DC_JACK_HOLE)
-for sx in (-DC_SCREW_X, DC_SCREW_X):
-    dc_plate = dc_plate - cyl_z(sx, 0, -1, DC_PLATE_T + 1, M3_CLR)
-    dc_plate = dc_plate - M.cylinder(1.7, 3.4, M3_CLR / 2, SEG).translate([sx, 0, -0.01])   # 90 deg countersink
-dc_plate_w = dc_plate.rotate([90, 0, 0]).translate([0, REAR_FACE, DC_Z])
+# Power plate, built face down: z = 0 is the outside face, +z goes into the spine, +y is up.
+# Trigger board in plate coordinates: socket mouth at the plate's back face, PCB horizontal, parts up.
+pcb_bot = -TRIG_T / 2 - TRIG_USB_OFFSET                     # socket center at y = 0
+edge_z = PWR_PLATE_T + TRIG_USB_OVERHANG                     # z of the PCB's USB edge
+def board_xz(bx, by):
+    return bx - TRIG_W / 2, edge_z + (TRIG_L - by)
+sled_top = pcb_bot - TRIG_PAD_H
+sled_end = edge_z + TRIG_L + 1.0
+pp = plate_cs(PWR_PLATE_W, PWR_PLATE_H, PWR_PLATE_R).extrude(PWR_PLATE_T)
+ow, oh, orr = PWR_OPENING
+c = PWR_OPENING_CHAMFER
+opening = M.batch_hull([plate_cs(ow + 2*c, oh + 2*c, orr + c).extrude(0.01).translate([0, 0, -0.01]),
+                        plate_cs(ow, oh, orr).extrude(PWR_PLATE_T + 1).translate([0, 0, c])])
+pp = pp - opening - plate_cs(ow, oh, orr).extrude(PWR_PLATE_T + 2).translate([0, 0, -1])
+for sx in (-PWR_SCREW_X, PWR_SCREW_X):
+    pp = pp - cyl_z(sx, 0, -1, PWR_PLATE_T + 1, M3_CLR)
+    pp = pp - M.cylinder(1.7, 3.4, M3_CLR / 2, SEG).translate([sx, 0, -0.01])   # 90 deg countersink
+# sled under the board, pads under its four mounting holes, reliefs under the socket shell and terminal pins
+sled = box(-TRIG_W / 2 - 0.7, TRIG_W / 2 + 0.7, sled_top - TRIG_SLED_T, sled_top, PWR_PLATE_T - 0.01, sled_end)
+sled = sled - box(-5.3, 5.3, sled_top - 1.2, sled_top + 1, PWR_PLATE_T - 1, edge_z + 8.0)          # socket shell
+tx0, tz0 = board_xz(8.46 - 2.2, 3.81 + 2.5); tx1, tz1 = board_xz(11.86 + 2.2, 3.81 - 2.5)
+sled = sled - box(tx0, tx1, sled_top - 1.2, sled_top + 1, tz0, tz1)                              # terminal pins
+for bx, by in TRIG_HOLES:
+    x, z = board_xz(bx, by)
+    sled = sled + box(x - TRIG_PAD/2, x + TRIG_PAD/2, sled_top - 0.01, pcb_bot, z - TRIG_PAD/2, z + TRIG_PAD/2)
+    sled = sled - M.cylinder(20, TRIG_PILOT/2, TRIG_PILOT/2, 24).rotate([90, 0, 0]).translate([x, pcb_bot + 1, z])
+pwr_plate = pp + sled
+pwr_plate_w = pwr_plate.rotate([90, 0, 0]).translate([0, REAR_FACE, PWR_ZW])
+
+# spine pocket, cavity and inserts
+spine = spine - along_y(plate_cs(PWR_PLATE_W + 2 * PWR_PLATE_CLR, PWR_PLATE_H + 2 * PWR_PLATE_CLR, PWR_PLATE_R + PWR_PLATE_CLR),
+                        POCKET_FLOOR, REAR_FACE + 1, PWR_ZW)
+cav_y0 = REAR_FACE - sled_end - 6.0                          # room behind the board for the output wires
+cav = box(-TRIG_W / 2 - 2.2, TRIG_W / 2 + 2.2, cav_y0, POCKET_FLOOR + 0.01,
+          PWR_ZW + sled_top - TRIG_SLED_T - 1.5, PWR_ZW + pcb_bot + TRIG_T + TRIG_TALL + 1.5)
+spine = spine - cav                                          # opens into the cable channel
+for sx in (-PWR_SCREW_X, PWR_SCREW_X):
+    spine = spine - cyl_y(sx, PWR_ZW, POCKET_FLOOR - INSERT_DEPTH, POCKET_FLOOR + 0.01, M3_INSERT)
 # don't let the spine poke into the tray
 spine = spine - place(rounded_slab(EW, EH, ER, -1, T, f1=BEZEL_BACK_FILLET, bed="a1"))   # hugs the curved tray back
 lid_spine = lid + spine
@@ -591,7 +628,7 @@ def export(man, name):
 
 parts_world = {
     "base_tub": tub, "lid_spine": lid_spine, "grille_ring": gf, "grille_shell": shell,
-    "bezel_front": bezel_front_w, "bezel_tray": bezel_tray_w, "dc_plate": dc_plate_w,
+    "bezel_front": bezel_front_w, "bezel_tray": bezel_tray_w, "power_plate": pwr_plate_w,
 }
 meshes = {k: export(v, k) for k, v in parts_world.items()}
 export(fabric, "_render_fabric")
@@ -605,7 +642,7 @@ export(gf.rotate([180, 0, 0]), "print_grille_ring")          # top edge down
 export(shell.rotate([180, 0, 0]), "print_grille_shell")       # top edge down
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
-export(dc_plate, "print_dc_plate")                             # outside face down
+export(pwr_plate, "print_power_plate")                         # outside face down, sled standing up
 
 # acoustic volumes: air inside the closed tub (lid on), by chamber. Driver bodies are not subtracted.
 air = extrude(inner, FLOOR, TUB_H) - tub - union(PASS_THROUGHS)   # pass-throughs hot-glued shut
