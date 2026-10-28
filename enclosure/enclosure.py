@@ -97,12 +97,19 @@ TRAY_D = max(26.0, math.ceil(TRAY_WALL + AMP_STANDOFF + AMP_H + AMP_CLEAR))
 # bezel coordinates (z from the bezel bottom edge). Low walls locate each part; VHB tape holds it.
 # Set the PD module size to the module you buy.
 CRADLE_WALL, CRADLE_H, CRADLE_CLR = 1.6, 3.0, 0.4
+# Each cradle also gets a raised label, printed above or below it.
 CRADLES = [
-    ("pd_module",      85.0,  75.0, 40.0, 25.0),   # 24 V -> USB-C PD output
-    ("audio_adapter",  85.0, 120.0, 45.0, 30.0),   # UGREEN 2-in-1 USB-C to 3.5 mm + PD body
-    ("buck_5v",        40.0, 120.0, 22.0, 17.0),   # MP1584EN
-    ("esp32_c3",       45.0,  80.0, 22.5, 18.0),   # ESP32-C3 SuperMini
+    ("pd_module",      85.0,  75.0, 40.0, 25.0, "PD MODULE",     "below"),   # 24 V -> USB-C PD output
+    ("audio_adapter",  85.0, 120.0, 45.0, 30.0, "AUDIO ADAPTER", "above"),   # UGREEN 2-in-1 USB-C to 3.5 mm + PD body
+    ("buck_5v",        40.0, 120.0, 22.0, 17.0, "5V BUCK",       "above"),   # MP1584EN
+    ("esp32_c3",       45.0,  80.0, 22.5, 18.0, "ESP32-C3",      "below"),   # ESP32-C3 SuperMini
 ]
+# Raised labels inside the bezel, one per component. They face up in both print orientations.
+LABELS = True
+LABEL_SIZE = 5.5                             # font size in mm; capitals come out about 4 mm tall
+LABEL_RAISE = 0.6                            # height above the surface
+LABEL_GAP = 1.5                              # space between a cradle wall and its label
+LABEL_FONT = "DejaVu Sans"                   # bundled with matplotlib, so every machine gets the same STL
 CAMERA_HOLE = True
 USB_SIDE = +1                                # +1 = tablet USB-C at right end, -1 = left
 TILT = 15.0                                  # screen tilt back, degrees
@@ -160,6 +167,27 @@ def union(parts):
 
 def extrude(cs, z0, z1):
     return cs.extrude(z1 - z0).translate([0, 0, z0])
+
+def text_cs(s, size=None):
+    """Text outline as a CrossSection, centered on the origin (bold DejaVu from matplotlib)."""
+    from matplotlib.textpath import TextPath
+    from matplotlib.font_manager import FontProperties
+    tp = TextPath((0, 0), s, size=size or LABEL_SIZE, prop=FontProperties(family=LABEL_FONT, weight="bold"))
+    cs = CS([p.tolist() for p in tp.to_polygons(closed_only=True)], m3.FillRule.EvenOdd)
+    cs = cs.offset(0.02, m3.JoinType.Miter)    # merges glyph contours that touch at a point (the K)
+    x0, y0, x1, y1 = cs.bounds()
+    return cs.translate([-(x0 + x1) / 2, -(y0 + y1) / 2])
+
+def bezel_label(s, x, z, a_face, toward, angle=0.0):
+    """Raised label on a bezel face at depth a_face, standing LABEL_RAISE proud toward -a (toward=-1)
+    or +a (toward=+1). Text reads correctly when viewed from the side it stands out toward."""
+    cs = text_cs(s).rotate(angle)
+    if toward > 0:
+        cs = cs.mirror([1, 0])                 # seen from behind, so flip left-right
+    h = LABEL_RAISE + 0.2                      # 0.2 mm sunk into the face so they fuse
+    solid = cs.extrude(h).rotate([90, 0, 0])   # profile y -> z, extrusion -> -a, spanning a = -h..0
+    shift = a_face + 0.2 if toward < 0 else a_face + LABEL_RAISE
+    return solid.translate([x, shift, z])
 
 # ======================= BASE TUB =======================
 # Linen wraps the whole base (front, sides, rear). The tub is recessed RECESS mm all the way
@@ -343,6 +371,9 @@ SCREWS = [(-(EW/2 - 4.5), 32), (EW/2 - 4.5, 32), (-(EW/2 - 4.5), EH - 32), (EW/2
           (-70, 4.5), (70, 4.5), (-70, EH - 4.5), (70, EH - 4.5)]
 for (x, z) in SCREWS:
     bf = bf - lcyl_a(x, z, T_FRONT - INSERT_DEPTH, T_FRONT + 1, M3_INSERT)
+# radar label on the back of the chin, beside its pocket (read from the tray side)
+if LABELS:
+    bf = bf + bezel_label("LD2410C", RADAR_W / 2 + 18.0, RADAR_Z, T_FRONT, +1)
 
 # --- bezel tray
 tr = M.batch_hull([rr_xz(EW, EH, ER, T_FRONT, T - BCH), rr_xz(EW - 2*BCH, EH - 2*BCH, ER - BCH, T - BCH, T)]) - rr_xz(EW - 2*TRAY_WALL, EH - 2*TRAY_WALL, ER - TRAY_WALL, T_FRONT - 1, T - TRAY_WALL)
@@ -366,7 +397,7 @@ for dx in (-AMP_HOLES[0] / 2, AMP_HOLES[0] / 2):
 tr = tr - lbox(ux0, ux1, T_FRONT - 1, T_FRONT + 3, TAB_CZ - USB_NOTCH_H / 2, TAB_CZ + USB_NOTCH_H / 2)
 # cradles for the small boards, standing off the inside of the back wall
 BACK_IN = T - TRAY_WALL
-for (_, cx, cz, w, h) in CRADLES:
+for (_, cx, cz, w, h, label, side) in CRADLES:
     iw, ih = w + 2 * CRADLE_CLR, h + 2 * CRADLE_CLR
     ring = lbox(cx - iw/2 - CRADLE_WALL, cx + iw/2 + CRADLE_WALL, BACK_IN - CRADLE_H, BACK_IN + 0.01,
                 cz - ih/2 - CRADLE_WALL, cz + ih/2 + CRADLE_WALL) \
@@ -375,6 +406,13 @@ for (_, cx, cz, w, h) in CRADLES:
     ring = ring - lbox(cx - iw/2 - CRADLE_WALL - 1, cx + iw/2 + CRADLE_WALL + 1, BACK_IN - CRADLE_H - 1, BACK_IN - 0.6,
                        cz - gap/2, cz + gap/2)
     tr = tr + ring
+    if LABELS:
+        off = ih / 2 + CRADLE_WALL + LABEL_GAP + LABEL_SIZE * 0.4
+        tr = tr + bezel_label(label, cx, cz + (off if side == "above" else -off), BACK_IN, -1)
+if LABELS:
+    # amp: above the board; right-angle USB-C adapter: beside the notch, reading upward
+    tr = tr + bezel_label("KABD-430 AMP", JX, JZ + 34.3 + LABEL_GAP + 3.5 + LABEL_SIZE * 0.4, BACK_IN, -1)
+    tr = tr + bezel_label("USB-C 90°", USB_SIDE * (PW / 2 - 4.0), TAB_CZ, BACK_IN, -1, angle=90 * USB_SIDE)
 # vents in the back wall
 for i in range(9):
     x = -112 + i * 28

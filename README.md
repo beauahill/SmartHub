@@ -85,6 +85,13 @@ the top side for the solder tabs, so mount the ND65s with their tabs up. Each re
 1 mm compressed gasket under the flange (`GASKET_T`). The ND105 ear shape is inferred from the
 drawing, so its recesses have 1 mm of extra clearance.
 
+**The bezel has raised labels for every component.** On the inside of the tray's back wall, each
+cradle is labeled with its board, the amp standoffs say `KABD-430 AMP`, and `USB-C 90°` marks the
+spot for the right-angle adapter. `LD2410C` sits beside the radar pocket on the back of the chin.
+The labels stand 0.6 mm proud and face up in both print orientations. Change them in `CRADLES`, or
+turn them off with `LABELS = False`. The script draws them with the DejaVu Sans font bundled with
+matplotlib, so the STLs come out the same on every machine.
+
 To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenerate:
 
 ```
