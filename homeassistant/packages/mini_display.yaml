@@ -1,188 +1,195 @@
-# Counter display: Home Assistant side.
+# Hub Mini display: Home Assistant side.
+# It uses its own names (mini_display, mini_presence), so it runs alongside the Counter Display package.
+#
+# More than one Hub Mini: copy this file once per unit and replace every "mini_display" and
+# "mini_presence" with the unit's names, for example bedroom_display and bedroom_presence (the
+# ESPHome name bedroom-presence gives binary_sensor.bedroom_presence_presence). Use separate secrets
+# for each tablet.
+#
 # Drop this file in config/packages/ and make sure configuration.yaml has:
 #   homeassistant:
 #     packages: !include_dir_named packages
 #
 # The camera automations at the bottom need:
 #   - "Allow the camera" switched on in Counter Home settings on the tablet
-#   - an MJPEG IP Camera integration named "Counter display" (entity camera.counter_display),
+#   - an MJPEG IP Camera integration named "Mini display" (entity camera.mini_display),
 #     added in Settings > Devices & services; see the README for the URLs
 #   - person entities with device trackers, so zone.home counts who is home
 #
 # secrets.yaml needs (setup.sh prints the token and IP):
-#   counter_display_token: "Bearer <token>"
-#   counter_display_api: "http://192.168.0.120:2323/{{ path }}"
-#   counter_display_status: "http://192.168.0.120:2323/status"
+#   mini_display_token: "Bearer <token>"
+#   mini_display_api: "http://192.168.0.121:2323/{{ path }}"
+#   mini_display_status: "http://192.168.0.121:2323/status"
 
 rest_command:
-  counter_display:
-    url: !secret counter_display_api
+  mini_display:
+    url: !secret mini_display_api
     method: post
     headers:
-      Authorization: !secret counter_display_token
+      Authorization: !secret mini_display_token
     timeout: 5
 
 rest:
-  - resource: !secret counter_display_status
+  - resource: !secret mini_display_status
     headers:
-      Authorization: !secret counter_display_token
+      Authorization: !secret mini_display_token
     scan_interval: 20
     timeout: 5
     sensor:
-      - name: Counter display battery
-        unique_id: counter_display_battery
+      - name: Mini display battery
+        unique_id: mini_display_battery
         value_template: "{{ value_json.battery }}"
         unit_of_measurement: "%"
         device_class: battery
-      - name: Counter display battery temperature
-        unique_id: counter_display_battery_temp
+      - name: Mini display battery temperature
+        unique_id: mini_display_battery_temp
         value_template: "{{ value_json.batteryTempC }}"
         unit_of_measurement: "°C"
         device_class: temperature
     binary_sensor:
-      - name: Counter display screen
-        unique_id: counter_display_screen
+      - name: Mini display screen
+        unique_id: mini_display_screen
         value_template: "{{ value_json.screenOn }}"
-      - name: Counter display on dashboard
-        unique_id: counter_display_on_dashboard
+      - name: Mini display on dashboard
+        unique_id: mini_display_on_dashboard
         value_template: "{{ value_json.launcherInFront and not value_json.ambient }}"
-      - name: Counter display launcher in front
-        unique_id: counter_display_launcher_in_front
+      - name: Mini display launcher in front
+        unique_id: mini_display_launcher_in_front
         value_template: "{{ value_json.launcherInFront }}"
-      - name: Counter display camera
-        unique_id: counter_display_camera
+      - name: Mini display camera
+        unique_id: mini_display_camera
         value_template: "{{ value_json.camera.running }}"
 
 script:
-  counter_display:
-    alias: Counter display command
+  mini_display:
+    alias: Mini display command
     description: Send any API path, e.g. screen/on, ambient/on, home, launch?app=Music
     fields:
       path:
         description: API path
         example: launch?app=Music
     sequence:
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: "{{ path }}"
 
 automation:
-  - id: counter_display_wake
-    alias: Counter display, wake when someone walks up
+  - id: mini_display_wake
+    alias: Mini display, wake when someone walks up
     mode: restart
     triggers:
       - trigger: state
-        entity_id: binary_sensor.counter_presence_presence
+        entity_id: binary_sensor.mini_presence_presence
         to: "on"
     actions:
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: screen/on
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           # Dim at night, auto brightness during the day.
           path: >-
             {{ 'brightness?value=25' if now().hour >= 22 or now().hour < 6 else 'brightness?value=auto' }}
 
-  - id: counter_display_ambient
-    alias: Counter display, clock after 2 minutes alone
+  - id: mini_display_ambient
+    alias: Mini display, clock after 2 minutes alone
     triggers:
       - trigger: state
-        entity_id: binary_sensor.counter_presence_presence
+        entity_id: binary_sensor.mini_presence_presence
         to: "off"
         for: "00:02:00"
     conditions:
       - condition: state
-        entity_id: binary_sensor.counter_display_launcher_in_front
+        entity_id: binary_sensor.mini_display_launcher_in_front
         state: "on"
     actions:
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: ambient/on
 
-  - id: counter_display_off
-    alias: Counter display, panel off after 10 minutes alone
+  - id: mini_display_off
+    alias: Mini display, panel off after 10 minutes alone
     triggers:
       - trigger: state
-        entity_id: binary_sensor.counter_presence_presence
+        entity_id: binary_sensor.mini_presence_presence
         to: "off"
         for: "00:10:00"
     conditions:
       # Leaves the screen alone while YouTube TV or IPTV is up.
       - condition: state
-        entity_id: binary_sensor.counter_display_launcher_in_front
+        entity_id: binary_sensor.mini_display_launcher_in_front
         state: "on"
     actions:
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: screen/off
 
-  - id: counter_display_return_home
-    alias: Counter display, back to the dashboard after 30 minutes alone
+  - id: mini_display_return_home
+    alias: Mini display, back to the dashboard after 30 minutes alone
     triggers:
       - trigger: state
-        entity_id: binary_sensor.counter_presence_presence
+        entity_id: binary_sensor.mini_presence_presence
         to: "off"
         for: "00:30:00"
     conditions:
       - condition: state
-        entity_id: binary_sensor.counter_display_launcher_in_front
+        entity_id: binary_sensor.mini_display_launcher_in_front
         state: "off"
     actions:
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: home
       - delay: "00:00:05"
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: screen/off
 
-  - id: counter_display_battery_guard
-    alias: Counter display, warn if the battery runs hot
+  - id: mini_display_battery_guard
+    alias: Mini display, warn if the battery runs hot
     triggers:
       - trigger: numeric_state
-        entity_id: sensor.counter_display_battery_temperature
+        entity_id: sensor.mini_display_battery_temperature
         above: 42
         for: "00:05:00"
     actions:
       - action: persistent_notification.create
         data:
-          title: Counter display
+          title: Mini display
           message: >-
-            Tablet battery is at {{ states('sensor.counter_display_battery_temperature') }} °C.
+            Tablet battery is at {{ states('sensor.mini_display_battery_temperature') }} °C.
             Check the tray vents and that Battery protection is still set to Maximum.
 
   # ---------------------------------------------------------------- camera (optional)
-  - id: counter_display_camera_away
-    alias: Counter display, camera on when everyone has left
+  - id: mini_display_camera_away
+    alias: Mini display, camera on when everyone has left
     triggers:
       - trigger: numeric_state
         entity_id: zone.home
         below: 1
         for: "00:05:00"
     actions:
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: camera/on
 
-  - id: counter_display_camera_home
-    alias: Counter display, camera off when someone is home
+  - id: mini_display_camera_home
+    alias: Mini display, camera off when someone is home
     triggers:
       - trigger: numeric_state
         entity_id: zone.home
         above: 0
     actions:
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: camera/off
 
-  - id: counter_display_camera_motion_away
-    alias: Counter display, snapshot when someone is seen while away
+  - id: mini_display_camera_motion_away
+    alias: Mini display, snapshot when someone is seen while away
     mode: single
     max_exceeded: silent
     triggers:
       - trigger: state
-        entity_id: binary_sensor.counter_presence_presence
+        entity_id: binary_sensor.mini_presence_presence
         to: "on"
     conditions:
       - condition: numeric_state
@@ -191,26 +198,26 @@ automation:
     actions:
       # Make sure the camera is running (the wake automation also turns the screen on, which
       # lights the room a little). minutes=15 turns it back off if nobody turns it off sooner.
-      - action: rest_command.counter_display
+      - action: rest_command.mini_display
         data:
           path: camera/on?minutes=15
       - delay: "00:00:02"
       - action: camera.snapshot
         target:
-          entity_id: camera.counter_display
+          entity_id: camera.mini_display
         data:
-          filename: /config/www/counter_display/last_motion.jpg
+          filename: /config/www/mini_display/last_motion.jpg
       - action: persistent_notification.create
         data:
-          title: Movement at the counter
+          title: Movement at the Hub Mini
           message: >-
-            The counter display saw someone at {{ now().strftime('%H:%M') }} while nobody was home.
+            The Hub Mini saw someone at {{ now().strftime('%H:%M') }} while nobody was home.
 
-            ![snapshot](/local/counter_display/last_motion.jpg?{{ now().timestamp() | int }})
+            ![snapshot](/local/mini_display/last_motion.jpg?{{ now().timestamp() | int }})
       # For a phone notification, add your mobile app notifier, for example:
       # - action: notify.mobile_app_your_phone
       #   data:
-      #     message: Movement at the counter
+      #     message: Movement at the Hub Mini
       #     data:
-      #       image: /local/counter_display/last_motion.jpg
+      #       image: /local/mini_display/last_motion.jpg
       - delay: "00:01:00"   # at most one snapshot a minute

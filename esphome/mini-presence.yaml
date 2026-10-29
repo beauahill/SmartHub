@@ -1,8 +1,12 @@
-# Counter display presence sensor
+# Hub Mini presence sensor
 # ESP32-C3 SuperMini + HLK-LD2410C 24 GHz mmWave radar, both inside the bezel.
 #
+# More than one Hub Mini: give each one its own name below (bedroom-presence, office-presence, ...)
+# and its own api key secret. The presence entity follows the name, for example
+# binary_sensor.bedroom_presence_presence, so update the Home Assistant package to match.
+#
 # Wiring (solder wires straight to the LD2410C pads, no header pins, so it sits flat in the chin pocket):
-#   LD2410C VCC -> 5V   (from the mini buck in the tray, also feeds the C3's 5V pin)
+#   LD2410C VCC -> 5V   (from the 5 V buck in the tray, which also feeds the C3 5V pin and the amp)
 #   LD2410C GND -> GND
 #   LD2410C TX  -> C3 GPIO20 (RX)
 #   LD2410C RX  -> C3 GPIO21 (TX)
@@ -11,8 +15,8 @@
 # Flash once over USB, then everything after is OTA.
 
 substitutions:
-  name: counter-presence
-  friendly_name: Counter presence
+  name: mini-presence
+  friendly_name: Mini presence
 
 esphome:
   name: ${name}
@@ -29,7 +33,7 @@ logger:
 
 api:
   encryption:
-    key: !secret counter_presence_api_key
+    key: !secret mini_presence_api_key
 
 ota:
   - platform: esphome
@@ -39,7 +43,7 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   ap:
-    ssid: "Counter Presence Fallback"
+    ssid: "Mini Presence Fallback"
 
 captive_portal:
 
@@ -59,7 +63,7 @@ binary_sensor:
   - platform: ld2410
     ld2410_id: radar
     has_target:
-      name: Presence            # -> binary_sensor.counter_presence_presence
+      name: Presence            # -> binary_sensor.mini_presence_presence
     has_moving_target:
       name: Moving target
     has_still_target:
@@ -83,9 +87,9 @@ sensor:
     update_interval: 120s
 
 # Tuning lives in the radar itself; change these from the HA device page.
-# Starting points for a counter:
-#   Max move / still distance gate: 3   (about 2.25 m, so the far side of the kitchen doesn't wake it)
-#   Gate 0 move and still threshold: 100 (ignores the first 0.75 m, which is where the speaker cones are)
+# Starting points for a nightstand or desk:
+#   Max move / still distance gate: 3   (about 2.25 m, so the far side of the room does not wake it)
+#   Gate 0 move and still threshold: 100 (ignores the first 0.75 m; raise it if the bed or chair right in front keeps it awake)
 #   Timeout: 10 s                        (HA adds its own delays on top)
 number:
   - platform: ld2410

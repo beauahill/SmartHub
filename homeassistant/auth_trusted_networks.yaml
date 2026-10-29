@@ -1,9 +1,9 @@
-# Lets the counter display open the dashboard without a login screen or a stored password.
-# Merge this into the homeassistant: block of configuration.yaml, then restart HA.
+# Lets the Hub Mini (and any other wall or counter tablets) open the dashboard without a login screen
+# or a stored password. Merge this into the homeassistant: block of configuration.yaml, then restart HA.
 #
-# 1. Settings > People > Users: add a user "counter" (not an admin). Copy its user ID from the URL
-#    or from the user's detail page.
-# 2. Give the tablet a fixed DHCP lease on the EdgeRouter and use that IP below.
+# 1. Settings > People > Users: add a user for the tablets, for example "display" (not an admin).
+#    Copy its user ID from the URL or from the user's detail page. One user can serve every tablet.
+# 2. Give each tablet a fixed DHCP lease on the router and list each IP below.
 # 3. Keep the "homeassistant" provider FIRST so every other device still gets the normal login.
 #
 # Note: HA must see the tablet's real IP. That's true for a bridged VirtualBox network adapter;
@@ -14,7 +14,9 @@ homeassistant:
     - type: homeassistant
     - type: trusted_networks
       trusted_networks:
-        - 192.168.0.120/32
+        - 192.168.0.121/32          # Hub Mini
+        # - 192.168.0.120/32        # Counter Display, if you have one
       trusted_users:
-        192.168.0.120/32: PUT_COUNTER_USER_ID_HERE
+        192.168.0.121/32: PUT_DISPLAY_USER_ID_HERE
+        # 192.168.0.120/32: PUT_DISPLAY_USER_ID_HERE
       allow_bypass_login: true

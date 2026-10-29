@@ -1,22 +1,23 @@
 """
-Counter Display enclosure - parametric model (manifold3d)
+Hub Mini enclosure - parametric model (manifold3d)
+A smaller sibling of the Counter Display: an 8.7 in Galaxy Tab A9 in a tilted frameless bezel on a
+small single-driver speaker base. Sized to replace a Google Home / Nest Mini on a nightstand, desk
+or shelf. Every part fits a 256 mm print bed.
 Units: mm.  World axes: X = width, Y = depth (front face at Y=0, back is +Y), Z = up.
 
 Parts exported (world position as <name>.stl, print orientation as print_<name>.stl):
-  base_tub       speaker box with full range sub chambers, open top
-  lid_spine      top plate (seals all three chambers) printed in one piece with the tilted
-                 spine that joins it to the bezel tray and carries the cable channel
-  grille_ring    ring frame that the linen wraps around, slides on from below, magnets to the tub
-  grille_shell   fabric-free alternative to grille_ring + linen: printed honeycomb grille, same fit
+  base_tub       sealed speaker box for one front-firing ND65, open top
+  lid_spine      top plate (seals the box) printed in one piece with the tilted spine that joins it
+                 to the bezel tray and carries the cable channel
+  grille_shell   printed honeycomb grille skin, slides on from below, held by magnets
   bezel_shell    frameless bezel: thin rim around the tablet glass and the tray behind it, one piece.
-                 Holds the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
+                 Holds the mono amp, PD module, 5 V buck and ESP32-C3
   bezel_chin     chin below the tablet with the mmWave radar; closes the bottom of the shell
   power_plate    flush USB-C power plate with a sled for the PD trigger board, screws into the spine
-  _render_fabric linen skin, for renders only
-  _render_tablet tablet placeholder, for renders only
-Measure your tablet and drivers and edit the PARAMETERS block before printing.
+  _render_tablet / _render_screen   placeholders, for renders only
+Measure your tablet and driver and edit the PARAMETERS block before printing.
 
-Usage:  python enclosure.py [out_dir]      (needs manifold3d, trimesh, numpy; see requirements.txt)
+Usage:  python enclosure.py [out_dir]      (see requirements.txt)
 """
 import math, os, sys
 import numpy as np
@@ -29,95 +30,81 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else "out"
 os.makedirs(OUT, exist_ok=True)
 
 # ---------------- PARAMETERS ----------------
-# Base
-BW, BD = 300.0, 150.0          # outer width, depth
-TUB_H, LID_T = 116.0, 4.0      # tub height, lid thickness (total base height 120)
-R_FRONT, R_REAR = 24.0, 12.0   # plan view corner radii
-WALL_SIDE, WALL_REAR, FLOOR = 7.0, 10.0, 5.0
+# Base: one sealed box, about 0.9 L of air for a single ND65.
+BW, BD = 170.0, 110.0          # outer width, depth
+TUB_H, LID_T = 76.0, 4.0       # tub height, lid thickness (total base height 80)
+R_FRONT, R_REAR = 20.0, 10.0   # plan view corner radii
+WALL_SIDE, WALL_REAR, FLOOR = 6.0, 8.0, 4.0
 FRONT_INNER_Y = 12.0           # front baffle inner face (outer face at Y=0, recess to Y=3 -> 9 mm baffle)
-RECESS = 3.0                   # grille recess depth (2.4 frame + 0.6 fabric)
-REC_Z1 = 113.0                 # linen band runs from the counter up to here
-FABRIC = 0.6
-# Fabric-free alternative: a printed grille shell replaces the grille ring and linen. Same tub, same
-# magnets. Honeycomb of pointy-top hexagon holes (prints cleanly in a vertical wall), ~52% open.
+RECESS = 3.0                   # the grille shell sits in this recess, flush with the top band
+REC_Z1 = 74.0                  # recess runs from the counter up to here; a 2 mm band stays above it
+# Grille shell: honeycomb of pointy-top hexagon holes (prints cleanly in a vertical wall), ~52% open.
 SHELL_HEX = 2.6                # hole size across flats
 SHELL_WEB = 1.0                # web between holes
-SHELL_Z = (15.0, 100.0)        # perforated band, clear of the magnets at z = 9 and 106
+SHELL_Z = (6.0, 70.0)          # perforated band on the front. No magnets on the front, so it runs tall
 SHELL_FIELD_R = 8.0            # corner radius of each perforated field
-SHELL_SIDES = False            # also perforate the side faces
+SHELL_SIDES = False            # also perforate the side faces (decorative; the box is sealed)
 SHELL_TOP_GAP = 0.3            # reveal line between the shell and the tub's top band
-CHAMBER_WALL = 4.0
-FR_CH_X0 = 58.0                # full range chamber inner wall starts at |X| = 58
-FR_CH_Y1 = 80.0                # full range chamber back wall outer face
 
-# Drivers, from the Dayton Audio spec sheets and the ND65 3D model.
-# Each frame is a round body with four mounting ears on the diagonals:
+# Driver, from Dayton's spec sheet and the ND65 3D model (same numbers as the Counter Display).
+# Its frame is a round body with four mounting ears on the diagonals:
 #   body_r     radius of the round part of the frame
 #   ear_c, ear_r   ear tip modeled as a circle of radius ear_r centered ear_c from the axis
 #   flange_t   frame flange thickness
 #   proud      how far the surround stands in front of the mounting face, at rest
 #   cut        baffle cutout
 #   tab_notch  (half width, reach from the axis, depth behind the mounting face where it starts):
-#              relief on the top side for solder tabs that stick out past the cutout
+#              relief on the top side for the solder tabs
 #   bc         screw bolt circle (4 x 4.2 mm holes at 45 deg)
-#   cover_clear    gap from the surround (at rest) to the inside of the covering, for cone excursion.
-#                  Measured to the inner face of the grille ring / grille shell (RECESS - RING_GAP from
-#                  the outside), which is closer than the linen, so it holds for both base versions.
+#   cover_clear    gap from the surround (at rest) to the inner face of the grille shell, for excursion
 #   well_clr   clearance around the frame in its recess
 DRIVERS = {
     # ND65-4: 64 mm frame, 52 mm cutout, 48 mm deep (43 behind the mounting face), Xmax 3.5 mm.
-    # Outline, proud height and solder tabs measured from Dayton's STEP/STL. The tabs reach 27 mm from
-    # the axis within +-15.7 mm, from 2.5 mm behind the flange. Mount the ND65s with the tabs up.
-    "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.5, 28.0, 2.0),
-                   bc=66.0, cover_clear=4.0, well_clr=0.5),
-    # ND105-4: 105 mm frame, ears to 120 mm, 93 mm cutout, 67 mm deep (57 behind the mounting face),
-    # Xmax 4 mm. Ear shape inferred from the drawing, so the recess has extra clearance.
-    "nd105":  dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=5.0, well_clr=1.0),
-    # ND105-PR: same frame as the ND105-4, 40.5 mm deep (30.5 behind the mounting face), Xmax 11 mm.
-    "nd105pr": dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=9.0, well_clr=1.0),
+    "nd65": dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.5, 28.0, 2.0),
+                 bc=66.0, cover_clear=4.0, well_clr=0.5),
 }
-FR_X = 96.0                            # full range centers at +/-X
+DRIVER = "nd65"
+DRV_X = 0.0                            # driver centered on the front
 DRV_Z = (FLOOR + TUB_H) / 2.0          # driver center height
-MOUNT_MEAT = 7.0                       # baffle material behind each mounting face, for the screws
-GASKET_T = 1.0                         # foam gasket under each flange (compressed); seats sit this much deeper
+MOUNT_MEAT = 7.0                       # baffle material behind the mounting face, for the screws
+GASKET_T = 1.0                         # foam gasket under the flange (compressed); the seat sits this much deeper
 PILOT_D = 2.5                          # blind pilots for M3 thread-forming or #4 screws
-PILOT_DEPTH = 6.0                      # leaves 1 mm before the chamber
+PILOT_DEPTH = 6.0
 
-# Tablet (Galaxy Tab A9+ : 257.1 x 168.7 x 6.9)
-TAB_W, TAB_H, TAB_T, TAB_R = 257.1, 168.7, 6.9, 10.0
+# Tablet: Galaxy Tab A9 8.7 in (SM-X110 / X115): 211.0 x 124.7 x 8.0. Corner radius is an estimate;
+# measure yours. It has a 3.5 mm headphone jack, so audio leaves through the jack and the USB-C port
+# only charges.
+TAB_W, TAB_H, TAB_T, TAB_R = 211.0, 124.7, 8.0, 8.0
 TAB_CLR = 0.4
 # Frameless front: the tablet's own black glass border shows; a thin printed lip overlaps its edge.
 LIP_OVERLAP = 1.5                            # how far the lip covers the tablet glass, per side
-FRAME = 6.8                                  # rim width above the tablet (and part of the chin)
-FRAME_SIDE = 6.8                             # rim width left and right of the tablet
-USB_CLEAR = 4.0                              # room past the tablet's USB-C edge for a flat FPC 90 deg adapter
-CHIN = 14.2                                  # extra bottom border for the mmWave sensor (chin = FRAME + CHIN = 21)
+FRAME = 10.0                                 # rim width above the tablet (and part of the chin)
+FRAME_SIDE = 10.0                            # rim width left and right; wide enough for the 3.5 mm plug
+USB_CLEAR = 4.0                              # room past the USB-C edge for a flat FPC 90 deg adapter
+JACK_CLEAR = 7.0                             # room past the jack edge for a slim 90 deg 3.5 mm plug
+USB_SIDE = +1                                # +1 = USB-C at the right end seen from the front, -1 = left
+JACK_SIDE = -USB_SIDE                        # the Tab A9 has the jack on the opposite short edge
+USB_Z, JACK_Z = 0.0, 0.0                     # port center offset from the tablet's center, along the edge (+ = up)
+USB_NOTCH_H, JACK_NOTCH_H = 22.0, 18.0       # height of the clearance channel around each port
+CHIN = 11.0                                  # extra bottom border for the mmWave sensor (chin = FRAME + CHIN = 21)
 RADAR_W, RADAR_H = 23.0, 17.0                # pocket for HLK-LD2410C (22 x 16 mm board)
 LIP = 1.2                                    # lip in front of the glass
 RADAR_LIP = 1.6                              # plastic in front of the radar
-USB_NOTCH_H = 22.0                           # height of the USB-C clearance around the port
 POCKET_D = TAB_T + 0.8                       # room for 0.5 mm felt pads on the back-stop posts
 TRAY_WALL = 2.4
-# Amplifier: Dayton Audio KABD-430. Board 91.4 x 68.6 mm, M3 holes on 83.8 x 61.0 mm.
-# Height: the user guide says 20 mm, retail listings say 0.9 in (23 mm). Measure yours and set AMP_H.
-AMP_HOLES = (83.8, 61.0)                     # hole spacing, x by z
-AMP_H = 20.0                                 # tallest part above the PCB bottom (Dayton spec sheet: 20 mm)
-AMP_STANDOFF = 3.5                           # PCB bottom above the tray back wall
-AMP_CLEAR = 1.0                              # gap between the tallest part and the tablet back
-# Tray depth follows the amp: wall + standoff + amp + clearance, never less than the original 26 mm.
-TRAY_D = max(26.0, math.ceil(TRAY_WALL + AMP_STANDOFF + AMP_H + AMP_CLEAR))
-# Cradles on the inside of the tray back wall: (name, x, z, width, height) of the board itself, in
-# bezel coordinates (z from the bezel bottom edge). Low walls locate each part; VHB tape holds it.
-# Set the PD module size to the module you buy.
+# Tray: no big amp any more, so it only has to clear the small boards stuck to its back wall.
+PARTS_H = 13.0                               # tallest board in the tray, from the back wall (PD module)
+TRAY_CLEAR = 1.0                             # gap between that board and the tablet back
+TRAY_D = math.ceil(TRAY_WALL + PARTS_H + TRAY_CLEAR)
+# Cradles on the inside of the tray back wall: (name, x, z, width, height, label, label side) of the
+# board itself, in bezel coordinates (z from the bezel bottom edge). Low walls locate each part; VHB
+# tape holds it. Set each size to the board you buy.
 CRADLE_WALL, CRADLE_H, CRADLE_CLR = 1.6, 3.0, 0.4
-# Each cradle also gets a raised label, printed above or below it.
 CRADLES = [
-    ("pd_module",      85.0,  75.0, 40.0, 25.0, "PD MODULE",     "below"),   # 20 V -> USB-C PD output
-    ("audio_adapter",  85.0, 120.0, 45.0, 30.0, "AUDIO ADAPTER", "above"),   # UGREEN 2-in-1 USB-C to 3.5 mm + PD body
-    ("buck_5v",        40.0, 120.0, 22.0, 17.0, "5V BUCK",       "above"),   # MP1584EN
-    ("esp32_c3",       45.0,  80.0, 22.5, 18.0, "ESP32-C3",      "below"),   # ESP32-C3 SuperMini
+    ("pd_module",  58.0, 102.0, 40.0, 25.0, "PD MODULE", "below"),   # 20 V -> USB-C PD output to the tablet
+    ("amp",       -58.0, 106.0, 21.0, 18.0, "AMP",       "below"),   # Adafruit PAM8302 mono class D
+    ("buck_5v",   -58.0,  64.0, 22.0, 17.0, "5V BUCK",   "below"),   # MP1584EN: ESP32, radar and amp
+    ("esp32_c3",   58.0,  60.0, 22.5, 18.0, "ESP32-C3",  "below"),   # ESP32-C3 SuperMini
 ]
 # Raised labels inside the bezel, one per component. They face up in both print orientations.
 LABELS = True
@@ -125,30 +112,36 @@ LABEL_SIZE = 5.5                             # font size in mm; capitals come ou
 LABEL_RAISE = 0.6                            # height above the surface
 LABEL_GAP = 1.5                              # space between a cradle wall and its label
 LABEL_FONT = "DejaVu Sans"                   # bundled with matplotlib, so every machine gets the same STL
-USB_SIDE = +1                                # +1 = tablet USB-C at right end, -1 = left
-TILT = 15.0                                  # screen tilt back, degrees
+TILT = 20.0                                  # screen tilt back, degrees; it usually sits below eye level
 # Bezel styling. Rounded edges are drawn as a quarter circle that turns into a 45 deg chamfer on the
 # edge that sits on the print bed, so they print without sagging.
 BEZEL_R = TAB_R + TAB_CLR + FRAME_SIDE       # corner radius in plan: an even rim around the tablet corners
 BEZEL_FRONT_FILLET = 3.0                     # round-over on the front edge
 BEZEL_BACK_FILLET = 6.0                      # round-over on the tray's back edge
 WINDOW_CHAMFER = 0.5                         # 45 deg chamfer on the lip's inner edge
-# Chin cap: 3 screws from underneath into inserts in the shell. x positions sit between the vents.
-CHIN_SCREW_X = (-98.0, 0.0, 98.0)
+MIC_SLOTS_X = (-60.0, -20.0, 20.0, 60.0)     # slots through the top rim, for the tablet microphones
+POSTS_X = (-92.0, 0.0, 92.0)                 # tablet back-stop posts, at POST_Z1 and EH - POST_Z1
+POST_Z1 = 40.0
+# Chin cap: 3 screws from underneath into inserts in the shell.
+CHIN_SCREW_X = (-75.0, 0.0, 75.0)
 # Bezel to spine: M3 bolts from the back of the spine into inserts in the tray's back wall.
-SPINE_PTS = [(-18, 45), (18, 45), (-18, 80), (18, 80)]    # (x, height up the tray back)
+SPINE_PTS = [(-16, 50), (16, 50), (-16, 80), (16, 80)]    # (x, height up the tray back), exit above the power plate
 SPINE_GRIP = 12.0                            # spine material under the bolt heads -> M3 x 16 bolts
-BEZ_Y0 = 14.0                                # bezel bottom-front edge Y
+SPINE_W = 56.0                               # spine width
+SPINE_HS = 110.0                             # spine reaches this far up the tray back
+SPINE_REAR = 52.0                            # spine rear face, behind the bezel's lowest back corner
+BEZ_Y0 = 8.0                                 # bezel bottom-front edge Y
 BEZ_GAP = 4.0                                # air gap between lid and lowest bezel corner
+CH_H = 60.0                                  # cable channel enters the tray here (height up the tray back)
+WIRE_HOLE = (0.0, 55.0, 6.0)                 # speaker wire hole through the lid (x, y, d). Hot-glue it shut
 
 # Hardware
 M3_CLR, M3_INSERT, INSERT_DEPTH = 3.4, 4.0, 6.0
-# Power input: USB-C PD. An Adafruit HUSB238 PD trigger (product 5991, set to 20 V on its DIP switch)
-# screws to a sled on the back of a small printed plate. The plate sits flush in a pocket on the spine's
-# rear face, held by two M3 countersunk screws in heat-set inserts. Board geometry is from Adafruit's
-# PCB files: 20.32 x 27.81 mm, 2.5 mm holes, mid-mount USB-C socket overhanging the top edge by 1.14 mm.
-# The opening clears the plug's overmold, so the plug seats fully. It takes a 13 x 7 mm overmold with
-# the socket up to 0.9 mm off center (the socket's exact height on the PCB isn't in the board files).
+# Power input: USB-C PD, identical to the Counter Display. An Adafruit HUSB238 PD trigger (product 5991,
+# set to 20 V on its DIP switch) screws to a sled on the back of a small printed plate. The plate sits
+# flush in a pocket on the spine's rear face, held by two M3 countersunk screws in heat-set inserts.
+# Board geometry is from Adafruit's PCB files: 20.32 x 27.81 mm, 2.5 mm holes, mid-mount USB-C socket
+# overhanging the top edge by 1.14 mm.
 PWR_Z = 16.0                                 # socket center above the lid top
 PWR_PLATE_W, PWR_PLATE_H, PWR_PLATE_T, PWR_PLATE_R = 44.0, 26.0, 3.0, 3.0
 PWR_PLATE_CLR = 0.2                          # pocket clearance per side
@@ -163,13 +156,18 @@ TRIG_PAD, TRIG_PAD_H = 5.0, 2.2              # standoff pads under the mounting 
 TRIG_PILOT = 2.1                             # for M2.5 thread-forming screws
 TRIG_SLED_T = 2.5
 TRIG_TALL = 9.5                              # tallest part above the PCB (the screw terminal)
-# Magnet pairs: a 6x2 mm disc in the tub and a 6x1 mm disc in the grille ring at each position.
+# Magnet pairs: a 6x2 mm disc in the tub and a 6x1 mm disc in the grille shell at each position.
+# Rear and sides only, so the front grille can run the full height of the driver.
 MAG_D = 6.4                                  # pocket diameter for 6 mm discs
 MAG_T_TUB, MAG_T_FRAME = 2.0, 1.0            # magnet thicknesses
 MAG_GLUE = 0.2                               # tub magnet sits this far below the surface
-RING_GAP = 0.15                              # clearance between the grille ring and the tub recess
+RING_GAP = 0.15                              # clearance between the grille shell and the tub recess
 MAG_TUB = MAG_T_TUB + MAG_GLUE               # pocket depth into the tub
-MAG_FRAME = MAG_T_FRAME + RING_GAP           # pocket cut, measured from the tub surface; flush in the ring
+MAG_FRAME = MAG_T_FRAME + RING_GAP           # pocket cut, measured from the tub surface; flush in the shell
+MAG_REAR = [(-45, 12), (45, 12), (-45, 62), (45, 62)]      # (x, z)
+MAG_SIDE = [(BD / 2, 12), (BD / 2, 62)]                     # (y, z), both sides
+DOWELS = [(-68, 22), (68, 22), (-68, 96), (68, 96)]         # brace columns with lid dowel holes
+FEET = [(-62, 18), (62, 18), (-62, BD - 18), (62, BD - 18)]
 # ---------------------------------------------
 
 def rrect(x0, x1, y0, y1, rf, rr, n=24):
@@ -210,7 +208,7 @@ def text_cs(s, size=None):
     from matplotlib.font_manager import FontProperties
     tp = TextPath((0, 0), s, size=size or LABEL_SIZE, prop=FontProperties(family=LABEL_FONT, weight="bold"))
     cs = CS([p.tolist() for p in tp.to_polygons(closed_only=True)], m3.FillRule.EvenOdd)
-    cs = cs.offset(0.02, m3.JoinType.Miter)    # merges glyph contours that touch at a point (the K)
+    cs = cs.offset(0.02, m3.JoinType.Miter)    # merges glyph contours that touch at a point
     x0, y0, x1, y1 = cs.bounds()
     return cs.translate([-(x0 + x1) / 2, -(y0 + y1) / 2])
 
@@ -226,8 +224,8 @@ def bezel_label(s, x, z, a_face, toward, angle=0.0):
     return solid.translate([x, shift, z])
 
 # ======================= BASE TUB =======================
-# Linen wraps the whole base (front, sides, rear). The tub is recessed RECESS mm all the way
-# around from the floor up to REC_Z1; a one piece ring frame slides on from below and is held by magnets.
+# The tub is recessed RECESS mm all the way around from the floor up to REC_Z1; the grille shell slides
+# on from below and is held by magnets. The whole inside is one sealed chamber.
 outline = rrect(-BW/2, BW/2, 0, BD, R_FRONT, R_REAR)
 inset = rrect(-BW/2 + RECESS, BW/2 - RECESS, RECESS, BD - RECESS, R_FRONT - RECESS, R_REAR - RECESS)
 inner = rrect(-BW/2 + WALL_SIDE, BW/2 - WALL_SIDE, FRONT_INNER_Y, BD - WALL_REAR,
@@ -238,24 +236,14 @@ IY0, IY1 = FRONT_INNER_Y, BD - WALL_REAR
 tub = extrude(inset, 0, REC_Z1) + extrude(outline, REC_Z1, TUB_H)
 tub = tub - extrude(inner, FLOOR, TUB_H + 1)
 
-# full range sub chambers (one per side)
-for s in (-1, 1):
-    xw0, xw1 = sorted((s * FR_CH_X0, s * (FR_CH_X0 + CHAMBER_WALL)))
-    tub = tub + box(xw0, xw1, IY0 - 1, FR_CH_Y1, FLOOR - 1, TUB_H)
-    xb0, xb1 = sorted((s * FR_CH_X0, s * (IX + 1)))
-    tub = tub + box(xb0, xb1, FR_CH_Y1 - CHAMBER_WALL, FR_CH_Y1, FLOOR - 1, TUB_H)
-
-# brace columns, which also take the lid locating pins
-# (+-139, 100) overlaps the side wall by 1 mm. At 138 the column only touched the wall along a line,
-# which made the mesh non-manifold.
-BOSSES = [(-135, 22), (135, 22), (-139, 100), (139, 100), (-130, 128), (130, 128)]
-for (x, y) in BOSSES:
+# brace columns, which also take the lid dowels
+for (x, y) in DOWELS:
     tub = tub + (cyl_z(x, y, FLOOR - 1, TUB_H, 10) ^ extrude(inner.offset(1, m3.JoinType.Round), 0, TUB_H))
-for (x, y) in BOSSES:
+for (x, y) in DOWELS:
     tub = tub - cyl_z(x, y, TUB_H - 4, TUB_H + 1, 4.3)
 
-# Driver mounts. Each driver sits in a recessed well deep enough that its surround clears the fabric
-# by cover_clear, on a mounting ring that thickens the baffle behind it for the screws.
+# Driver mount. The driver sits in a recessed well deep enough that its surround clears the grille
+# shell by cover_clear, on a mounting ring that thickens the baffle behind it for the screws.
 def frame_outline(d, grow=0.0):
     ears = [CS.circle(d["ear_r"] + grow, 48).translate([d["ear_c"] * math.cos(math.radians(a)),
                                                         d["ear_c"] * math.sin(math.radians(a))])
@@ -267,76 +255,55 @@ def prism_y(cs, x, z, y0, y1):
     return cs.extrude(y1 - y0).rotate([-90, 0, 0]).translate([x, y0, z])
 
 INTERIOR = box(-IX, IX, IY0 - 1, IY1 + 1, FLOOR - 1, TUB_H)
-SEATS = {}
 
-def mount_driver(tub, name, x, rear=False):
+def mount_driver(tub, name, x):
     d = DRIVERS[name]
-    sgn = 1 if rear else -1                                   # direction the driver faces, along Y
-    cover_in = BD - (RECESS - RING_GAP) if rear else RECESS - RING_GAP   # inside face of ring / shell
-    surface = BD - RECESS if rear else RECESS                 # recessed tub surface under the fabric
-    seat = cover_in - sgn * (d["cover_clear"] + d["proud"] + GASKET_T)    # baffle face under the gasket
-    back = seat - sgn * MOUNT_MEAT                            # back of the mounting ring
-    SEATS[name + ("" if x >= 0 else "_l")] = seat
-    # the ring runs from the baffle to the back of the mounting face, so the well gets solid walls
-    baffle = BD - WALL_REAR + 1 if rear else IY0 - 1
-    lo, hi = sorted((baffle, back))
-    ring = prism_y(frame_outline(d, 4.0), x, DRV_Z, lo, hi) ^ INTERIOR
+    cover_in = RECESS - RING_GAP                               # inside face of the grille shell
+    surface = RECESS                                           # recessed tub surface under the shell
+    seat = cover_in + d["cover_clear"] + d["proud"] + GASKET_T # baffle face under the gasket
+    back = seat + MOUNT_MEAT                                   # back of the mounting ring
+    ring = prism_y(frame_outline(d, 4.0), x, DRV_Z, IY0 - 1, back) ^ INTERIOR
     tub = tub + ring
-    # well: from the recessed surface down to the mounting face. Keep the skin above the fabric line.
-    w0, w1 = sorted((surface - sgn * 0.3, seat))
-    tub = tub - prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, w0, w1)
-    e0, e1 = sorted((surface + sgn * 1.0, surface - sgn * 0.3))
-    tub = tub - (prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, e0, e1) ^ box(-BW, BW, -10, BD + 10, -10, REC_Z1 - 0.01))
+    # well: from the recessed surface down to the mounting face, plus the skin in front of it
+    tub = tub - prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, surface + 0.3, seat)
+    tub = tub - (prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, surface - 1.0, surface + 0.3)
+                 ^ box(-BW, BW, -10, BD + 10, -10, REC_Z1 - 0.01))
     # cutout through the ring, plus the solder-tab relief on the top side
-    c0, c1 = sorted((seat + sgn * 1.0, back - sgn * 5.0))
-    tub = tub - cyl_y(x, DRV_Z, c0, c1, d["cut"])
+    tub = tub - cyl_y(x, DRV_Z, seat - 1.0, back + 5.0, d["cut"])
     if d["tab_notch"]:
         hw, reach, depth = d["tab_notch"]
-        n0, n1 = sorted((seat - sgn * depth, back - sgn * 5.0))
-        tub = tub - box(x - hw, x + hw, n0, n1, DRV_Z + d["cut"] / 2 - 2.0, DRV_Z + reach)
+        tub = tub - box(x - hw, x + hw, seat + depth, back + 5.0, DRV_Z + d["cut"] / 2 - 2.0, DRV_Z + reach)
     # blind pilot holes on the bolt circle
     for k in range(4):
         a = math.radians(45 + 90 * k)
         px, pz = x + d["bc"] / 2 * math.cos(a), DRV_Z + d["bc"] / 2 * math.sin(a)
-        p0, p1 = sorted((seat + sgn * 0.5, seat - sgn * PILOT_DEPTH))
-        tub = tub - cyl_y(px, pz, p0, p1, PILOT_D)
-    return tub
+        tub = tub - cyl_y(px, pz, seat - 0.5, seat + PILOT_DEPTH, PILOT_D)
+    return tub, seat
 
-tub = mount_driver(tub, "nd65", -FR_X)
-tub = mount_driver(tub, "nd65", FR_X)
-tub = mount_driver(tub, "nd105", 0)
-tub = mount_driver(tub, "nd105pr", 0, rear=True)
+tub, SEAT = mount_driver(tub, DRIVER, DRV_X)
+WELL_TOP = DRV_Z + DRIVERS[DRIVER]["body_r"] + DRIVERS[DRIVER]["well_clr"]
+assert WELL_TOP < REC_Z1 and DRV_Z - (WELL_TOP - DRV_Z) > 1.0, "driver well does not fit the tub height"
 
-# wire pass-through holes into each full range chamber (seal with hot glue)
-PASS_THROUGHS = [cyl_x(FR_CH_Y1 - 12, TUB_H - 14, FR_CH_X0 - 6, FR_CH_X0 + 10, 4),
-                 cyl_x(FR_CH_Y1 - 12, TUB_H - 14, -FR_CH_X0 - 10, -FR_CH_X0 + 6, 4)]
-for c in PASS_THROUGHS:
-    tub = tub - c
-
-# magnet pockets (front / rear: (x, z); sides: (y, z))
-MAG_FRONT = [(-58, 9), (58, 9), (-58, 106), (58, 106)]
-MAG_REAR = [(-62, 9), (62, 9), (-62, 106), (62, 106)]
-MAG_SIDE = [(65, 9), (65, 106)]
-YF, YR, XS = RECESS, BD - RECESS, BW/2 - RECESS
-def mag_cuts(depth_tub, depth_frame, for_frame):
+# magnet pockets: rear (x, z) and both sides (y, z)
+YR, XS = BD - RECESS, BW/2 - RECESS
+def mag_cuts(for_shell):
     cuts = []
-    a, b = (-depth_frame, 0.01) if for_frame else (-1, depth_tub)   # offsets measured inward from the inset surface
-    for (x, z) in MAG_FRONT:
-        cuts.append(cyl_y(x, z, YF + (-0.01 if for_frame else -1), YF + (0.01 if for_frame else depth_tub), MAG_D) if not for_frame
-                    else cyl_y(x, z, YF - depth_frame, YF + 0.01, MAG_D))
     for (x, z) in MAG_REAR:
-        cuts.append(cyl_y(x, z, YR - depth_tub, YR + 1, MAG_D) if not for_frame else cyl_y(x, z, YR - 0.01, YR + depth_frame, MAG_D))
+        cuts.append(cyl_y(x, z, YR - 0.01, YR + MAG_FRAME, MAG_D) if for_shell
+                    else cyl_y(x, z, YR - MAG_TUB, YR + 1, MAG_D))
     for (y, z) in MAG_SIDE:
-        if not for_frame:
-            cuts += [cyl_x(y, z, XS - depth_tub, XS + 1, MAG_D), cyl_x(y, z, -XS - 1, -XS + depth_tub, MAG_D)]
-        else:
-            cuts += [cyl_x(y, z, XS - 0.01, XS + depth_frame, MAG_D), cyl_x(y, z, -XS - depth_frame, -XS + 0.01, MAG_D)]
+        for s in (-1, 1):
+            if for_shell:
+                x0, x1 = sorted((s * (XS - 0.01), s * (XS + MAG_FRAME)))
+            else:
+                x0, x1 = sorted((s * (XS - MAG_TUB), s * (XS + 1)))
+            cuts.append(cyl_x(y, z, x0, x1, MAG_D))
     return cuts
-for c in mag_cuts(MAG_TUB, MAG_FRAME, False):
+for c in mag_cuts(False):
     tub = tub - c
 
-# feet recesses (10 mm silicone bumpers, ~3 mm tall, lift the fabric edge off the counter)
-for (x, y) in [(-120, 24), (120, 24), (-120, 126), (120, 126)]:
+# feet recesses (10 mm silicone bumpers, ~3 mm tall, lift the shell's edge off the counter)
+for (x, y) in FEET:
     tub = tub - cyl_z(x, y, -1, 1.0, 10.5)
 
 # ======================= LID (glued on; spine is printed with it) =======================
@@ -344,31 +311,16 @@ LID_Z0 = TUB_H
 TOPZ = LID_Z0 + LID_T
 CH = 1.2   # top edge chamfer
 lid = M.batch_hull([extrude(outline, LID_Z0, TOPZ - CH), extrude(outline.offset(-CH, m3.JoinType.Round), TOPZ - CH, TOPZ)])
-for (x, y) in BOSSES:                      # 4 mm dowel holes (dowels align lid to tub for gluing)
+for (x, y) in DOWELS:                      # 4 mm dowel holes (dowels align lid to tub for gluing)
     lid = lid - cyl_z(x, y, LID_Z0 - 1, LID_Z0 + 2.0, 4.3)
-WIRE_HOLE = (0, 74)
-lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, 12)
+wire_hole = cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE[2])
+lid = lid - wire_hole
 
-# ======================= GRILLE RING =======================
-frame_outer = inset.offset(RECESS - FABRIC, m3.JoinType.Round)
-GZ0, GZ1 = 0.5, REC_Z1 - 0.5
-gf = extrude(frame_outer, GZ0, GZ1) - extrude(inset.offset(RING_GAP, m3.JoinType.Round), -1, 200)
-WZ0, WZ1 = 18.0, GZ1 - 14.0
-FW = 150 - R_FRONT - 2      # flat part of front face
-win = box(-FW, -60.5, -20, 40, WZ0, WZ1) + box(-55.5, 55.5, -20, 40, WZ0, WZ1) + box(60.5, FW, -20, 40, WZ0, WZ1)
-win = win + box(-200, -120, 32, BD - 20, WZ0, WZ1) + box(120, 200, 32, BD - 20, WZ0, WZ1)
-RW = 150 - R_REAR - 4
-win = win + box(-RW, -66, BD - 40, BD + 20, WZ0, WZ1) + box(-58, 58, BD - 40, BD + 20, WZ0, WZ1) + box(66, RW, BD - 40, BD + 20, WZ0, WZ1)
-gf = gf - win
-for c in mag_cuts(MAG_TUB, MAG_FRAME, True):
-    gf = gf - c
-fabric = extrude(outline, GZ0, GZ1) - extrude(inset, -1, 200)
-
-# ======================= GRILLE SHELL (fabric-free alternative) =======================
-# Flush with the tub's top band on the outside, same inner clearance and magnet pockets as the ring.
-SZ0, SZ1 = GZ0, REC_Z1 - SHELL_TOP_GAP
+# ======================= GRILLE SHELL =======================
+# Flush with the tub's top band on the outside; magnet pockets open to the inside.
+SZ0, SZ1 = 0.5, REC_Z1 - SHELL_TOP_GAP
 shell = extrude(outline, SZ0, SZ1) - extrude(inset.offset(RING_GAP, m3.JoinType.Round), -1, 200)
-for c in mag_cuts(MAG_TUB, MAG_FRAME, True):
+for c in mag_cuts(True):
     shell = shell - c
 
 def hex_field(u0, u1, z0, z1, place_hole):
@@ -387,9 +339,8 @@ def hex_field(u0, u1, z0, z1, place_hole):
         uc0 = (u0 + u1) / 2 - (ncols - 1) * pitch / 2 + off
         for j in range(ncols):
             u = uc0 + j * pitch
-            # keep holes whose whole hexagon sits inside the field
             probe = CS.circle(r_hex, 6).translate([u, z])
-            if (probe - field).area() < 1e-6:
+            if (probe - field).area() < 1e-6:   # keep holes whose whole hexagon sits inside the field
                 holes.append(place_hole(u, z, r_hex))
     return holes
 
@@ -401,26 +352,27 @@ def hex_hole_x(y, z, r, x0, x1):
     return M.cylinder(x1 - x0, r, r, 6).rotate([0, 0, 30]).rotate([0, 90, 0]).translate([x0, y, z])
 
 FRONT_FLAT = BW / 2 - R_FRONT - 4.0
-REAR_FLAT = BW / 2 - R_REAR - 4.0
-SIDE_FLAT = (R_FRONT + 4.0, BD - R_REAR - 4.0)
 holes = hex_field(-FRONT_FLAT, FRONT_FLAT, *SHELL_Z, lambda u, z, r: hex_hole_y(u, z, r, -1, RECESS + 1))
-holes += hex_field(-REAR_FLAT, REAR_FLAT, *SHELL_Z, lambda u, z, r: hex_hole_y(u, z, r, BD - RECESS - 1, BD + 1))
 if SHELL_SIDES:
+    side_z = (SHELL_Z[0] + 12, MAG_SIDE[1][1] - 6)   # between the side magnets
     for sx in (-1, 1):
         x0, x1 = sorted((sx * (BW / 2 + 1), sx * (BW / 2 - RECESS - 1)))
-        holes += hex_field(*SIDE_FLAT, *SHELL_Z, lambda u, z, r, x0=x0, x1=x1: hex_hole_x(u, z, r, x0, x1))
+        holes += hex_field(R_FRONT + 4.0, BD - R_REAR - 4.0, *side_z,
+                           lambda u, z, r, x0=x0, x1=x1: hex_hole_x(u, z, r, x0, x1))
 shell = shell - union(holes)
 
 # ======================= BEZEL (built in local frame) =======================
 # local: x = X, y = a (depth, 0 at front face, + backward), z = h (up the face, 0 at bottom edge)
 PW, PH = TAB_W + 2 * TAB_CLR, TAB_H + 2 * TAB_CLR
 EW, EH = PW + 2 * FRAME_SIDE, PH + 2 * FRAME + CHIN
-assert USB_CLEAR <= FRAME_SIDE - TRAY_WALL - 0.4 + 1e-6, "USB_CLEAR needs a wider FRAME_SIDE"
+for clear in (USB_CLEAR, JACK_CLEAR):
+    assert clear <= FRAME_SIDE - TRAY_WALL - 0.4 + 1e-6, "plug clearance needs a wider FRAME_SIDE"
 ER = BEZEL_R
 T_FRONT = LIP + POCKET_D
 T = T_FRONT + TRAY_D
 HC = EH / 2
-TAB_CZ = FRAME + CHIN + PH / 2               # tablet center height in the bezel
+CHIN_TOP = FRAME + CHIN                      # pocket bottom; the shell / chin split
+TAB_CZ = CHIN_TOP + PH / 2                   # tablet center height in the bezel
 
 def rr_xz(w, h, r, a0, a1, cx=0.0, cz=HC):
     """rounded rect in the X-Z plane, extruded along local depth a0..a1"""
@@ -449,17 +401,13 @@ def rounded_slab(w, h, r, a0, a1, f0=0.0, f1=0.0, bed=None, n=12, cz=HC):
 def lcyl_a(x, z, a0, a1, d):
     return M.cylinder(a1 - a0, d/2, d/2, SEG).rotate([-90, 0, 0]).translate([x, a0, z])
 
-def lbox(x0, x1, a0, a1, z0, z1):
-    return box(x0, x1, a0, a1, z0, z1)
+lbox = box
 
 # --- bezel body: front rim, tablet pocket and tray in one piece, later split at the top of the chin
-CHIN_TOP = FRAME + CHIN                      # pocket bottom; the shell / chin split
 WIN_W, WIN_H = PW - 2 * LIP_OVERLAP, PH - 2 * LIP_OVERLAP
 WIN_R = TAB_R + TAB_CLR - LIP_OVERLAP
-assert FRAME_SIDE >= USB_CLEAR + TRAY_WALL + 0.4 - 1e-6, "FRAME_SIDE too thin for USB_CLEAR"
 # Prints back down: the front edge is on top, so it gets a full round-over; the back edge is on the bed.
 body_outer = rounded_slab(EW, EH, ER, 0, T, f0=BEZEL_FRONT_FILLET, f1=BEZEL_BACK_FILLET, bed="a1")
-tray_outer = body_outer
 tray_inner = rounded_slab(EW - 2*TRAY_WALL, EH - 2*TRAY_WALL, ER - TRAY_WALL, T_FRONT, T - TRAY_WALL,
                           f1=BEZEL_BACK_FILLET - TRAY_WALL)
 c = WINDOW_CHAMFER
@@ -471,12 +419,16 @@ pocket = rr_xz(PW, PH, TAB_R + TAB_CLR, LIP, T_FRONT + 0.01, cz=TAB_CZ)
 pocket_ext = lbox(-PW / 2 - 0.01, PW / 2 + 0.01, LIP, T_FRONT + 0.01, CHIN_TOP - 1, TAB_CZ)
 tr = body_outer - window - pocket - tray_inner
 # mic slots through the top rim into the pocket
-for x in (-60, -20, 20, 60):
+for x in MIC_SLOTS_X:
     tr = tr - lbox(x - 6, x + 6, LIP + 2.6, LIP + 5.6, TAB_CZ + PH / 2 - 1, EH + 1)   # behind the front round-over
-# USB-C: room for a flat FPC 90 deg plug beside the port. It runs down to the bottom of the pocket,
-# because the tablet slides in from below with the plug already in.
-ux0, ux1 = sorted((USB_SIDE * PW/2 - USB_SIDE * 1, USB_SIDE * (PW/2 + USB_CLEAR)))
-usb_channel = lbox(ux0, ux1, LIP + 0.2, T_FRONT + 1, CHIN_TOP - 1, TAB_CZ + USB_NOTCH_H / 2)   # cut after the split
+# Plug channels beside the tablet: a flat FPC 90 deg USB-C adapter on one end, a slim 90 deg 3.5 mm
+# plug on the other. They run down to the bottom of the pocket, because the tablet slides in from
+# below with both plugs already in.
+def side_channel(side, clear, zc, notch_h):
+    x0, x1 = sorted((side * PW/2 - side * 1, side * (PW/2 + clear)))
+    return lbox(x0, x1, LIP + 0.2, T_FRONT + 1, CHIN_TOP - 1, TAB_CZ + zc + notch_h / 2)
+plug_channels = side_channel(USB_SIDE, USB_CLEAR, USB_Z, USB_NOTCH_H) + \
+                side_channel(JACK_SIDE, JACK_CLEAR, JACK_Z, JACK_NOTCH_H)                   # cut after the split
 # mmWave radar pocket in the chin, open to the tray; the radar looks out through RADAR_LIP of plastic
 RADAR_Z = CHIN_TOP / 2
 tr = tr - lbox(-RADAR_W / 2, RADAR_W / 2, RADAR_LIP, T_FRONT + 1, RADAR_Z - RADAR_H / 2, RADAR_Z + RADAR_H / 2)
@@ -484,16 +436,10 @@ if LABELS:   # on the back of the chin, beside the radar pocket (read from the t
     tr = tr + bezel_label("LD2410C", RADAR_W / 2 + 18.0, RADAR_Z, T_FRONT, +1)
 BACK_IN = T - TRAY_WALL
 # tablet back-stop posts (0.5 mm felt on the tips, so the tablet slides in)
-for x in (-115, 0, 115):
-    for z in (40, EH - 40):
+for x in POSTS_X:
+    for z in (POST_Z1, EH - POST_Z1):
         tr = tr + lcyl_a(x, z, T_FRONT, T - 0.01, 8.0)
-# KABD-430 standoffs, 2.6 mm pilots for M3 thread-forming screws (the board's holes are 3.6 mm)
-JX, JZ = -70.0, HC
-for dx in (-AMP_HOLES[0] / 2, AMP_HOLES[0] / 2):
-    for dz in (-AMP_HOLES[1] / 2, AMP_HOLES[1] / 2):
-        tr = tr + lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF, T - 0.01, 7.0)
-        tr = tr - lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF - 1, T - 1.0, 2.6)
-# cradles for the small boards, standing off the inside of the back wall
+# cradles for the boards, standing off the inside of the back wall
 for (_, cx, cz, w, h, label, side) in CRADLES:
     iw, ih = w + 2 * CRADLE_CLR, h + 2 * CRADLE_CLR
     ring = lbox(cx - iw/2 - CRADLE_WALL, cx + iw/2 + CRADLE_WALL, BACK_IN - CRADLE_H, BACK_IN + 0.01,
@@ -507,8 +453,8 @@ for (_, cx, cz, w, h, label, side) in CRADLES:
         off = ih / 2 + CRADLE_WALL + LABEL_GAP + LABEL_SIZE * 0.4
         tr = tr + bezel_label(label, cx, cz + (off if side == "above" else -off), BACK_IN, -1)
 if LABELS:
-    tr = tr + bezel_label("KABD-430 AMP", JX, JZ + 34.3 + LABEL_GAP + 3.5 + LABEL_SIZE * 0.4, BACK_IN, -1)
     tr = tr + bezel_label("USB-C FPC", USB_SIDE * (PW / 2 - 4.0), TAB_CZ, BACK_IN, -1, angle=90 * USB_SIDE)
+    tr = tr + bezel_label("3.5 MM", JACK_SIDE * (PW / 2 - 4.0), TAB_CZ, BACK_IN, -1, angle=90 * JACK_SIDE)
 # bosses for the spine bolts: inserts pressed in from the back face, bolts come from the spine's rear
 for (x, z) in SPINE_PTS:
     tr = tr + lcyl_a(x, z, BACK_IN - 7.0, T - 0.01, 8.0)
@@ -519,22 +465,18 @@ for x in CHIN_SCREW_X:
     boss = cyl_z(x, CHIN_BOSS_A, TRAY_WALL - 0.5, CHIN_TOP + 12.0, 9.0) + \
            lbox(x - 2.5, x + 2.5, CHIN_BOSS_A, BACK_IN + 0.5, TRAY_WALL - 0.5, CHIN_TOP + 12.0)   # rib to the back wall
     tr = tr + (boss ^ body_outer)                                                             # sunk into the floor
-# vents in the back wall, kept clear of the chin bosses
-for i in range(9):
-    x = -112 + i * 28
-    if abs(x) < 40:
-        continue
+# vents in the back wall: a low row clear of the chin bosses, a high row above the cradles
+for x in (-105, -92, -58, -45, 45, 58, 92, 105):
     tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, CHIN_TOP + 3, CHIN_TOP + 13)
-for i in range(16):
-    x = -112 + i * 15
-    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, EH - 37, EH - 15)
-CH_H = 60.0                                     # cable channel enters tray here
-tr = tr - lcyl_a(0, CH_H, T - TRAY_WALL - 1, T + 1, 13)
+for i in range(13):
+    x = -96 + i * 16
+    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, EH - 30, EH - 14)
+tr = tr - lcyl_a(0, CH_H, T - TRAY_WALL - 1, T + 1, 13)          # cable channel into the tray
 # split: shell above the top of the chin, chin cap below it
 above = box(-EW, EW, -10, T + 10, CHIN_TOP, EH + 10)
 below = box(-EW, EW, -10, T + 10, -10, CHIN_TOP)
 chin = tr ^ below
-tr = (tr ^ above) - pocket_ext - usb_channel
+tr = (tr ^ above) - pocket_ext - plug_channels
 for x in CHIN_SCREW_X:
     tr = tr - cyl_z(x, CHIN_BOSS_A, CHIN_TOP - 1, CHIN_TOP + INSERT_DEPTH, M3_INSERT)          # insert from below
     chin = chin - cyl_z(x, CHIN_BOSS_A, -1, CHIN_TOP + 1, M3_CLR)
@@ -551,20 +493,19 @@ bezel_shell_w, bezel_chin_w = place(tr), place(chin)
 
 # ======================= SPINE =======================
 bp0 = to_world(0, T, 0)              # bottom of tray back face
-HS = 115.0
-bps = to_world(0, T, HS)
+bps = to_world(0, T, SPINE_HS)
 Yb0 = bp0[1]
-REAR_Y = Yb0 + 50
+REAR_Y = Yb0 + SPINE_REAR
+assert REAR_Y < BD - 2, "spine runs off the back of the base"
 REAR_FACE_H = max(8.0, PWR_Z + PWR_PLATE_H / 2 + 3.0)    # flat rear face tall enough for the power plate
 prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + REAR_FACE_H), (bps[1], bps[2]), (bp0[1], bp0[2]), (Yb0 - 6, bp0[2])]])
-SW = 60.0
-spine = prof.extrude(SW).rotate([90, 0, 90]).translate([-SW/2, 0, 0])   # profile (Y,Z) extruded along X
+spine = prof.extrude(SPINE_W).rotate([90, 0, 90]).translate([-SPINE_W/2, 0, 0])   # profile (Y,Z) extruded along X
 spine = spine.translate([0, 0, -0.5])     # sink 0.5 mm into the lid so they fuse
 # bolt holes for the bezel, drilled along the bezel normal from the spine's rear, with head counterbores
 for (x, h) in SPINE_PTS:
     spine = spine - place(lcyl_a(x, h, T - 0.5, T + 120, M3_CLR)) - place(lcyl_a(x, h, T + SPINE_GRIP, T + 160, 6.4))
 # cable channel: hull of two spheres, lid hole -> tray
-p_low = np.array([0, WIRE_HOLE[1], TOPZ - 2])
+p_low = np.array([WIRE_HOLE[0], WIRE_HOLE[1], TOPZ - 2])
 p_high = to_world(0, T - 6, CH_H)
 chan = M.batch_hull([M.sphere(6, 48).translate(p_low.tolist()), M.sphere(6, 48).translate(p_high.tolist())])
 spine = spine - chan
@@ -617,9 +558,10 @@ spine = spine - cav                                          # opens into the ca
 for sx in (-PWR_SCREW_X, PWR_SCREW_X):
     spine = spine - cyl_y(sx, PWR_ZW, POCKET_FLOOR - INSERT_DEPTH, POCKET_FLOOR + 0.01, M3_INSERT)
 # don't let the spine poke into the tray
-spine = spine - place(rounded_slab(EW, EH, ER, -1, T, f1=BEZEL_BACK_FILLET, bed="a1"))   # hugs the curved tray back
+bezel_keepout = place(rounded_slab(EW, EH, ER, -1, T, f1=BEZEL_BACK_FILLET, bed="a1"))   # hugs the curved tray back
+spine = spine - bezel_keepout
 lid_spine = lid + spine
-lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, 12)
+lid_spine = lid_spine - chan - wire_hole
 
 # ======================= EXPORT =======================
 def export(man, name):
@@ -630,34 +572,39 @@ def export(man, name):
         tm = trimesh.util.concatenate(bodies) if len(bodies) > 1 else bodies[0]
     tm.export(os.path.join(OUT, name + ".stl"))
     bb = tm.bounds
-    print(f"{name:14s} vol {tm.volume/1000:8.1f} cm3  bbox {np.round(bb[1]-bb[0],1)}  watertight={tm.is_watertight}")
+    print(f"{name:18s} vol {tm.volume/1000:8.1f} cm3  bbox {np.round(bb[1]-bb[0],1)}  watertight={tm.is_watertight}")
     return tm
 
 parts_world = {
-    "base_tub": tub, "lid_spine": lid_spine, "grille_ring": gf, "grille_shell": shell,
+    "base_tub": tub, "lid_spine": lid_spine, "grille_shell": shell,
     "bezel_shell": bezel_shell_w, "bezel_chin": bezel_chin_w, "power_plate": pwr_plate_w,
 }
 meshes = {k: export(v, k) for k, v in parts_world.items()}
-export(fabric, "_render_fabric")
 # tablet placeholder for renders: glass face at the back of the lip
 tablet = place(rr_xz(TAB_W, TAB_H, TAB_R, LIP + 0.05, LIP + TAB_T, cz=TAB_CZ))
 export(tablet, "_render_tablet")
-# lit screen area for renders: the 11 in 16:10 active area, centered on the glass
-screen = place(rr_xz(236.9, 148.1, 1.0, LIP + 0.0, LIP + 0.06, cz=TAB_CZ))
+# lit screen area for renders: the 8.7 in 1340 x 800 active area, centered on the glass
+screen = place(rr_xz(189.7, 113.3, 1.0, LIP + 0.0, LIP + 0.06, cz=TAB_CZ))
 export(screen, "_render_screen")
 # print-ready orientations
 export(tr.rotate([-90, 0, 0]), "print_bezel_shell")            # back wall down, front rim on top
 export(chin.rotate([-90, 0, 0]), "print_bezel_chin")           # back wall down
-export(gf.rotate([180, 0, 0]), "print_grille_ring")          # top edge down
-export(shell.rotate([180, 0, 0]), "print_grille_shell")       # top edge down
+export(shell.rotate([180, 0, 0]), "print_grille_shell")        # top edge down
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
 export(pwr_plate, "print_power_plate")                         # outside face down, sled standing up
 
-# acoustic volumes: air inside the closed tub (lid on), by chamber. Driver bodies are not subtracted.
-air = extrude(inner, FLOOR, TUB_H) - tub - union(PASS_THROUGHS)   # pass-throughs hot-glued shut
+# Checks
+air = extrude(inner, FLOOR, TUB_H) - tub                       # lid on, wire hole hot-glued shut
 chambers = sorted((c.volume() / 1e6 for c in air.decompose()), reverse=True)
-print("chamber air volumes (L, driver bodies not subtracted):", [round(v, 3) for v in chambers[:3]])
-print("mounting faces (Y):", {k: round(v, 1) for k, v in SEATS.items()})
-print("bezel thickness", T, "bezel outer", EW, EH, "Z0", Z0, "top Z", to_world(0, 0, EH)[2], "top-back", to_world(0, T, EH))
-print("lowest bezel corner Z", to_world(0, T, 0)[2], "Yb0", Yb0)
+print("chamber air volume (L, driver body not subtracted):", [round(v, 3) for v in chambers[:2]])
+print("driver mounting face Y", round(SEAT, 1), "magnet back Y", round(SEAT + 43.0, 1), "of", IY1)
+# Spine material along each bolt axis, from the tray back to the spine's rear surface, probed with a
+# thin rod just beside the counterbore. A bolt gets a proper seat when this exceeds SPINE_GRIP + 3 mm.
+for (x, h) in SPINE_PTS:
+    rod = place(lcyl_a(x + 4.0, h, T - 0.01, T + 100, 1.0))
+    print(f"spine bolt ({x:+.0f}, {h:.0f}): {(lid_spine ^ rod).volume() / (math.pi * 0.25):.1f} mm of spine "
+          f"along the axis, head seat at {SPINE_GRIP}")
+print("bezel thickness", T, "bezel outer", round(EW, 1), round(EH, 1), "top Z", round(to_world(0, 0, EH)[2], 1),
+      "top-back Y", round(to_world(0, T, EH)[1], 1))
+print("lowest bezel corner Z", round(to_world(0, T, 0)[2], 1), "Yb0", round(Yb0, 1), "spine rear Y", round(REAR_Y, 1))

@@ -1,28 +1,40 @@
-# SmartHub: Counter Display
+# SmartHub: Hub Mini
 
-An open source kitchen-counter smart display and sound system. A Samsung Galaxy Tab A9+ sits in a
-tilted 3D-printed bezel on top of a speaker base, which can be wrapped in linen or fitted with a
-printed honeycomb grille. A custom Android home app shows a
-Home Assistant dashboard full screen with a dock of app tiles. A 24 GHz mmWave radar in the bezel
-chin wakes the screen when someone walks up.
+A small smart display to replace a Google Home or Nest Mini on a nightstand, desk or shelf. It is the
+little sibling of the Counter Display on the [`main`](../../tree/main) branch and keeps the same hub
+and media features. An 8.7" Samsung Galaxy Tab A9 runs the same **Counter Home** launcher: a full
+screen Home Assistant dashboard with a dock of app tiles for Spotify, YouTube TV, IPTV and Assist.
+A 24 GHz mmWave radar in the chin wakes the screen when someone walks up. Sound comes from one
+Dayton ND65 driver in a small sealed base, run by a 2.5 W mono amp. That is plenty for a bedroom or
+office, not for a party.
 
-![Counter display, current design](enclosure/renders/current_hero.png)
+![Hub Mini](enclosure/renders/mini_hero.png)
 
-| ![Fabric-free version with the printed grille shell](enclosure/renders/current_shell_hero.png) | ![Grille shell close-up](enclosure/renders/current_shell_grille.png) |
+| ![Side](enclosure/renders/mini_side.png) | ![Rear](enclosure/renders/mini_rear.png) |
 | --- | --- |
-| ![Rear, current design](enclosure/renders/current_rear.png) | ![USB-C power port](enclosure/renders/current_power.png) |
+| ![USB-C power port](enclosure/renders/mini_power.png) | ![Base without the grille shell](enclosure/renders/mini_base.png) |
 
-The `current_*` renders show the current STLs, with the linen base and with the fabric-free grille
-shell. The bezel is frameless: the tablet's own black glass border shows, and a 6.8 mm printed rim
-wraps its edge with a 1.2 mm lip that overlaps the glass by 1.5 mm. The chin below the screen holds
-the radar.
+Overall it is 232 mm wide, 110 mm deep and 240 mm tall, with the screen tilted back 20°. Every part
+fits a 256 mm print bed. The full parts list is in [BOM.md](BOM.md).
 
-The original Cowork renders show the first version and are kept for reference:
+## What changed from the Counter Display
 
-| ![Original hero](enclosure/renders/hero.png) | ![Exploded view](enclosure/renders/exploded.png) | ![Speaker base internals](enclosure/renders/internals.png) |
+| | Counter Display (`main`) | Hub Mini (this branch) |
 | --- | --- | --- |
+| Tablet | Galaxy Tab A9+, 11" | Galaxy Tab A9, 8.7" |
+| Audio out | USB-C to 3.5 mm adapter on a flat FPC plug | The tablet's own 3.5 mm jack |
+| Amplifier | Dayton KABD-430 DSP, 20 V, Bluetooth | Adafruit PAM8302, 2.5 W mono, 5 V, no Bluetooth |
+| Speakers | Two ND65s, an ND105 woofer and an ND105 passive radiator | One ND65 in a sealed 0.98 L box |
+| Base finish | Linen on a grille ring, or a printed grille shell | Printed grille shell |
+| Footprint | 300 x 150 mm, 324 mm tall | 232 x 110 mm, 240 mm tall |
+| Print bed | 300 mm or more | 256 mm |
+| Filament | About 2 kg | About 1 kg |
+| Power | USB-C PD at 20 V through the same flush power plate | Same plate and trigger, a 30 W charger is enough |
 
-The full parts list is in [BOM.md](BOM.md).
+The Android app, the ESPHome presence firmware and the Home Assistant automations are the same.
+The ESPHome and Home Assistant files use `mini` names so a Hub Mini can run next to a Counter
+Display. To run several Hub Minis, give each one its own names, as described in
+[Configure Home Assistant](#5-configure-home-assistant).
 
 ## How it works
 
@@ -33,20 +45,23 @@ The full parts list is in [BOM.md](BOM.md).
   wake, dim, blank and navigate the display.
 - **Presence.** An ESP32-C3 SuperMini reads an HLK-LD2410C radar and reports presence to Home
   Assistant over ESPHome. Automations wake the screen, fall back to a dim clock, then turn it off.
-- **Sound.** The tablet's USB-C port goes through a flat FPC 90° adapter into a UGREEN 2-in-1 adapter.
-  That adapter splits it into a 3.5 mm audio output and a USB-C charging input. A 3.5 mm cable runs
-  to the AUX input of a Dayton Audio KABD-430 DSP amplifier in the bezel tray. The amp drives two Dayton ND65
-  full-range drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105
-  passive radiator.
-- **Power.** A small single-port USB-C charger at the wall feeds one thin USB-C cable into a flush
-  port on the rear of the spine. Behind the port, an Adafruit HUSB238 PD trigger set to 20 V asks
-  the charger for 20 V. That feeds the amp directly, a USB-C PD module that charges the tablet
-  through the UGREEN adapter, and a small 5 V buck for the ESP32 and radar.
-- **Volume cap.** The tablet's media volume sets the amp's input level. Counter Home holds media
-  volume at or below a cap, 80 % by default, so the 15 W full-range drivers are not overdriven.
-- **Camera.** The tablet's front camera, looking out through the bezel, can act as a security camera
-  for Home Assistant. Counter Home serves snapshots and an MJPEG stream through its API, only while
-  Home Assistant has turned the camera on, and only if it is allowed on the tablet.
+- **Sound.** A slim 90° 3.5 mm plug in the tablet's headphone jack carries the audio. Its left and
+  right channels are summed through two 1 kΩ resistors into the input of an Adafruit PAM8302 mono
+  class D amp in the bezel tray. The amp drives one Dayton ND65-4 full-range driver in the base.
+  With a plug in the jack, Android mutes the tablet's own speakers.
+- **Power.** One USB-C charger at the wall feeds a flush port on the rear of the spine. Behind the
+  port, an Adafruit HUSB238 PD trigger set to 20 V asks the charger for 20 V. That feeds a USB-C PD
+  module that charges the tablet through a flat FPC 90° plug, and a 5 V buck for the amp, ESP32 and
+  radar.
+- **Volume cap.** In some regions Android warns before it raises wired headphone volume past a
+  hearing-safety level, and that dialog would pop up on the dashboard. Counter Home holds media volume
+  at or below a cap, so set the cap to 60 % and make up the loudness with the amp's gain pot.
+- **Camera.** The tablet's front camera can act as a security camera for Home Assistant, exactly as
+  on the Counter Display. It is off unless it is allowed on the tablet and Home Assistant turns it on.
+
+There is no always-listening wake word, the same as on the Counter Display. Assist opens from the
+dock tile, from Home Assistant, or from the tablet's assistant gesture once the Home Assistant app is
+the default digital assistant.
 
 ## Repository layout
 
@@ -54,12 +69,12 @@ The full parts list is in [BOM.md](BOM.md).
 | --- | --- |
 | [`android/`](android) | Counter Home launcher: Kotlin source, Gradle build, `setup.sh` provisioning script |
 | `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap and camera, so build v1.2.0 from source |
-| [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
-| [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
+| [`esphome/mini-presence.yaml`](esphome/mini-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
+| [`homeassistant/packages/mini_display.yaml`](homeassistant/packages/mini_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
 | [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates every STL |
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
-| `enclosure/renders/` | `current_*` renders of the current design, plus the original Cowork renders |
+| `enclosure/renders/` | Renders of the current STLs |
 | [`BOM.md`](BOM.md) | Bill of materials |
 
 ## Build order
@@ -71,64 +86,43 @@ already oriented for printing.
 
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
-| `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers |
-| `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
-| `grille_ring` | 299 x 149 x 112 | Linen version. Linen wraps around it. Slides on from below, held by magnets |
-| `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints top edge down |
-| `bezel_shell` | 272 x 176 x 36 | Prints back wall down, front rim on top. Rim, tablet pocket and tray in one piece |
-| `bezel_chin` | 272 x 21 x 36 | Prints back wall down. Holds the radar and closes the bottom of the shell |
-| `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
+| `base_tub` | 170 x 110 x 76 | Sealed speaker box for the ND65 |
+| `lid_spine` | 170 x 110 x 102 | Top plate and tilted stand in one piece. Glued to the tub |
+| `grille_shell` | 170 x 110 x 73 | Prints top edge down. Slides on from below, held by magnets |
+| `bezel_shell` | 232 x 136 x 27 | Prints back wall down, front rim on top. Rim, tablet pocket and tray in one piece |
+| `bezel_chin` | 232 x 21 x 27 | Prints back wall down. Holds the radar and closes the bottom of the shell |
+| `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger. Same part as the Counter Display |
 
-You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
-The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
-Use PETG or ASA for the bezel shell, because it sits behind a charging tablet and an amplifier.
-Do not use carbon-fiber or metal-filled filament for the chin: the radar looks through 1.6 mm of it.
+The bezel is the widest part at 232 mm, so a 256 mm bed works, such as a Bambu Lab A1 or P1S or a
+Prusa MK4. Use PETG or ASA for the bezel shell, because it sits behind a charging tablet. Do not use
+carbon-fiber or metal-filled filament for the chin: the radar looks through 1.6 mm of it.
 
-**Frameless bezel.** The front rim and the tray are one part, so there is no seam on the front.
-The tablet slides up into the shell from below, then the chin closes the bottom with three M3
-screws from underneath. Because the tablet blocks the inside of the tray, the bezel bolts to the
-spine from the spine's rear, through four counterbored holes, into inserts in the tray's back wall.
-The pocket is square below the tablet's center, so its rounded corners slide in; the lip hides the
-gaps. A slide-in check with a tablet and plug model shows no interference along the whole path.
+![Inside of the bezel tray](enclosure/renders/mini_tray.png)
 
-The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm from the bottom of
-the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
+**Measure first.** The tablet numbers come from Samsung's published size, 211.0 x 124.7 x 8.0 mm.
+The corner radius, `TAB_R` = 8 mm, and the port positions are estimates. Before printing the bezel,
+check three things on your tablet:
 
-**USB-C power plate.** The PD trigger mounts on a sled molded onto the back of the plate, using its
-own four mounting holes. The board geometry comes from Adafruit's published PCB files. The socket
-sits just behind a 14.4 x 8.8 mm chamfered opening that the plug's molded body passes through, so
-the plug seats fully. A cavity in the spine clears the board and its screw terminal and opens into
-the cable channel. If you use a different trigger board, change the `TRIG_*` parameters.
+- **Corner radius.** Set `TAB_R`.
+- **Port sides.** The model puts the USB-C port at the right end, seen from the front, and the
+  headphone jack at the left end. Flip `USB_SIDE` if yours is the other way round, and set
+  `JACK_SIDE` if both ports share one end.
+- **Port heights.** If a port is not centered on its edge, set `USB_Z` or `JACK_Z` to its offset.
 
-**Two base finishes, same tub.** Print either the grille ring and wrap it in linen, or print the
-grille shell. The shell is a 2.85 mm printed skin, flush with the tub's top band, with a honeycomb
-of 2.6 mm hexagonal holes over the front and rear faces, about 52 % open. The holes point up and
-down, so they print cleanly in a vertical wall. The shell uses the same magnets and slides on the
-same way as the ring. Set `SHELL_SIDES = True` to perforate the sides too, or change the hole size
-and web with `SHELL_HEX` and `SHELL_WEB`.
+**Frameless bezel.** It works like the Counter Display's. The front rim and tray are one part, with
+a 1.2 mm lip that overlaps the glass by 1.5 mm. The tablet slides up into the shell from below with
+both plugs already in, then the chin closes the bottom with three M3 screws. The bezel bolts to the
+spine from the spine's rear with four M3 bolts. The rim is 10 mm wide all round, because the 3.5 mm
+plug needs 7 mm of room beside the tablet (`JACK_CLEAR`). The USB-C side needs 4 mm (`USB_CLEAR`).
+The tray is 17 mm deep, set by `PARTS_H`, the tallest board on its back wall. Each board has a
+cradle with a raised label. Change the cradle sizes in `CRADLES` to the boards you buy.
 
-**Driver mounts follow Dayton's drawings and the ND65 3D model.** Each driver sits in a recess
-shaped to its frame, deep enough that the surround clears the inside of the covering with room for
-excursion: 4 mm for the ND65s, 5 mm for the woofer and 9 mm for the passive radiator. Clearance is
-measured to the inner face of the ring or shell, which is closer than the linen, so it holds for
-both finishes. A thickened ring behind each
-recess carries blind pilot holes on the published bolt circles. The ND65 recesses have a notch on
-the top side for the solder tabs, so mount the ND65s with their tabs up. Each recess allows for a
-1 mm compressed gasket under the flange (`GASKET_T`). The ND105 ear shape is inferred from the
-drawing, so its recesses have 1 mm of extra clearance.
-
-**The bezel has raised labels for every component.** On the inside of the tray's back wall, each
-cradle is labeled with its board, the amp standoffs say `KABD-430 AMP`, and `USB-C FPC` marks the
-spot for the flat USB-C adapter. `LD2410C` sits beside the radar pocket on the back of the chin.
-The labels stand 0.6 mm proud and face up in both print orientations. Change them in `CRADLES`, or
-turn them off with `LABELS = False`. The script draws them with the DejaVu Sans font bundled with
-matplotlib, so the STLs come out the same on every machine.
-
-**Bezel styling is parametric.** `FRAME_SIDE` and `FRAME` set the rim width, `LIP` and
-`LIP_OVERLAP` the lip, and `BEZEL_FRONT_FILLET` and `BEZEL_BACK_FILLET` the edge round-overs. The
-corner radius follows the rim, so it stays even around the tablet's corners. The back round-over
-turns into a 45° chamfer where it meets the print bed. The tray's inner shell follows the outer
-curve, so its wall stays 2.4 mm all the way round.
+**Base.** The ND65 sits in a recess shaped to its frame, 4 mm behind the inner face of the grille
+shell, with blind pilot holes on its 66 mm bolt circle and a notch on top for its solder tabs. The
+whole tub is one sealed chamber of 0.98 L, before subtracting the driver. The grille shell is a
+2.85 mm printed skin with a honeycomb of 2.6 mm hexagonal holes over the front. Its eight magnets
+sit on the rear and sides, so the honeycomb can run the full height of the driver. Set
+`SHELL_SIDES = True` to perforate the sides too.
 
 To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenerate:
 
@@ -137,81 +131,86 @@ pip install -r enclosure/requirements.txt
 python enclosure/enclosure.py enclosure/out
 ```
 
-The script prints part volumes and the air volume of each chamber: about 0.55 L per full-range
-chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
+The script prints part sizes, the chamber volume, and how much spine material each bezel bolt passes
+through. Copy the `print_*.stl` files over the ones in `enclosure/stl/`, dropping the `print_` prefix.
 
 ### 2. Assemble
 
 1. Press the M3 heat-set inserts into the bezel shell: three from below into the chin bosses, and
    four from the back into the spine-bolt bosses. Press two more into the power plate pocket on
    the spine's rear face.
-2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
-   or shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
-   ring magnets sit flush.
-3. Wire the drivers, pass the full-range leads through the chamber holes, and seal them with hot glue.
-   Mount the drivers from the outside on 1 mm gasket tape with M3 x 6 screws in the pilot holes.
-   Turn the ND65 solder tabs up, into the notch.
-4. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
-5. Linen version: wrap the linen around the grille ring, then slide the ring onto the tub.
-   Fabric-free version: slide the grille shell onto the tub from below.
+2. Glue a 6 x 2 mm magnet into each of the 8 tub pockets and a 6 x 1 mm magnet into each grille
+   shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface
+   and the shell magnets sit flush.
+3. Solder the speaker pair to the ND65, mount it from the outside on 1 mm gasket tape with M3 x 6
+   screws in the pilot holes, solder tabs up into the notch. Add a loose handful of polyfill.
+4. Feed the speaker pair up through the 6 mm hole in the lid, then glue the lid to the tub using the
+   four dowels for alignment. Seal the hole around the wire with hot glue. The box must be airtight.
+5. Slide the grille shell onto the tub from below.
 6. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
    plate's sled with four M2.5 x 6 thread-forming screws, USB-C socket toward the opening. Put 18 AWG
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
-   then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
-   the charger and check for 20 V at the leads.
-7. With the bezel shell off the stand and face down, mount the amp on its standoffs. Stick the PD module,
-   UGREEN adapter, 5 V buck and ESP32-C3 into their cradles with VHB tape. Feed the speaker and power
-   leads out through the cable hole in the back wall.
-8. Plug the flat FPC 90° adapter into the tablet. Connect the UGREEN adapter to it, the PD module to the
-   UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
-   Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
-9. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
-   glass toward the lip, with the FPC plug riding in the channel on the right.
-10. Fit the radar into the chin, run its wires up to the ESP32-C3, and screw the chin on from below
+   then screw the plate flush with two M3 x 8 countersunk screws. Before connecting anything else,
+   plug in the charger and check for 20 V at the leads.
+7. Set the MP1584 buck to 5.0 V before connecting it. These modules ship at a random output voltage.
+8. With the bezel shell face down, stick the PD module, buck, amp and ESP32-C3 into their cradles
+   with VHB tape. Wire 20 V to the PD module and the buck, and 5 V from the buck to the amp's VIN,
+   the ESP32-C3's 5V pin and the radar.
+9. Wire the audio. Cut the 3.5 mm cable about 25 cm from the slim 90° plug. Solder tip and ring
+   each through a 1 kΩ resistor to the amp's A+ input, and the sleeve to A−. Leave SD unconnected.
+   Solder the speaker pair to the amp's output terminals. The PAM8302 is a bridge-tied output, so
+   never connect either speaker wire to ground.
+10. Plug the flat FPC 90° adapter into the tablet's USB-C port and connect it to the PD module.
+    Plug the 3.5 mm plug into the jack. Use a 3-pole TRS plug: a 4-pole headset plug can switch the
+    tablet to a headset microphone that isn't there, and Assist would stop hearing you.
+11. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the
+    bottom, glass toward the lip, with each plug riding in its channel.
+12. Fit the radar into the chin, run its wires up to the ESP32-C3, and screw the chin on from below
     with three M3 x 12 screws.
-11. Thread the leads down the spine's cable channel, then bolt the bezel to the spine from the spine's
-    rear with four M3 x 16 bolts.
+13. Thread the speaker pair and power leads down the spine's cable channel, then bolt the bezel to
+    the spine from the spine's rear with four M3 x 16 bolts. The lower pair sits in deep
+    counterbores, so use a long 2.5 mm hex key.
 
-The flat FPC adapter has to fit within 4 mm of the tablet's edge (`USB_CLEAR`). If yours sticks out
-further, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
-
-If you hear hum or charging noise through the speakers, add a 3.5 mm ground loop isolator in the
-audio cable. The tablet charger and the amp share one supply, which can create a ground loop.
+Hum or charging noise is less likely than on the Counter Display, because the sleeve goes to the
+amp's negative input, not to its ground. If you still hear it, put a 3.5 mm ground loop isolator
+between the tablet's plug and the cut cable.
 
 ### 3. Flash the presence sensor
 
 ```
 cd esphome
-esphome run counter-presence.yaml
+esphome run mini-presence.yaml
 ```
 
 The first flash needs USB; after that updates go over the air. Wiring is at the top of the YAML.
-It needs `counter_presence_api_key`, `ota_password`, `wifi_ssid` and `wifi_password` in your
-ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
+It needs `mini_presence_api_key`, `ota_password`, `wifi_ssid` and `wifi_password` in your
+ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments. For more than one Hub Mini,
+change `name` in the YAML for each one, for example `bedroom-presence`.
 
 ### 4. Provision the tablet
 
-1. Build Counter Home v1.2.0, as described in [Building the app](#building-the-app). `setup.sh`
-   installs that build when it exists, and otherwise falls back to the prebuilt v1.0.0, which has no
-   volume cap or camera.
+1. Build Counter Home v1.2.0, as described in [Building the app](#building-the-app). The Hub Mini
+   needs the volume cap, which the prebuilt v1.0.0 doesn't have.
 2. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on USB debugging.
    Device owner can only be set while the tablet has no accounts.
 3. On your computer, with Android platform-tools installed:
 
    ```
    cd android
-   ./setup.sh http://<HA_IP>:8123/dashboard-counter/0?kiosk
+   ./setup.sh http://<HA_IP>:8123/dashboard-mini/0?kiosk
    ```
 
    It installs the APK, makes Counter Home the device owner, removes Samsung extras, and prints the
-   tablet IP, the API token and the Home Assistant secrets. Reserve that IP on your router.
+   tablet IP, the API token and the Home Assistant secrets. Reserve that IP on your router. The
+   secrets are named `mini_display_*`. For a second Hub Mini, set `NAME`, for example
+   `NAME=bedroom_display ./setup.sh ...`.
 4. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
    "Pause kiosk lock and open Android settings". Sign in to Google, install Spotify, YouTube TV,
-   IPTV Smarters and the Home Assistant app, set Battery protection to Maximum, and make Home
-   Assistant the default digital assistant. Then tap "Resume kiosk lock".
+   IPTV Smarters and the Home Assistant app, turn on battery protection, and make Home Assistant
+   the default digital assistant. Then tap "Resume kiosk lock".
 5. Change the settings PIN. The default PIN is public in this repository.
-6. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
-   settings screen if the full-range drivers distort or bottom out.
+6. Set "Max media volume" to 60 % in the settings screen. Play music at that volume and turn the
+   amp's gain pot up until it is as loud as you want.
 7. To use the camera, tick "Allow the camera" in the settings screen. It stays off until Home
    Assistant turns it on. Also check that Android's camera access toggle is on: Settings > Security
    and privacy > More privacy settings > Camera access. When it's off, every frame comes out black.
@@ -219,22 +218,24 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 Do the YouTube TV and Spotify sign-ins while the kiosk lock is paused. Google's login screens
 belong to other packages, and lock task mode blocks them.
 
-The KABD-430 still has Bluetooth, and its default DSP program mixes Bluetooth audio with the AUX
-input. Anyone in range can pair a phone with it. A custom SigmaStudio program, loaded with a Dayton
-ICP1 or KPX programmer, can drop the Bluetooth input.
-
 ### 5. Configure Home Assistant
 
-1. Copy `homeassistant/packages/counter_display.yaml` into `config/packages/` and enable packages in
-   `configuration.yaml`.
+1. Copy `homeassistant/packages/mini_display.yaml` into `config/packages/` and enable packages in
+   `configuration.yaml`. It uses its own entity names, so it works next to `counter_display.yaml`.
 2. Add the three secrets `setup.sh` printed to `secrets.yaml`:
-   `counter_display_token`, `counter_display_api` and `counter_display_status`.
+   `mini_display_token`, `mini_display_api` and `mini_display_status`.
 3. Merge `homeassistant/auth_trusted_networks.yaml` into the `homeassistant:` block. Create a non-admin
-   `counter` user and put its user ID and the tablet IP in the snippet.
-4. Install the HACS "kiosk-mode" plugin so `?kiosk` hides the header and sidebar, then restart Home Assistant.
+   user for the tablets and put its user ID and each tablet's IP in the snippet.
+4. Make a dashboard for the Hub Mini at `dashboard-mini`. The 8.7" screen is 1340 x 800, so fewer,
+   larger cards work better than a copy of the counter dashboard.
+5. Install the HACS "kiosk-mode" plugin so `?kiosk` hides the header and sidebar, then restart Home Assistant.
 
-The automations expect the presence entity `binary_sensor.counter_presence_presence`, which the
+The automations expect the presence entity `binary_sensor.mini_presence_presence`, which the
 ESPHome config creates.
+
+**More than one Hub Mini.** Copy the package once per unit. In each copy, replace every
+`mini_display` and `mini_presence` with that unit's names, such as `bedroom_display` and
+`bedroom_presence`. Match the ESPHome `name` (`bedroom-presence`) and the `NAME` you gave `setup.sh`.
 
 | Time with nobody present | What happens |
 | --- | --- |
@@ -249,36 +250,23 @@ A notification fires if the tablet battery stays above 42 °C for 5 minutes.
 
 1. Tick "Allow the camera" in Counter Home settings on the tablet.
 2. In Home Assistant, go to Settings > Devices & services > Add integration > MJPEG IP Camera, name it
-   `Counter display` and use:
+   `Mini display` and use:
 
    ```
    MJPEG URL:        http://<tablet_ip>:2323/camera.mjpeg?token=<token>
    Still image URL:  http://<tablet_ip>:2323/camera.jpg?token=<token>
    ```
 
-   That creates `camera.counter_display`.
-3. The package's camera automations then do three things:
-   - turn the camera on five minutes after everyone has left, using `zone.home`, so it needs person entities with device trackers
-   - turn it off as soon as someone is home
-   - when the radar sees someone while nobody is home, take a snapshot to
-     `/config/www/counter_display/last_motion.jpg` and post a notification with the picture
+   That creates `camera.mini_display`.
+3. The package's camera automations turn the camera on five minutes after everyone has left, turn it
+   off as soon as someone is home, and snapshot anyone the radar sees while nobody is home. They use
+   `zone.home`, so they need person entities with device trackers. Uncomment the
+   `notify.mobile_app_...` lines for a phone push.
 
-   Uncomment the `notify.mobile_app_...` lines for a phone push.
-
-To check on the house from away, open the camera in the Home Assistant app over Nabu Casa or a VPN
-to your EdgeRouter. Never forward port 2323 to the internet.
-
-**What to expect from the camera:**
-- **Privacy indicator.** A red `● CAM` shows in the dock whenever the camera runs. The API can turn it
-  on and off but cannot change "Allow the camera"; only the settings screen behind the PIN can.
-- **Explicit control.** Snapshots and streams fail with "camera is off" unless Home Assistant has
-  turned the camera on. A dashboard that refreshes the camera picture never switches it on by itself.
-- **No night vision.** In the dark the picture is black. The wake automation turns the screen on
-  when the radar sees someone, which lights the counter a little; a light turned on by an automation works better.
-- **One app at a time.** While the camera runs, other apps can't use it, so video calls fail. Turn it off first.
-- **Heat.** Streaming warms the tablet. The battery temperature alert covers it, but don't stream around the clock.
-- **Rear camera.** `cameraFacing: back` works in software, but that camera sits behind the bezel tray and sees nothing unless you cut an opening.
-- **Not yet tested on a device.** This version compiles against the Android 14 framework but hasn't run on a tablet yet.
+A Hub Mini often lives in a bedroom. Think about where the camera points before you allow it, and
+leave it off where it doesn't belong. Never forward port 2323 to the internet. The camera behaves as
+described for the Counter Display: a red `● CAM` in the dock while it runs, no night vision, one app
+at a time, and some extra heat while streaming.
 
 ## Counter Home API
 
@@ -354,22 +342,17 @@ for example in `~/.gradle/gradle.properties`.
 Open the settings screen and choose "Release device owner". The tablet goes back to being a normal
 Android tablet. A factory reset also clears it.
 
-## Design review status
+## Not yet verified
 
-These items came out of reviewing the Cowork export.
+Nothing on this branch has been printed or assembled yet. Check these before a full print:
 
-| Item | Status |
-| --- | --- |
-| Magnet pockets too shallow for one 3 mm magnet each side | Fixed. Pockets now fit a 6 x 2 mm tub magnet and a 6 x 1 mm ring magnet |
-| No room for a USB-C plug past the tablet edge | Fixed. A flat FPC 90° adapter in a 4 mm channel beside the tablet |
-| No mounts for the small boards in the tray | Fixed. Cradles for the PD module, UGREEN adapter, 5 V buck and ESP32-C3 |
-| No pilot holes for the driver screws | Fixed. Blind pilots on Dayton's published bolt circles: 66 mm for the ND65, 108.5 mm for the ND105 pair |
-| Woofer and passive radiator surrounds stood 3 to 4 mm proud of the fabric | Fixed. Every driver sits in a recess shaped to its frame, with excursion clearance to the covering |
-| Driver clearance was measured to the linen, but the grille ring's rails sit 2.25 mm closer | Fixed. Clearance is measured to the inner face of the ring or shell |
-| Full-range drivers can be overdriven | Fixed in the app with a media volume cap, 80 % by default. Tune it by ear |
-| Four non-manifold edges in `base_tub` | Fixed. Two brace columns now overlap the side walls instead of touching them |
-| Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
-| Setup script printed the wrong Home Assistant secret names | Fixed |
-| KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth follows the amp height: 27 mm for the 20 mm board on Dayton's spec sheet |
-| Wide printed frame covered the tablet's glass, light sensor and camera | Changed to a frameless bezel: a thin rim, the tablet glass showing, and a one-piece shell plus chin |
-| 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |
+- **Tablet fit.** `TAB_R`, the port sides and the port heights are estimates. Print the bezel chin
+  and the bottom 30 mm of the shell first to test the fit.
+- **Plug sizes.** The 3.5 mm plug must stick out no more than 7 mm past the tablet's edge, and the
+  USB-C FPC plug no more than 4 mm.
+- **Board sizes.** The PD module, buck and amp cradles are set to typical board sizes. Measure yours
+  and update `CRADLES`. The tallest board must stay under 13 mm, or raise `PARTS_H`.
+- **Volume warning.** The 60 % cap is a starting point. If the hearing-safety dialog still appears,
+  lower the cap one step and raise the amp gain.
+- **Microphones.** The four slots in the top rim follow the Counter Display. Check where the Tab A9's
+  microphones are and move `MIC_SLOTS_X` if Assist hears you poorly.

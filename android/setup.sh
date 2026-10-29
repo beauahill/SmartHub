@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Counter Home: one-time provisioning for the Galaxy Tab A9+ over USB.
+# Counter Home: one-time provisioning for the Hub Mini's Galaxy Tab A9 over USB.
+# The same app and script also provision the Counter Display's Galaxy Tab A9+.
 #
 # Before running:
 #   1. Factory reset the tablet. In the setup wizard connect Wi-Fi but SKIP the Google and
@@ -7,11 +8,13 @@
 #   2. Settings > About tablet > Software information > tap Build number 7 times.
 #   3. Settings > Developer options > USB debugging on. Plug in, accept the RSA prompt.
 #
-# Usage:  ./setup.sh [dashboard_url]
-#   e.g.  ./setup.sh http://192.168.0.50:8123/dashboard-counter/0
+# Usage:  [NAME=<prefix>] ./setup.sh [dashboard_url]
+#   e.g.  ./setup.sh http://192.168.0.50:8123/dashboard-mini/0?kiosk
+#         NAME=bedroom_display ./setup.sh http://192.168.0.50:8123/dashboard-bedroom/0?kiosk
 #
-# Prints the API token and the three Home Assistant secrets (counter_display_token,
-# counter_display_api, counter_display_status) at the end.
+# Prints the API token and the three Home Assistant secrets (<NAME>_token, <NAME>_api,
+# <NAME>_status) at the end. NAME defaults to mini_display, which matches
+# homeassistant/packages/mini_display.yaml. Use counter_display for a Counter Display.
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -28,6 +31,7 @@ if [ -z "${APK:-}" ]; then
 fi
 [ -f "$APK" ] || { echo "APK not found: $APK"; exit 1; }
 URL=${1:-}
+NAME=${NAME:-mini_display}
 
 command -v adb >/dev/null || { echo "adb not found. Install Android platform-tools first."; exit 1; }
 adb get-state >/dev/null 2>&1 || { echo "No device. Check the cable and the USB debugging prompt."; exit 1; }
@@ -96,9 +100,9 @@ Done. Counter Home is now the home app and device owner.
   API token:  $TOKEN
 
 Add to Home Assistant secrets.yaml:
-  counter_display_token: "Bearer $TOKEN"
-  counter_display_api: "http://${IP:-TABLET_IP}:2323/{{ path }}"
-  counter_display_status: "http://${IP:-TABLET_IP}:2323/status"
+  ${NAME}_token: "Bearer $TOKEN"
+  ${NAME}_api: "http://${IP:-TABLET_IP}:2323/{{ path }}"
+  ${NAME}_status: "http://${IP:-TABLET_IP}:2323/status"
 
 Quick test from any machine on the LAN:
   curl -H "Authorization: Bearer $TOKEN" http://${IP:-TABLET_IP}:2323/status
@@ -107,4 +111,7 @@ Next: sign in to Google in Android settings (hold the dock clock 3 s, PIN 2580,
 "Pause kiosk lock and open Android settings"), install Spotify, YouTube TV,
 IPTV Smarters and the Home Assistant app, then tap "Resume kiosk lock".
 Change the PIN while you're in there.
+
+Hub Mini: in the same settings screen, set "Max media volume" to 60 % or lower, so the tablet
+stays under Android's wired-headphone safety warning. Set loudness with the amp's gain pot.
 EOF
