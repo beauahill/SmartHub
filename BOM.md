@@ -66,7 +66,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 
 | # | Qty | Part | Spec / notes |
 | --- | --- | --- | --- |
-| W1 | 3 m | Speaker wire, 20 AWG | Three pairs from the KABD-430 down the spine channel and through the 6 mm lid hole into the tub |
+| W1 | 3 m | Speaker wire, 20 AWG | Three pairs from the KABD-430 down the spine channel and through the 8 mm lid hole into the tub |
 | W2 | 1 m | Power wire, 18 AWG, red and black | From the PD trigger up the spine channel, then 20 V distribution in the tray |
 | W3 | 1 m | Silicone hookup wire, 26 to 28 AWG | Radar to ESP32-C3: 5V, GND, TX, RX |
 | W4 | 1 set | Speaker and power connectors for the KABD-430 | The functional cable kit covers the AUX input; check what else ships with your board |

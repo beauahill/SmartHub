@@ -153,6 +153,30 @@ down, so they print cleanly in a vertical wall. The shell uses the same magnets 
 same way as the ring. Set `SHELL_SIDES = True` to perforate the sides too, or change the hole size
 and web with `SHELL_HEX` and `SHELL_WEB`.
 
+**Printing the grille shell.** Print it bottom edge down; it needs no supports. The holes have 60°
+tops, and the beveled top edge faces up. The bottom edge has a 0.5 mm lead-in chamfer inside and a
+0.3 mm chamfer outside. The inner one guides the shell onto the tub and leaves room for elephant's
+foot, which would otherwise use up the 0.35 mm clearance. The outer one hides elephant's foot on
+the visible edge. That leaves a 1.85 mm wide first layer around an 870 mm loop.
+
+The holes sit over the drivers: 51 % open in front of each ND65 cone and 52 % in front of the woofer
+and radiator. The field runs from Z 17 to 98, clear of the magnet pockets at Z 9 and 106 by at least
+4.8 mm. The 1.0 mm webs between holes print as two lines.
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Supports | Off | Nothing past 45° |
+| Wall generator | Arachne | Prints the 1.0 mm webs and the 0.6 mm top land as clean lines |
+| Wall loops | 3 or more | Three per side fills the 2.65 mm skin with walls. With two, a 1 mm strip of 15 % infill is left in the middle of the skin |
+| Infill | Any; it is all walls | |
+| Elephant foot compensation | 0.15 mm | |
+| Brim | Inner brim only, about 4 mm, if the first layer doesn't stick. It stays on the hidden inside face | |
+| Seam | Aligned, on the rear | |
+| Retraction | Profile default; dry the PLA+ first | About 3,600 holes, so there is a lot of travel. Wet filament strings across them |
+
+The grille ring has the same lead-in and the same beveled top. Its window tops are bridges up to
+111 mm long. They sag a little, but the linen covers them.
+
 **Driver mounts follow Dayton's drawings and the ND65 3D model.** Each driver sits in a recess
 shaped to its frame, deep enough that the surround clears the inside of the covering with room for
 excursion: 4 mm for the ND65s, 5 mm for the woofer and 9 mm for the passive radiator. Clearance is
@@ -185,8 +209,8 @@ python enclosure/enclosure.py enclosure/out
 
 The script prints part volumes and the air volume of each chamber: about 0.55 L per full-range
 chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Those volumes assume a
-closed box, so it also prints the open area through the lid. That should be only the 6 mm speaker
-wire hole (28.3 mm²), which you seal with hot glue during assembly. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
+closed box, so it also prints the open area through the lid. That should be only the 8 mm speaker
+wire hole (50.3 mm²), which you seal with hot glue during assembly. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
 
 ### 2. Assemble
 
@@ -198,7 +222,7 @@ wire hole (28.3 mm²), which you seal with hot glue during assembly. Copy the `p
 3. Cut three pairs of speaker wire, one each for the woofer and the two full-range drivers. Each pair
    runs from its driver out through the lid and up the spine's cable channel, so make it long enough
    to reach the amp in the tray with 10 cm to spare. With the lid off the tub, push the pairs up
-   through the 6 mm hole in the lid from underneath until they come out of the top of the channel.
+   through the 8 mm hole in the lid from underneath until they come out of the top of the channel.
    Pass the full-range pairs through the chamber holes. Seal the chamber holes and the lid hole with
    hot glue around the wires, from the inside. Fill the lid hole completely. It opens into the woofer
    chamber, and any gap left there acts as a port and spoils the passive radiator tuning.
@@ -426,4 +450,4 @@ These items came out of reviewing the Cowork export.
 | KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth follows the amp height: 27 mm for the 20 mm board on Dayton's spec sheet |
 | Wide printed frame covered the tablet's glass, light sensor and camera | Changed to a frameless bezel: a thin rim, the tablet glass showing, and a one-piece shell plus chin |
 | 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |
-| The 12 mm lid hole left the woofer chamber open to the bezel tray through the cable channel, which spoiled the passive radiator alignment | Fixed. The hole is 6 mm, sized for three 20 AWG pairs, the channel no longer cuts through the lid, and assembly step 3 seals the hole with hot glue |
+| The 12 mm lid hole left the woofer chamber open to the bezel tray through the cable channel, which spoiled the passive radiator alignment | Fixed. The hole is 8 mm, sized for three 20 AWG pairs, the channel no longer cuts through the lid, and assembly step 3 seals the hole with hot glue |

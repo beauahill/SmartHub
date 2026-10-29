@@ -49,6 +49,9 @@ SHELL_TOP_GAP = 0.3            # reveal line between the shell and the tub's top
 TOP_LAND = 0.6                 # flat strip on the outer top edge of the ring / shell, under the band chamfer
 BAND_CHAMFER = RECESS          # 45 deg chamfer under the top band (the band overhangs the recess by RECESS)
 FOOT_CHAMFER = 0.6             # 45 deg chamfer on the tub's bottom outer edge (elephant foot, eases the ring on)
+LEAD_IN = 0.5                  # 45 deg chamfer on the inner bottom edge of the ring / shell: slide-on lead-in, and
+                               # room for elephant's foot, which would otherwise eat the 0.35 mm clearance
+SHELL_FOOT = 0.3               # 45 deg chamfer on the shell's outer bottom edge (hides elephant's foot)
 CHAMBER_WALL = 4.0
 FR_CH_X0 = 58.0                # full range chamber inner wall starts at |X| = 58
 FR_CH_Y1 = 80.0                # full range chamber back wall outer face
@@ -371,15 +374,20 @@ lid = M.batch_hull([extrude(outline, LID_Z0, TOPZ - CH), extrude(outline.offset(
 for (x, y) in BOSSES:                      # 4 mm dowel holes (dowels align lid to tub for gluing)
     lid = lid - cyl_z(x, y, LID_Z0 - 1, LID_Z0 + 2.0, 4.3)
 # Speaker wire hole into the woofer chamber, at the bottom of the spine's cable channel. Sized for three
-# 20 AWG pairs (six ~1.8 mm conductors) and hot-glued shut around them: any gap here acts as a port.
+# 20 AWG zip-cord pairs (about 2 x 4 mm each) and hot-glued shut around them: any gap here acts as a port.
 WIRE_HOLE = (0, 74)
-WIRE_HOLE_D = 6.0
+WIRE_HOLE_D = 8.0
 lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
 
 # ======================= GRILLE RING =======================
 frame_outer = inset.offset(RECESS - FABRIC, m3.JoinType.Round)
 GZ0, GZ1 = 0.5, REC_Z1 - 0.5
-gf = extrude(frame_outer, GZ0, GZ1) - extrude(inset.offset(RING_GAP, m3.JoinType.Round), -1, 200)
+def bore(z0):
+    """Inside of the ring / shell, with the LEAD_IN chamfer at its bottom edge z0."""
+    i = inset.offset(RING_GAP, m3.JoinType.Round)
+    return extrude(i, -1, 200) + M.batch_hull([extrude(inset.offset(RING_GAP + LEAD_IN + 1, m3.JoinType.Round), z0 - 1.01, z0 - 1),
+                                               extrude(i, z0 + LEAD_IN, z0 + LEAD_IN + 0.01)])
+gf = extrude(frame_outer, GZ0, GZ1) - bore(GZ0)
 WZ0, WZ1 = 18.0, GZ1 - 14.0
 FW = 150 - R_FRONT - 2      # flat part of front face
 win = box(-FW, -60.5, -20, 40, WZ0, WZ1) + box(-55.5, 55.5, -20, 40, WZ0, WZ1) + box(60.5, FW, -20, 40, WZ0, WZ1)
@@ -405,7 +413,8 @@ fabric = extrude(outline, GZ0, GZ1) - extrude(inset, -1, 200) - top_bevel(REC_Z1
 # ======================= GRILLE SHELL (fabric-free alternative) =======================
 # Flush with the tub's top band on the outside, same inner clearance and magnet pockets as the ring.
 SZ0, SZ1 = GZ0, REC_Z1 - SHELL_TOP_GAP
-shell = extrude(outline, SZ0, SZ1) - extrude(inset.offset(RING_GAP, m3.JoinType.Round), -1, 200)
+shell = M.batch_hull([extrude(outline.offset(-SHELL_FOOT, m3.JoinType.Round), SZ0, SZ0 + 0.01),
+                      extrude(outline, SZ0 + SHELL_FOOT, SZ1)]) - bore(SZ0)
 for c in mag_cuts(MAG_TUB, MAG_FRAME, True):
     shell = shell - c
 shell = shell - top_bevel(SHELL_TOP_GAP, 0)
@@ -611,7 +620,7 @@ spine = spine.translate([0, 0, -0.5])     # sink 0.5 mm into the lid so they fus
 for (x, h) in SPINE_PTS:
     spine = spine - place(lcyl_a(x, h, T - 0.5, T + 120, M3_CLR)) - place(lcyl_a(x, h, T + SPINE_GRIP, T + 160, 6.4))
 # cable channel: hull of two spheres, lid hole -> tray. The low sphere dips only 1 mm into the lid, so the
-# lid stays closed around the wire hole and the dip makes a cup for the glue.
+# lid stays closed around the wire hole.
 p_low = np.array([0, WIRE_HOLE[1], TOPZ + 5])
 p_high = to_world(0, T - 6, CH_H)
 chan = M.batch_hull([M.sphere(6, 48).translate(p_low.tolist()), M.sphere(6, 48).translate(p_high.tolist())])
@@ -667,7 +676,8 @@ for sx in (-PWR_SCREW_X, PWR_SCREW_X):
 # don't let the spine poke into the tray
 spine = spine - place(rounded_slab(EW, EH, ER, -1, T, f1=BEZEL_BACK_FILLET, bed="a1"))   # hugs the curved tray back
 lid_spine = lid + spine
-lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
+# the hole runs straight up into the channel's low sphere, so the full 8 mm reaches the channel
+lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, p_low[2], WIRE_HOLE_D)
 
 # ======================= EXPORT =======================
 def export(man, name):
@@ -696,8 +706,8 @@ export(screen, "_render_screen")
 # print-ready orientations
 export(tr.rotate([-90, 0, 0]), "print_bezel_shell")            # back wall down, front rim on top
 export(chin.rotate([-90, 0, 0]), "print_bezel_chin")           # back wall down
-export(gf, "print_grille_ring")                                # bottom edge down, beveled top up
-export(shell, "print_grille_shell")                            # bottom edge down, beveled top up
+export(gf.translate([0, 0, -GZ0]), "print_grille_ring")         # bottom edge down, beveled top up
+export(shell.translate([0, 0, -SZ0]), "print_grille_shell")     # bottom edge down, beveled top up
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
 export(pwr_plate, "print_power_plate")                         # outside face down, sled standing up
