@@ -71,10 +71,10 @@ already oriented for printing.
 
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
-| `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers |
+| `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers. Prints floor down, supports only in the outside driver recesses |
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
-| `grille_ring` | 299 x 149 x 112 | Linen version. Linen wraps around it. Slides on from below, held by magnets |
-| `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints top edge down |
+| `grille_ring` | 299 x 149 x 111 | Linen version. Linen wraps around it. Slides on from below, held by magnets. Prints bottom edge down |
+| `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints bottom edge down |
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
 | `bezel_chin` | 272 x 23 x 9 | Prints back face down, no supports. The chin bar: holds the radar and the lip along the bottom of the glass |
 | `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
@@ -103,6 +103,40 @@ check of both parts in those orientations finds only three spots past 2 mm:
 
 All three print without supports. Expect at most slight sag on surfaces you don't see.
 
+**Printing the tub.** Print it floor down, long side along X. It is laid out so nothing inside the
+chambers needs support, so the supports stay outside where you can reach them:
+- **Top band.** The band overhangs the grille recess by 3 mm, so its underside is a 45° chamfer
+  instead of a flat ledge. The ring and shell tops are beveled to match, with a 0.35 mm gap
+  (0.21 mm for the shell). Under the band there is a reveal line of about 1 mm.
+- **Mounting rings.** The undersides of the rings inside the chambers taper at 45° down to the floor.
+- **Driver cutouts.** These have 45° sides and a flat top that prints as a bridge: 22 mm for the
+  ND65s, 39 mm for the woofer and radiator. On the ND65s, the solder-tab notch above them is a
+  33 mm bridge.
+- **Woofer and radiator.** Their centers are at Z 56.25, 4.25 mm below the full-range drivers. This
+  keeps their recesses under the band chamfer.
+- **Bottom edge.** The outer bottom edge has a 0.6 mm chamfer, so elephant's foot doesn't stop the
+  ring or shell from sliding on.
+
+Only the arched tops of the four driver recesses, three on the front and one on the rear, need
+support. The feet recesses under the floor are 10.5 mm bridges.
+
+Suggested settings for PLA+ on a Bambu H2S, 0.4 mm nozzle:
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Supports | Tree (auto), **On build plate only**, threshold 30°, Don't support bridges on | Supports reach the recesses from the plate. Nothing grows inside the chambers |
+| Wall generator | Arachne | Prints the 1 mm skins behind the pilot holes and the top land of the ring and shell cleanly |
+| Wall loops | 4 (5 if you want margin) | The box must be airtight. The thinnest wall is 1.8 mm, behind the side magnet pockets |
+| Top / bottom shells | 5 / 5 | The floor is 5 mm, so it prints solid |
+| Infill | 15 % gyroid is fine. 25 % gives a stiffer front baffle | The walls are 7 to 10 mm thick, so infill sets how stiff they are |
+| Elephant foot compensation | 0.15 mm | Works with the bottom chamfer |
+| Brim | None on textured PEI. Add a 5 mm brim if the corners lift | |
+| Seam | Aligned, on the rear | |
+
+When the drivers are in and the lid is glued on, check the seal: push the woofer cone in gently and
+let go. It should come back slowly. If it springs straight back, there is a leak. Brush a thin coat
+of epoxy or wood glue inside the chambers to seal it.
+
 The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm from the bottom of
 the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
 
@@ -113,7 +147,7 @@ the plug seats fully. A cavity in the spine clears the board and its screw termi
 the cable channel. If you use a different trigger board, change the `TRIG_*` parameters.
 
 **Two base finishes, same tub.** Print either the grille ring and wrap it in linen, or print the
-grille shell. The shell is a 2.85 mm printed skin, flush with the tub's top band, with a honeycomb
+grille shell. The shell is a 2.65 mm printed skin, flush with the tub's top band, with a honeycomb
 of 2.6 mm hexagonal holes over the front and rear faces, about 52 % open. The holes point up and
 down, so they print cleanly in a vertical wall. The shell uses the same magnets and slides on the
 same way as the ring. Set `SHELL_SIDES = True` to perforate the sides too, or change the hole size
