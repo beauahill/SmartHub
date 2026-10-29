@@ -70,6 +70,36 @@ class Config(context: Context) {
         get() = prefs.getInt(KEY_MAX_VOLUME, DEFAULT_MAX_VOLUME)
         set(v) = prefs.edit().putInt(KEY_MAX_VOLUME, v.coerceIn(1, 100)).apply()
 
+    /**
+     * Master switch for the camera. Only the on-device settings screen (behind the PIN) can change it;
+     * the API cannot, so a leaked token alone can't turn a camera on that the owner switched off.
+     */
+    var cameraAllowed: Boolean
+        get() = prefs.getBoolean(KEY_CAM_ALLOWED, false)
+        set(v) = prefs.edit().putBoolean(KEY_CAM_ALLOWED, v).apply()
+
+    /** "front" (looks out through the bezel) or "back" (behind the tray, normally covered). */
+    var cameraFacing: String
+        get() = prefs.getString(KEY_CAM_FACING, "front")!!
+        set(v) = prefs.edit().putString(KEY_CAM_FACING, if (v == "back") "back" else "front").apply()
+
+    var cameraWidth: Int
+        get() = prefs.getInt(KEY_CAM_WIDTH, 1280)
+        set(v) = prefs.edit().putInt(KEY_CAM_WIDTH, v.coerceIn(320, 1920)).apply()
+
+    var cameraFps: Int
+        get() = prefs.getInt(KEY_CAM_FPS, 5)
+        set(v) = prefs.edit().putInt(KEY_CAM_FPS, v.coerceIn(1, 15)).apply()
+
+    var cameraQuality: Int
+        get() = prefs.getInt(KEY_CAM_QUALITY, 70)
+        set(v) = prefs.edit().putInt(KEY_CAM_QUALITY, v.coerceIn(30, 95)).apply()
+
+    /** Degrees to rotate the picture, or -1 to follow the screen orientation. */
+    var cameraRotation: Int
+        get() = prefs.getInt(KEY_CAM_ROTATION, -1)
+        set(v) = prefs.edit().putInt(KEY_CAM_ROTATION, if (v in setOf(0, 90, 180, 270)) v else -1).apply()
+
     /** "right", "left" or "bottom". */
     var dockSide: String
         get() = prefs.getString(KEY_DOCK, "right")!!
@@ -92,6 +122,12 @@ class Config(context: Context) {
         put("kioskLock", kioskLock)
         put("dockSide", dockSide)
         put("maxVolume", maxVolume)
+        put("cameraAllowed", cameraAllowed)
+        put("cameraFacing", cameraFacing)
+        put("cameraWidth", cameraWidth)
+        put("cameraFps", cameraFps)
+        put("cameraQuality", cameraQuality)
+        put("cameraRotation", cameraRotation)
         put("tiles", JSONArray(tilesJson))
         if (includeSecrets) { put("token", token); put("pin", pin) }
     }
@@ -103,6 +139,12 @@ class Config(context: Context) {
         if (o.has("kioskLock")) kioskLock = o.getBoolean("kioskLock")
         if (o.has("dockSide")) dockSide = o.getString("dockSide")
         if (o.has("maxVolume")) maxVolume = o.getInt("maxVolume")
+        // cameraAllowed is deliberately not settable here; see its comment.
+        if (o.has("cameraFacing")) cameraFacing = o.getString("cameraFacing")
+        if (o.has("cameraWidth")) cameraWidth = o.getInt("cameraWidth")
+        if (o.has("cameraFps")) cameraFps = o.getInt("cameraFps")
+        if (o.has("cameraQuality")) cameraQuality = o.getInt("cameraQuality")
+        if (o.has("cameraRotation")) cameraRotation = o.getInt("cameraRotation")
         if (o.has("tiles")) tilesJson = o.getJSONArray("tiles").toString(2)
         if (o.has("pin")) pin = o.getString("pin")
     }
@@ -122,6 +164,12 @@ class Config(context: Context) {
         private const val KEY_TILES = "tiles"
         private const val KEY_PROVISIONED = "provisioned"
         private const val KEY_MAX_VOLUME = "max_volume"
+        private const val KEY_CAM_ALLOWED = "camera_allowed"
+        private const val KEY_CAM_FACING = "camera_facing"
+        private const val KEY_CAM_WIDTH = "camera_width"
+        private const val KEY_CAM_FPS = "camera_fps"
+        private const val KEY_CAM_QUALITY = "camera_quality"
+        private const val KEY_CAM_ROTATION = "camera_rotation"
         /** Roughly 6 to 8 dB below full scale on Android's volume curve. Tune it by ear. */
         const val DEFAULT_MAX_VOLUME = 80
         const val DEFAULT_URL = "http://homeassistant.local:8123/dashboard-counter/0?kiosk"

@@ -47,6 +47,7 @@ class MainActivity : Activity() {
     private lateinit var content: LinearLayout
     private lateinit var ambient: FrameLayout
     private lateinit var offline: TextView
+    private var camIndicator: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
     private var loadedUrl: String? = null
     private val retry = Runnable { web.reload() }
@@ -65,6 +66,7 @@ class MainActivity : Activity() {
         buildUi()
         loadDashboard()
         Bus.listener = ::onCommand
+        CameraStreamer.onStateChanged = { on -> Bus.post(Command.CameraState(on)) }
         ControlService.start(this)
     }
 
@@ -75,6 +77,9 @@ class MainActivity : Activity() {
         hideSystemBars()
         Kiosk.applyPolicies(this, cfg) // picks up apps installed since the last launch
         if (!State.kioskPaused) Kiosk.enterLock(this, cfg)
+        // We're on screen, so the service may claim camera access now and keep it in the background.
+        ControlService.refreshForeground(this)
+        showCameraState(CameraStreamer.running)
         // Settings may have changed while we were away.
         if (cfg.haUrl != loadedUrl) loadDashboard()
     }
@@ -173,6 +178,18 @@ class MainActivity : Activity() {
         }
         dock.addView(clock, if (bottom) LinearLayout.LayoutParams(dp(130), MATCH_PARENT)
                             else LinearLayout.LayoutParams(MATCH_PARENT, dp(64)))
+
+        // Privacy indicator: shown whenever the camera is running.
+        camIndicator = TextView(this).apply {
+            text = "\u25CF CAM"
+            setTextColor(Color.parseColor("#FF453A"))
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            visibility = if (CameraStreamer.running) View.VISIBLE else View.GONE
+        }
+        dock.addView(camIndicator, if (bottom) LinearLayout.LayoutParams(dp(70), MATCH_PARENT)
+                                   else LinearLayout.LayoutParams(MATCH_PARENT, dp(22)))
 
         for (tile in cfg.tiles) {
             val b = TextView(this).apply {
@@ -295,6 +312,10 @@ class MainActivity : Activity() {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
     }
 
+    private fun showCameraState(on: Boolean) {
+        camIndicator?.visibility = if (on) View.VISIBLE else View.GONE
+    }
+
     private fun setAmbient(on: Boolean) {
         State.ambient = on
         ambient.visibility = if (on) View.VISIBLE else View.GONE
@@ -309,6 +330,7 @@ class MainActivity : Activity() {
             is Command.Launch -> launch(cmd.app)
             is Command.Navigate -> { setAmbient(false); bringToFront(); web.loadUrl(cmd.url) }
             Command.Assist -> openAssist()
+            is Command.CameraState -> showCameraState(cmd.on)
             Command.ConfigChanged -> {
                 Kiosk.applyPolicies(this, cfg)
                 layoutDock()

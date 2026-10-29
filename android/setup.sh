@@ -17,13 +17,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 PKG=com.counterdisplay.launcher
-# Prefer a fresh build (v1.1.0+, with the media volume cap). Fall back to the prebuilt v1.0.0.
+# Prefer a fresh build (v1.2.0: media volume cap and camera). Fall back to the prebuilt v1.0.0.
 BUILT=app/build/outputs/apk/release/app-release.apk
 if [ -z "${APK:-}" ]; then
   if [ -f "$BUILT" ]; then APK=$BUILT
   else
     APK=CounterHome-1.0.0.apk
-    echo "!! Using the prebuilt $APK. It has no media volume cap; build v1.1.0 to protect the speakers."
+    echo "!! Using the prebuilt $APK. It has no media volume cap or camera; build v1.2.0 from source."
   fi
 fi
 [ -f "$APK" ] || { echo "APK not found: $APK"; exit 1; }
@@ -48,6 +48,7 @@ adb shell dpm set-device-owner "$PKG/.KioskAdmin"
 
 echo "== Permissions and battery exemptions"
 adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS || true
+adb shell pm grant "$PKG" android.permission.CAMERA || true   # used only when "Allow the camera" is on
 adb shell dumpsys deviceidle whitelist +"$PKG" >/dev/null || true
 adb shell cmd appops set "$PKG" RUN_ANY_IN_BACKGROUND allow || true
 

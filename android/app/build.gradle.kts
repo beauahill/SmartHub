@@ -11,8 +11,8 @@ android {
         applicationId = "com.counterdisplay.launcher"
         minSdk = 29
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
     }
 
     // Keep this keystore. Updates must be signed with the same key, or Android refuses to

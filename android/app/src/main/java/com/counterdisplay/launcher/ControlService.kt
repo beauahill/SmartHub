@@ -19,12 +19,14 @@ import android.util.Log
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.io.OutputStream
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.URLDecoder
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Foreground service with a tiny HTTP server so Home Assistant can drive the display.
@@ -37,6 +39,10 @@ import java.util.concurrent.Executors
  *   POST /navigate?url=...          -> load a URL in the dashboard view
  *   POST /brightness?value=0-255|auto
  *   GET  /config, POST /config      -> read or update settings (JSON body)
+ *   POST /camera/on?minutes=N       -> camera on, optional auto-off (needs "Allow the camera" in settings)
+ *   POST /camera/off
+ *   GET  /camera.jpg                -> latest frame (503 while the camera is off)
+ *   GET  /camera.mjpeg              -> MJPEG stream; ends when the camera turns off
  *
  * It also holds the media volume at or below the configured cap (see [Volume]).
  *
@@ -46,7 +52,8 @@ class ControlService : Service() {
 
     private lateinit var cfg: Config
     private var server: ServerSocket? = null
-    private val pool = Executors.newFixedThreadPool(4)
+    private val pool = Executors.newFixedThreadPool(8)      // MJPEG streams hold a thread each
+    private val streams = AtomicInteger(0)
     private var cpuLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
 
@@ -63,19 +70,25 @@ class ControlService : Service() {
     override fun onCreate() {
         super.onCreate()
         cfg = Config(this)
-        goForeground()
+        // Camera access from a foreground service has to be claimed while the app is on screen.
+        // The launcher starts this service from onCreate, so State.foreground is normally true here.
+        goForeground(withCamera = State.foreground)
         holdLocks()
         startServer()
         watchVolume()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_RESTART_SERVER) startServer()
+        when (intent?.action) {
+            ACTION_RESTART_SERVER -> startServer()
+            ACTION_REFRESH_FOREGROUND -> goForeground(withCamera = true)   // sent from MainActivity.onResume
+        }
         return START_STICKY
     }
 
     override fun onDestroy() {
         try { unregisterReceiver(volumeReceiver) } catch (_: Exception) { }
+        CameraStreamer.stop()
         try { server?.close() } catch (_: Exception) { }
         pool.shutdownNow()
         cpuLock?.let { if (it.isHeld) it.release() }
@@ -85,7 +98,7 @@ class ControlService : Service() {
 
     // ---------------------------------------------------------------- setup
 
-    private fun goForeground() {
+    private fun goForeground(withCamera: Boolean) {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL, "Counter Home control", NotificationManager.IMPORTANCE_MIN)
@@ -96,10 +109,23 @@ class ControlService : Service() {
             .setSmallIcon(android.R.drawable.ic_menu_manage)
             .setOngoing(true)
             .build()
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(NOTIF_ID, n)
+        val camera = withCamera && cfg.cameraAllowed && CameraStreamer.hasPermission(this)
+        try {
+            when {
+                Build.VERSION.SDK_INT >= 34 -> startForeground(NOTIF_ID, n,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or
+                        (if (camera) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0))
+                Build.VERSION.SDK_INT >= 30 && camera ->
+                    startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+                else -> startForeground(NOTIF_ID, n)
+            }
+            cameraForeground = camera
+        } catch (e: Exception) {
+            // Not allowed to claim the camera right now (app in the background): keep the plain type.
+            Log.w(TAG, "foreground with camera refused: ${e.message}")
+            if (Build.VERSION.SDK_INT >= 34) startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            else startForeground(NOTIF_ID, n)
+            cameraForeground = false
         }
     }
 
@@ -173,18 +199,16 @@ class ControlService : Service() {
 
                 val auth = headers["authorization"]?.removePrefix("Bearer ")?.trim()
                     ?: headers["x-api-key"] ?: query["token"]
-                val (code, json) = if (auth != cfg.token) {
-                    401 to JSONObject().put("ok", false).put("error", "bad or missing token")
-                } else route(method, path, query, body)
-
-                val bytes = json.toString().toByteArray(Charsets.UTF_8)
                 val out = s.getOutputStream()
-                out.write(("HTTP/1.1 $code ${if (code == 200) "OK" else "Error"}\r\n" +
-                    "Content-Type: application/json\r\n" +
-                    "Content-Length: ${bytes.size}\r\n" +
-                    "Connection: close\r\n\r\n").toByteArray(Charsets.UTF_8))
-                out.write(bytes)
-                out.flush()
+                if (auth != cfg.token) {
+                    writeJson(out, 401, err("bad or missing token")); return
+                }
+                when (path) {
+                    "/camera.jpg" -> { serveSnapshot(out); return }
+                    "/camera.mjpeg" -> { serveMjpeg(out); return }
+                }
+                val (code, json) = route(method, path, query, body)
+                writeJson(out, code, json)
             } catch (e: Exception) {
                 Log.w(TAG, "request failed: ${e.message}")
             }
@@ -218,12 +242,29 @@ class ControlService : Service() {
                            else Kiosk.setBrightness(this, v.toIntOrNull() ?: return 400 to err("value 0-255 or auto"))
                 if (!done) return 409 to err("brightness needs device owner")
             }
+            "/camera/on" -> {
+                if (!cfg.cameraAllowed) return 403 to err("camera is turned off in Counter Home settings")
+                if (!cameraForeground) goForeground(withCamera = true)
+                val minutes = q["minutes"]?.toIntOrNull() ?: 0
+                CameraStreamer.start(this, cfg, minutes)?.let { return 409 to err(it) }
+                return 200 to JSONObject().put("ok", true).put("camera", CameraStreamer.statusJson())
+            }
+            "/camera/off" -> CameraStreamer.stop()
             "/config" -> {
                 if (method == "GET") return 200 to cfg.toJson()
                 return try {
                     val oldPort = cfg.port
+                    val oldCam = Triple(cfg.cameraFacing, cfg.cameraWidth, cfg.cameraRotation)
                     cfg.apply(JSONObject(body))
                     Volume.enforce(this, cfg)
+                    if (CameraStreamer.running && oldCam != Triple(cfg.cameraFacing, cfg.cameraWidth, cfg.cameraRotation)) {
+                        // reopen with the new settings, keeping any auto-off that was running
+                        val offAt = CameraStreamer.offAtMs
+                        val left = if (offAt > 0)
+                            ((offAt - android.os.SystemClock.uptimeMillis() + 59_999L) / 60_000L).toInt().coerceAtLeast(1) else 0
+                        CameraStreamer.stop()
+                        CameraStreamer.start(this, cfg, left)
+                    }
                     Bus.post(Command.ConfigChanged)
                     if (cfg.port != oldPort) startServer()
                     200 to ok
@@ -252,11 +293,62 @@ class ControlService : Service() {
             .put("charging", plugged)
             .put("volume", Volume.percent(this))
             .put("maxVolume", cfg.maxVolume)
+            .put("cameraAllowed", cfg.cameraAllowed)
+            .put("camera", CameraStreamer.statusJson())
             .put("batteryTempC", temp)
             .put("ip", ipAddress(this) ?: "")
     }
 
     private fun err(msg: String) = JSONObject().put("ok", false).put("error", msg)
+
+    private fun writeJson(out: OutputStream, code: Int, json: JSONObject) =
+        writeBytes(out, code, "application/json", json.toString().toByteArray(Charsets.UTF_8))
+
+    private fun writeBytes(out: OutputStream, code: Int, type: String, bytes: ByteArray) {
+        out.write(("HTTP/1.1 $code ${if (code == 200) "OK" else "Error"}\r\n" +
+            "Content-Type: $type\r\n" +
+            "Content-Length: ${bytes.size}\r\n" +
+            "Cache-Control: no-store\r\n" +
+            "Connection: close\r\n\r\n").toByteArray(Charsets.UTF_8))
+        out.write(bytes)
+        out.flush()
+    }
+
+    /** Latest JPEG. While the camera is off this is an error, never a reason to switch it on. */
+    private fun serveSnapshot(out: OutputStream) {
+        if (!CameraStreamer.running) { writeJson(out, 503, err("camera is off")); return }
+        val f = CameraStreamer.latestFrame() ?: CameraStreamer.awaitFrame(0L, 4000)
+        if (f == null) writeJson(out, 503, err(CameraStreamer.error ?: "no frame yet"))
+        else writeBytes(out, 200, "image/jpeg", f.jpeg)
+    }
+
+    /** multipart/x-mixed-replace stream of JPEG frames until the client leaves or the camera stops. */
+    private fun serveMjpeg(out: OutputStream) {
+        if (!CameraStreamer.running) { writeJson(out, 503, err("camera is off")); return }
+        if (streams.incrementAndGet() > MAX_STREAMS) {
+            streams.decrementAndGet(); writeJson(out, 503, err("too many streams")); return
+        }
+        try {
+            out.write(("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: multipart/x-mixed-replace; boundary=$BOUNDARY\r\n" +
+                "Cache-Control: no-store\r\n" +
+                "Connection: close\r\n\r\n").toByteArray(Charsets.UTF_8))
+            var last = 0L
+            while (true) {
+                val f = CameraStreamer.awaitFrame(last, 5000) ?: break
+                last = f.atMs
+                out.write(("--$BOUNDARY\r\nContent-Type: image/jpeg\r\nContent-Length: ${f.jpeg.size}\r\n\r\n")
+                    .toByteArray(Charsets.UTF_8))
+                out.write(f.jpeg)
+                out.write("\r\n".toByteArray(Charsets.UTF_8))
+                out.flush()
+            }
+        } catch (_: Exception) {
+            // client went away
+        } finally {
+            streams.decrementAndGet()
+        }
+    }
 
     private fun splitQuery(target: String): Pair<String, Map<String, String>> {
         val i = target.indexOf('?')
@@ -277,6 +369,15 @@ class ControlService : Service() {
         private const val CHANNEL = "control"
         private const val NOTIF_ID = 7
         const val ACTION_RESTART_SERVER = "restart_server"
+        const val ACTION_REFRESH_FOREGROUND = "refresh_foreground"
+        private const val MAX_STREAMS = 3
+        private const val BOUNDARY = "counterframe"
+        @Volatile private var cameraForeground = false
+
+        /** Re-claims the foreground service types (camera included) while the launcher is on screen. */
+        fun refreshForeground(ctx: Context) {
+            ctx.startForegroundService(Intent(ctx, ControlService::class.java).setAction(ACTION_REFRESH_FOREGROUND))
+        }
 
         fun start(ctx: Context) {
             ctx.startForegroundService(Intent(ctx, ControlService::class.java))
@@ -295,4 +396,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.1.0" }
+object BuildConfigShim { const val VERSION = "1.2.0" }

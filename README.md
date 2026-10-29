@@ -42,13 +42,16 @@ The full parts list is in [BOM.md](BOM.md).
   through the UGREEN adapter, and a small 5 V buck for the ESP32 and radar.
 - **Volume cap.** The tablet's media volume sets the amp's input level. Counter Home holds media
   volume at or below a cap, 80 % by default, so the 15 W full-range drivers are not overdriven.
+- **Camera.** The tablet's front camera, looking out through the bezel, can act as a security camera
+  for Home Assistant. Counter Home serves snapshots and an MJPEG stream through its API, only while
+  Home Assistant has turned the camera on, and only if it is allowed on the tablet.
 
 ## Repository layout
 
 | Path | What it is |
 | --- | --- |
 | [`android/`](android) | Counter Home launcher: Kotlin source, Gradle build, `setup.sh` provisioning script |
-| `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap, so build v1.1.0 from source |
+| `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap and camera, so build v1.2.0 from source |
 | [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
 | [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
@@ -174,8 +177,9 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 
 ### 4. Provision the tablet
 
-1. Build Counter Home v1.1.0, as described in [Building the app](#building-the-app). `setup.sh`
-   installs that build when it exists, and otherwise falls back to the prebuilt v1.0.0 without the volume cap.
+1. Build Counter Home v1.2.0, as described in [Building the app](#building-the-app). `setup.sh`
+   installs that build when it exists, and otherwise falls back to the prebuilt v1.0.0, which has no
+   volume cap or camera.
 2. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on USB debugging.
    Device owner can only be set while the tablet has no accounts.
 3. On your computer, with Android platform-tools installed:
@@ -194,6 +198,9 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 5. Change the settings PIN. The default PIN is public in this repository.
 6. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
    settings screen if the full-range drivers distort or bottom out.
+7. To use the camera, tick "Allow the camera" in the settings screen. It stays off until Home
+   Assistant turns it on. Also check that Android's camera access toggle is on: Settings > Security
+   and privacy > More privacy settings > Camera access. When it's off, every frame comes out black.
 
 Do the YouTube TV and Spotify sign-ins while the kiosk lock is paused. Google's login screens
 belong to other packages, and lock task mode blocks them.
@@ -224,13 +231,48 @@ ESPHome config creates.
 
 A notification fires if the tablet battery stays above 42 °C for 5 minutes.
 
+### 6. Camera in Home Assistant (optional)
+
+1. Tick "Allow the camera" in Counter Home settings on the tablet.
+2. In Home Assistant, go to Settings > Devices & services > Add integration > MJPEG IP Camera, name it
+   `Counter display` and use:
+
+   ```
+   MJPEG URL:        http://<tablet_ip>:2323/camera.mjpeg?token=<token>
+   Still image URL:  http://<tablet_ip>:2323/camera.jpg?token=<token>
+   ```
+
+   That creates `camera.counter_display`.
+3. The package's camera automations then do three things:
+   - turn the camera on five minutes after everyone has left, using `zone.home`, so it needs person entities with device trackers
+   - turn it off as soon as someone is home
+   - when the radar sees someone while nobody is home, take a snapshot to
+     `/config/www/counter_display/last_motion.jpg` and post a notification with the picture
+
+   Uncomment the `notify.mobile_app_...` lines for a phone push.
+
+To check on the house from away, open the camera in the Home Assistant app over Nabu Casa or a VPN
+to your EdgeRouter. Never forward port 2323 to the internet.
+
+**What to expect from the camera:**
+- **Privacy indicator.** A red `● CAM` shows in the dock whenever the camera runs. The API can turn it
+  on and off but cannot change "Allow the camera"; only the settings screen behind the PIN can.
+- **Explicit control.** Snapshots and streams fail with "camera is off" unless Home Assistant has
+  turned the camera on. A dashboard that refreshes the camera picture never switches it on by itself.
+- **No night vision.** In the dark the picture is black. The wake automation turns the screen on
+  when the radar sees someone, which lights the counter a little; a light turned on by an automation works better.
+- **One app at a time.** While the camera runs, other apps can't use it, so video calls fail. Turn it off first.
+- **Heat.** Streaming warms the tablet. The battery temperature alert covers it, but don't stream around the clock.
+- **Rear camera.** `cameraFacing: back` works in software, but that camera sits behind the bezel tray and sees nothing unless you cut an opening.
+- **Not yet tested on a device.** This version compiles against the Android 14 framework but hasn't run on a tablet yet.
+
 ## Counter Home API
 
 Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 
 | Call | Does |
 | --- | --- |
-| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, ip |
+| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, cameraAllowed, camera, ip |
 | `POST /screen/on`, `/screen/off`, `/screen/toggle` | Panel power |
 | `POST /ambient/on`, `/ambient/off` | Dim clock overlay, tap to dismiss |
 | `POST /home` | Back to the dashboard from any app |
@@ -239,9 +281,17 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | `POST /navigate?url=...` | Load any URL in the dashboard view, such as a camera page when the doorbell rings |
 | `POST /brightness?value=0-255` or `?value=auto` | Backlight |
 | `POST /reload` | Reload the dashboard |
-| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, tiles, dockSide, kioskLock, maxVolume, pin, port |
+| `POST /camera/on?minutes=N` | Camera on. With `minutes`, it turns itself off after that long. Needs "Allow the camera" |
+| `POST /camera/off` | Camera off |
+| `GET /camera.jpg` | Latest frame as JPEG. 503 while the camera is off |
+| `GET /camera.mjpeg` | MJPEG stream, up to 3 at once. It ends when the camera turns off |
+| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port |
 
 `volume` and `maxVolume` are percentages of the tablet's media volume range.
+
+`camera` in `/status` reports `running`, `facing`, `width`, `height`, `frameAgeMs`, `offInSeconds`
+and the last `error`. Camera defaults: front camera, up to 1280 px wide, 5 frames per second, JPEG
+quality 70. `cameraRotation` -1 follows the screen orientation; 0, 90, 180 or 270 force it.
 
 Quick test from any machine on the LAN:
 

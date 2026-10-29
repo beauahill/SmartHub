@@ -53,6 +53,10 @@ object Kiosk {
                     DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS
             )
             dpm.setKeyguardDisabled(admin, true)
+            // Grant the camera to ourselves so Home Assistant can use it without a prompt on the tablet.
+            // It still only runs when "Allow the camera" is on in Counter Home settings.
+            dpm.setPermissionGrantState(admin, ctx.packageName, android.Manifest.permission.CAMERA,
+                DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
             dpm.setStatusBarDisabled(admin, true)
 
             // Make this the permanent home app.
@@ -153,6 +157,7 @@ sealed class Command {
     data class Ambient(val on: Boolean) : Command()
     data class Launch(val app: String) : Command()
     data class Navigate(val url: String) : Command()
+    data class CameraState(val on: Boolean) : Command()
     object Assist : Command()
     object ConfigChanged : Command()
 }

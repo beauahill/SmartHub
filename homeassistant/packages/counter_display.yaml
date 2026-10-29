@@ -3,6 +3,12 @@
 #   homeassistant:
 #     packages: !include_dir_named packages
 #
+# The camera automations at the bottom need:
+#   - "Allow the camera" switched on in Counter Home settings on the tablet
+#   - an MJPEG IP Camera integration named "Counter display" (entity camera.counter_display),
+#     added in Settings > Devices & services; see the README for the URLs
+#   - person entities with device trackers, so zone.home counts who is home
+#
 # secrets.yaml needs (setup.sh prints the token and IP):
 #   counter_display_token: "Bearer <token>"
 #   counter_display_api: "http://192.168.0.120:2323/{{ path }}"
@@ -43,6 +49,9 @@ rest:
       - name: Counter display launcher in front
         unique_id: counter_display_launcher_in_front
         value_template: "{{ value_json.launcherInFront }}"
+      - name: Counter display camera
+        unique_id: counter_display_camera
+        value_template: "{{ value_json.camera.running }}"
 
 script:
   counter_display:
@@ -142,3 +151,66 @@ automation:
           message: >-
             Tablet battery is at {{ states('sensor.counter_display_battery_temperature') }} °C.
             Check the tray vents and that Battery protection is still set to Maximum.
+
+  # ---------------------------------------------------------------- camera (optional)
+  - id: counter_display_camera_away
+    alias: Counter display, camera on when everyone has left
+    triggers:
+      - trigger: numeric_state
+        entity_id: zone.home
+        below: 1
+        for: "00:05:00"
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: camera/on
+
+  - id: counter_display_camera_home
+    alias: Counter display, camera off when someone is home
+    triggers:
+      - trigger: numeric_state
+        entity_id: zone.home
+        above: 0
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: camera/off
+
+  - id: counter_display_camera_motion_away
+    alias: Counter display, snapshot when someone is seen while away
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.counter_presence_presence
+        to: "on"
+    conditions:
+      - condition: numeric_state
+        entity_id: zone.home
+        below: 1
+    actions:
+      # Make sure the camera is running (the wake automation also turns the screen on, which
+      # lights the room a little). minutes=15 turns it back off if nobody turns it off sooner.
+      - action: rest_command.counter_display
+        data:
+          path: camera/on?minutes=15
+      - delay: "00:00:02"
+      - action: camera.snapshot
+        target:
+          entity_id: camera.counter_display
+        data:
+          filename: /config/www/counter_display/last_motion.jpg
+      - action: persistent_notification.create
+        data:
+          title: Movement at the counter
+          message: >-
+            The counter display saw someone at {{ now().strftime('%H:%M') }} while nobody was home.
+
+            ![snapshot](/local/counter_display/last_motion.jpg?{{ now().timestamp() | int }})
+      # For a phone notification, add your mobile app notifier, for example:
+      # - action: notify.mobile_app_your_phone
+      #   data:
+      #     message: Movement at the counter
+      #     data:
+      #       image: /local/counter_display/last_motion.jpg
+      - delay: "00:01:00"   # at most one snapshot a minute
