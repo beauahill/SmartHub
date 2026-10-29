@@ -12,8 +12,10 @@ chin wakes the screen when someone walks up.
 | --- | --- |
 | ![Rear, current design](enclosure/renders/current_rear.png) | ![USB-C power port](enclosure/renders/current_power.png) |
 
-The `current_*` renders show the current STLs, with the linen base and with the fabric-free grille shell. The bezel has 28 mm corners, a 4 mm front round-over,
-a 6 mm back round-over and a chamfered screen window.
+The `current_*` renders show the current STLs, with the linen base and with the fabric-free grille
+shell. The bezel is frameless: the tablet's own black glass border shows, and a 6.8 mm printed rim
+wraps its edge with a 1.2 mm lip that overlaps the glass by 1.5 mm. The chin below the screen holds
+the radar.
 
 The original Cowork renders show the first version and are kept for reference:
 
@@ -31,7 +33,7 @@ The full parts list is in [BOM.md](BOM.md).
   wake, dim, blank and navigate the display.
 - **Presence.** An ESP32-C3 SuperMini reads an HLK-LD2410C radar and reports presence to Home
   Assistant over ESPHome. Automations wake the screen, fall back to a dim clock, then turn it off.
-- **Sound.** The tablet's USB-C port goes through a right-angle adapter into a UGREEN 2-in-1 adapter.
+- **Sound.** The tablet's USB-C port goes through a flat FPC 90° adapter into a UGREEN 2-in-1 adapter.
   That adapter splits it into a 3.5 mm audio output and a USB-C charging input. A 3.5 mm cable runs
   to the AUX input of a Dayton Audio KABD-430 DSP amplifier in the bezel tray. The amp drives two Dayton ND65
   full-range drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105
@@ -73,19 +75,24 @@ already oriented for printing.
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
 | `grille_ring` | 299 x 149 x 112 | Linen version. Linen wraps around it. Slides on from below, held by magnets |
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints top edge down |
-| `bezel_front` | 284 x 203 x 10 | Prints face down. Holds the tablet and the radar |
-| `bezel_tray` | 284 x 203 x 30 | Prints back wall down. Holds the amp, power modules and audio adapter |
+| `bezel_shell` | 272 x 176 x 36 | Prints back wall down, front rim on top. Rim, tablet pocket and tray in one piece |
+| `bezel_chin` | 272 x 21 x 36 | Prints back wall down. Holds the radar and closes the bottom of the shell |
 | `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
-Use PETG or ASA for the bezel tray, because it sits behind a charging tablet and an amplifier.
-Do not use carbon-fiber or metal-filled filament for the bezel front: the radar looks through its
-2.4 mm lip.
+Use PETG or ASA for the bezel shell, because it sits behind a charging tablet and an amplifier.
+Do not use carbon-fiber or metal-filled filament for the chin: the radar looks through 1.6 mm of it.
 
-**Before printing the tray, measure your KABD-430's height.** Dayton's user guide gives 20 mm and
-retail listings give 23 mm, so the script assumes 23 mm. The tray depth follows `AMP_H`. A shorter
-board gives a shallower tray, down to the original 26 mm.
+**Frameless bezel.** The front rim and the tray are one part, so there is no seam on the front.
+The tablet slides up into the shell from below, then the chin closes the bottom with three M3
+screws from underneath. Because the tablet blocks the inside of the tray, the bezel bolts to the
+spine from the spine's rear, through four counterbored holes, into inserts in the tray's back wall.
+The pocket is square below the tablet's center, so its rounded corners slide in; the lip hides the
+gaps. A slide-in check with a tablet and plug model shows no interference along the whole path.
+
+The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm from the bottom of
+the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
 
 **USB-C power plate.** The PD trigger mounts on a sled molded onto the back of the plate, using its
 own four mounting holes. The board geometry comes from Adafruit's published PCB files. The socket
@@ -111,17 +118,17 @@ the top side for the solder tabs, so mount the ND65s with their tabs up. Each re
 drawing, so its recesses have 1 mm of extra clearance.
 
 **The bezel has raised labels for every component.** On the inside of the tray's back wall, each
-cradle is labeled with its board, the amp standoffs say `KABD-430 AMP`, and `USB-C 90°` marks the
-spot for the right-angle adapter. `LD2410C` sits beside the radar pocket on the back of the chin.
+cradle is labeled with its board, the amp standoffs say `KABD-430 AMP`, and `USB-C FPC` marks the
+spot for the flat USB-C adapter. `LD2410C` sits beside the radar pocket on the back of the chin.
 The labels stand 0.6 mm proud and face up in both print orientations. Change them in `CRADLES`, or
 turn them off with `LABELS = False`. The script draws them with the DejaVu Sans font bundled with
 matplotlib, so the STLs come out the same on every machine.
 
-**Bezel styling is parametric.** `BEZEL_R` sets the corner radius, and `BEZEL_FRONT_FILLET` and
-`BEZEL_BACK_FILLET` set the edge round-overs. `WINDOW_CHAMFER` sets the screen window chamfer. On
-the edge that sits on the print bed, each round-over turns into a 45° chamfer for its last part, so
-it prints cleanly face down. The tray's inner shell follows the outer curve, so its wall stays
-2.4 mm all the way round.
+**Bezel styling is parametric.** `FRAME_SIDE` and `FRAME` set the rim width, `LIP` and
+`LIP_OVERLAP` the lip, and `BEZEL_FRONT_FILLET` and `BEZEL_BACK_FILLET` the edge round-overs. The
+corner radius follows the rim, so it stays even around the tablet's corners. The back round-over
+turns into a 45° chamfer where it meets the print bed. The tray's inner shell follows the outer
+curve, so its wall stays 2.4 mm all the way round.
 
 To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenerate:
 
@@ -135,8 +142,9 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
 
 ### 2. Assemble
 
-1. Press the M3 heat-set inserts into the bezel front (8), the spine's tray bolt holes (4) and the
-   power plate pocket on the spine's rear face (2).
+1. Press the M3 heat-set inserts into the bezel shell: three from below into the chin bosses, and
+   four from the back into the spine-bolt bosses. Press two more into the power plate pocket on
+   the spine's rear face.
 2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
    or shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
    ring magnets sit flush.
@@ -151,15 +159,21 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
    then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
    the charger and check for 20 V at the leads.
-7. Bolt the tray to the spine and mount the amp on its standoffs. Stick the PD module, UGREEN adapter,
-   5 V buck and ESP32-C3 into their cradles with VHB tape. Fit the radar in the chin pocket.
-8. Connect the audio: right-angle adapter into the tablet, UGREEN adapter into that, PD module into the
+7. With the bezel shell off the stand and face down, mount the amp on its standoffs. Stick the PD module,
+   UGREEN adapter, 5 V buck and ESP32-C3 into their cradles with VHB tape. Feed the speaker and power
+   leads out through the cable hole in the back wall.
+8. Plug the flat FPC 90° adapter into the tablet. Connect the UGREEN adapter to it, the PD module to the
    UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
-9. Put foam on the six tablet back-stop posts, drop in the tablet, and screw the front bezel on with M3 x 25 screws.
+9. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
+   glass toward the lip, with the FPC plug riding in the channel on the right.
+10. Fit the radar into the chin, run its wires up to the ESP32-C3, and screw the chin on from below
+    with three M3 x 12 screws.
+11. Thread the leads down the spine's cable channel, then bolt the bezel to the spine from the spine's
+    rear with four M3 x 16 bolts.
 
-The right-angle adapter has to turn the plug back into the tray within 10 mm of the tablet edge.
-If yours is bigger, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
+The flat FPC adapter has to fit within 4 mm of the tablet's edge (`USB_CLEAR`). If yours sticks out
+further, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
 
 If you hear hum or charging noise through the speakers, add a 3.5 mm ground loop isolator in the
 audio cable. The tablet charger and the amp share one supply, which can create a ground loop.
@@ -347,7 +361,7 @@ These items came out of reviewing the Cowork export.
 | Item | Status |
 | --- | --- |
 | Magnet pockets too shallow for one 3 mm magnet each side | Fixed. Pockets now fit a 6 x 2 mm tub magnet and a 6 x 1 mm ring magnet |
-| No room for a USB-C plug past the tablet edge | Fixed. Side borders are 13 mm, leaving 10 mm for a right-angle adapter |
+| No room for a USB-C plug past the tablet edge | Fixed. A flat FPC 90° adapter in a 4 mm channel beside the tablet |
 | No mounts for the small boards in the tray | Fixed. Cradles for the PD module, UGREEN adapter, 5 V buck and ESP32-C3 |
 | No pilot holes for the driver screws | Fixed. Blind pilots on Dayton's published bolt circles: 66 mm for the ND65, 108.5 mm for the ND105 pair |
 | Woofer and passive radiator surrounds stood 3 to 4 mm proud of the fabric | Fixed. Every driver sits in a recess shaped to its frame, with excursion clearance to the covering |
@@ -356,5 +370,6 @@ These items came out of reviewing the Cowork export.
 | Four non-manifold edges in `base_tub` | Fixed. Two brace columns now overlap the side walls instead of touching them |
 | Needs a 300 mm print bed | Not changed. The tablet is 257 mm wide, so a smaller bed would need a split bezel |
 | Setup script printed the wrong Home Assistant secret names | Fixed |
-| KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth now follows the amp height, 30 mm for a 23 mm board |
+| KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth follows the amp height: 27 mm for the 20 mm board on Dayton's spec sheet |
+| Wide printed frame covered the tablet's glass, light sensor and camera | Changed to a frameless bezel: a thin rim, the tablet glass showing, and a one-piece shell plus chin |
 | 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |

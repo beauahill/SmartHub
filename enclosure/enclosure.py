@@ -8,8 +8,9 @@ Parts exported (world position as <name>.stl, print orientation as print_<name>.
                  spine that joins it to the bezel tray and carries the cable channel
   grille_ring    ring frame that the linen wraps around, slides on from below, magnets to the tub
   grille_shell   fabric-free alternative to grille_ring + linen: printed honeycomb grille, same fit
-  bezel_front    tablet frame, front lip + pocket
-  bezel_tray     back housing for the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
+  bezel_shell    frameless bezel: thin rim around the tablet glass and the tray behind it, one piece.
+                 Holds the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
+  bezel_chin     chin below the tablet with the mmWave radar; closes the bottom of the shell
   power_plate    flush USB-C power plate with a sled for the PD trigger board, screws into the spine
   _render_fabric linen skin, for renders only
   _render_tablet tablet placeholder, for renders only
@@ -87,20 +88,22 @@ PILOT_DEPTH = 6.0                      # leaves 1 mm before the chamber
 # Tablet (Galaxy Tab A9+ : 257.1 x 168.7 x 6.9)
 TAB_W, TAB_H, TAB_T, TAB_R = 257.1, 168.7, 6.9, 10.0
 TAB_CLR = 0.4
-WIN_W, WIN_H, WIN_R = 238.0, 149.5, 3.0     # visible window (11" 16:10 active area is ~237 x 148)
-FRAME = 12.0                                 # bezel border width above and below the pocket
-FRAME_SIDE = 13.0                            # bezel border width left and right of the pocket
-USB_CLEAR = 10.0                             # room past the tablet's USB-C edge for a right-angle adapter
-CHIN = 9.0                                   # extra bottom border for the mmWave sensor (chin = FRAME + CHIN = 21)
+# Frameless front: the tablet's own black glass border shows; a thin printed lip overlaps its edge.
+LIP_OVERLAP = 1.5                            # how far the lip covers the tablet glass, per side
+FRAME = 6.8                                  # rim width above the tablet (and part of the chin)
+FRAME_SIDE = 6.8                             # rim width left and right of the tablet
+USB_CLEAR = 4.0                              # room past the tablet's USB-C edge for a flat FPC 90 deg adapter
+CHIN = 14.2                                  # extra bottom border for the mmWave sensor (chin = FRAME + CHIN = 21)
 RADAR_W, RADAR_H = 23.0, 17.0                # pocket for HLK-LD2410C (22 x 16 mm board)
-LIP = 2.4
-USB_NOTCH_H = 22.0                           # height of the USB-C notch, centered on the tablet
-POCKET_D = TAB_T + 0.4
+LIP = 1.2                                    # lip in front of the glass
+RADAR_LIP = 1.6                              # plastic in front of the radar
+USB_NOTCH_H = 22.0                           # height of the USB-C clearance around the port
+POCKET_D = TAB_T + 0.8                       # room for 0.5 mm felt pads on the back-stop posts
 TRAY_WALL = 2.4
 # Amplifier: Dayton Audio KABD-430. Board 91.4 x 68.6 mm, M3 holes on 83.8 x 61.0 mm.
 # Height: the user guide says 20 mm, retail listings say 0.9 in (23 mm). Measure yours and set AMP_H.
 AMP_HOLES = (83.8, 61.0)                     # hole spacing, x by z
-AMP_H = 23.0                                 # tallest part above the PCB bottom, including the PCB
+AMP_H = 20.0                                 # tallest part above the PCB bottom (Dayton spec sheet: 20 mm)
 AMP_STANDOFF = 3.5                           # PCB bottom above the tray back wall
 AMP_CLEAR = 1.0                              # gap between the tallest part and the tablet back
 # Tray depth follows the amp: wall + standoff + amp + clearance, never less than the original 26 mm.
@@ -122,15 +125,19 @@ LABEL_SIZE = 5.5                             # font size in mm; capitals come ou
 LABEL_RAISE = 0.6                            # height above the surface
 LABEL_GAP = 1.5                              # space between a cradle wall and its label
 LABEL_FONT = "DejaVu Sans"                   # bundled with matplotlib, so every machine gets the same STL
-CAMERA_HOLE = True
 USB_SIDE = +1                                # +1 = tablet USB-C at right end, -1 = left
 TILT = 15.0                                  # screen tilt back, degrees
 # Bezel styling. Rounded edges are drawn as a quarter circle that turns into a 45 deg chamfer on the
 # edge that sits on the print bed, so they print without sagging.
-BEZEL_R = 28.0                               # corner radius in plan (was TAB_R + FRAME = 19)
-BEZEL_FRONT_FILLET = 4.0                     # round-over on the front edge
+BEZEL_R = TAB_R + TAB_CLR + FRAME_SIDE       # corner radius in plan: an even rim around the tablet corners
+BEZEL_FRONT_FILLET = 3.0                     # round-over on the front edge
 BEZEL_BACK_FILLET = 6.0                      # round-over on the tray's back edge
-WINDOW_CHAMFER = 1.0                         # 45 deg chamfer around the screen window
+WINDOW_CHAMFER = 0.5                         # 45 deg chamfer on the lip's inner edge
+# Chin cap: 3 screws from underneath into inserts in the shell. x positions sit between the vents.
+CHIN_SCREW_X = (-98.0, 0.0, 98.0)
+# Bezel to spine: M3 bolts from the back of the spine into inserts in the tray's back wall.
+SPINE_PTS = [(-18, 45), (18, 45), (-18, 80), (18, 80)]    # (x, height up the tray back)
+SPINE_GRIP = 12.0                            # spine material under the bolt heads -> M3 x 16 bolts
 BEZ_Y0 = 14.0                                # bezel bottom-front edge Y
 BEZ_GAP = 4.0                                # air gap between lid and lowest bezel corner
 
@@ -408,7 +415,7 @@ shell = shell - union(holes)
 # local: x = X, y = a (depth, 0 at front face, + backward), z = h (up the face, 0 at bottom edge)
 PW, PH = TAB_W + 2 * TAB_CLR, TAB_H + 2 * TAB_CLR
 EW, EH = PW + 2 * FRAME_SIDE, PH + 2 * FRAME + CHIN
-assert USB_CLEAR <= FRAME_SIDE - TRAY_WALL - 0.4, "USB_CLEAR needs a wider FRAME_SIDE"
+assert USB_CLEAR <= FRAME_SIDE - TRAY_WALL - 0.4 + 1e-6, "USB_CLEAR needs a wider FRAME_SIDE"
 ER = BEZEL_R
 T_FRONT = LIP + POCKET_D
 T = T_FRONT + TRAY_D
@@ -445,60 +452,48 @@ def lcyl_a(x, z, a0, a1, d):
 def lbox(x0, x1, a0, a1, z0, z1):
     return box(x0, x1, a0, a1, z0, z1)
 
-# --- bezel front
-bf = rounded_slab(EW, EH, ER, 0, T_FRONT, f0=BEZEL_FRONT_FILLET, bed="a0")     # prints face down
-c = WINDOW_CHAMFER                                                                      # window, 45 deg chamfer
-bf = bf - M.batch_hull([rr_xz(WIN_W + 2*c, WIN_H + 2*c, WIN_R + c, -1, 0.0, cz=TAB_CZ),
-                        rr_xz(WIN_W, WIN_H, WIN_R, c, LIP + 0.01, cz=TAB_CZ)])
-bf = bf - rr_xz(PW, PH, TAB_R + TAB_CLR, LIP, T_FRONT + 1, cz=TAB_CZ)                   # pocket
-if CAMERA_HOLE:
-    bf = bf - lcyl_a(0, TAB_CZ + PH / 2 - 5.5, -1, LIP + 1, 5.0)
-# mic slots through the top of the frame into the pocket
-for x in (-60, -20, 20, 60):
-    bf = bf - lbox(x - 6, x + 6, LIP + 2.6, LIP + 5.6, TAB_CZ + PH / 2 - 1, EH + 1)   # starts behind the front round-over
-# USB-C notch at the port end. A right-angle adapter turns the plug back into the tray.
-ux0, ux1 = sorted((USB_SIDE * PW/2 - USB_SIDE * 1, USB_SIDE * (PW/2 + USB_CLEAR)))
-bf = bf - lbox(ux0, ux1, LIP + 0.2, T_FRONT + 1, TAB_CZ - USB_NOTCH_H / 2, TAB_CZ + USB_NOTCH_H / 2)
-# mmWave radar pocket in the chin, open to the tray; the radar looks out through the 2.4 mm lip
-RADAR_Z = (FRAME + CHIN) / 2
-bf = bf - lbox(-RADAR_W / 2, RADAR_W / 2, LIP, T_FRONT + 1, RADAR_Z - RADAR_H / 2, RADAR_Z + RADAR_H / 2)
-# insert holes for tray screws
-# Kept far enough from the rounded back edge that the head counterbores don't break through it,
-# and at least 2 mm of wall between each insert and the tablet pocket.
-SCREWS = [(-(EW/2 - 8.5), 32), (EW/2 - 8.5, 32), (-(EW/2 - 8.5), EH - 32), (EW/2 - 8.5, EH - 32),
-          (-70, (FRAME + CHIN) / 2), (70, (FRAME + CHIN) / 2), (-70, EH - 8.0), (70, EH - 8.0)]
-for (x, z) in SCREWS:
-    bf = bf - lcyl_a(x, z, T_FRONT - INSERT_DEPTH, T_FRONT + 1, M3_INSERT)
-# radar label on the back of the chin, beside its pocket (read from the tray side)
-if LABELS:
-    bf = bf + bezel_label("LD2410C", RADAR_W / 2 + 18.0, RADAR_Z, T_FRONT, +1)
-
-# --- bezel tray
-tray_outer = rounded_slab(EW, EH, ER, T_FRONT, T, f1=BEZEL_BACK_FILLET, bed="a1")  # prints back down
-# inner shell: the outer shape offset in by TRAY_WALL, with a concentric fillet, so the wall stays even
-tray_inner = rounded_slab(EW - 2*TRAY_WALL, EH - 2*TRAY_WALL, ER - TRAY_WALL, T_FRONT - 1, T - TRAY_WALL,
+# --- bezel body: front rim, tablet pocket and tray in one piece, later split at the top of the chin
+CHIN_TOP = FRAME + CHIN                      # pocket bottom; the shell / chin split
+WIN_W, WIN_H = PW - 2 * LIP_OVERLAP, PH - 2 * LIP_OVERLAP
+WIN_R = TAB_R + TAB_CLR - LIP_OVERLAP
+assert FRAME_SIDE >= USB_CLEAR + TRAY_WALL + 0.4 - 1e-6, "FRAME_SIDE too thin for USB_CLEAR"
+# Prints back down: the front edge is on top, so it gets a full round-over; the back edge is on the bed.
+body_outer = rounded_slab(EW, EH, ER, 0, T, f0=BEZEL_FRONT_FILLET, f1=BEZEL_BACK_FILLET, bed="a1")
+tray_outer = body_outer
+tray_inner = rounded_slab(EW - 2*TRAY_WALL, EH - 2*TRAY_WALL, ER - TRAY_WALL, T_FRONT, T - TRAY_WALL,
                           f1=BEZEL_BACK_FILLET - TRAY_WALL)
-tr = tray_outer - tray_inner
-# screw bosses through the tray depth
-CBORE = 5.0 + (TRAY_D - 26.0)   # counterbore grows with the tray, so M3x25 keeps ~4 mm insert engagement
-for (x, z) in SCREWS:
-    tr = tr + (lcyl_a(x, z, T_FRONT, T - 0.01, 9.0) ^ tray_outer)   # 9 mm: 1.4 mm wall around the 6.2 mm counterbore
-for (x, z) in SCREWS:
-    tr = tr - lcyl_a(x, z, T_FRONT - 1, T + 1, M3_CLR) - lcyl_a(x, z, T - CBORE, T + 1, 6.2)
-# tablet back-stop posts (put 1.5 mm foam on the tips)
+c = WINDOW_CHAMFER
+window = M.batch_hull([rr_xz(WIN_W + 2*c, WIN_H + 2*c, WIN_R + c, -1, 0.0, cz=TAB_CZ),
+                       rr_xz(WIN_W, WIN_H, WIN_R, c, LIP + 0.01, cz=TAB_CZ)])
+pocket = rr_xz(PW, PH, TAB_R + TAB_CLR, LIP, T_FRONT + 0.01, cz=TAB_CZ)
+# Square below the tablet's center, so its corners slide past on the way in; the lip hides the gaps.
+# Cut from the shell only, after the split, so the chin's top stays flat at CHIN_TOP.
+pocket_ext = lbox(-PW / 2 - 0.01, PW / 2 + 0.01, LIP, T_FRONT + 0.01, CHIN_TOP - 1, TAB_CZ)
+tr = body_outer - window - pocket - tray_inner
+# mic slots through the top rim into the pocket
+for x in (-60, -20, 20, 60):
+    tr = tr - lbox(x - 6, x + 6, LIP + 2.6, LIP + 5.6, TAB_CZ + PH / 2 - 1, EH + 1)   # behind the front round-over
+# USB-C: room for a flat FPC 90 deg plug beside the port. It runs down to the bottom of the pocket,
+# because the tablet slides in from below with the plug already in.
+ux0, ux1 = sorted((USB_SIDE * PW/2 - USB_SIDE * 1, USB_SIDE * (PW/2 + USB_CLEAR)))
+usb_channel = lbox(ux0, ux1, LIP + 0.2, T_FRONT + 1, CHIN_TOP - 1, TAB_CZ + USB_NOTCH_H / 2)   # cut after the split
+# mmWave radar pocket in the chin, open to the tray; the radar looks out through RADAR_LIP of plastic
+RADAR_Z = CHIN_TOP / 2
+tr = tr - lbox(-RADAR_W / 2, RADAR_W / 2, RADAR_LIP, T_FRONT + 1, RADAR_Z - RADAR_H / 2, RADAR_Z + RADAR_H / 2)
+if LABELS:   # on the back of the chin, beside the radar pocket (read from the tray side)
+    tr = tr + bezel_label("LD2410C", RADAR_W / 2 + 18.0, RADAR_Z, T_FRONT, +1)
+BACK_IN = T - TRAY_WALL
+# tablet back-stop posts (0.5 mm felt on the tips, so the tablet slides in)
 for x in (-115, 0, 115):
     for z in (40, EH - 40):
         tr = tr + lcyl_a(x, z, T_FRONT, T - 0.01, 8.0)
-# KABD-430 standoffs, 2.6 mm pilots for M3 thread-forming screws
+# KABD-430 standoffs, 2.6 mm pilots for M3 thread-forming screws (the board's holes are 3.6 mm)
 JX, JZ = -70.0, HC
 for dx in (-AMP_HOLES[0] / 2, AMP_HOLES[0] / 2):
     for dz in (-AMP_HOLES[1] / 2, AMP_HOLES[1] / 2):
         tr = tr + lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF, T - 0.01, 7.0)
         tr = tr - lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF - 1, T - 1.0, 2.6)
-# USB notch continuation
-tr = tr - lbox(ux0, ux1, T_FRONT - 1, T_FRONT + 3, TAB_CZ - USB_NOTCH_H / 2, TAB_CZ + USB_NOTCH_H / 2)
 # cradles for the small boards, standing off the inside of the back wall
-BACK_IN = T - TRAY_WALL
 for (_, cx, cz, w, h, label, side) in CRADLES:
     iw, ih = w + 2 * CRADLE_CLR, h + 2 * CRADLE_CLR
     ring = lbox(cx - iw/2 - CRADLE_WALL, cx + iw/2 + CRADLE_WALL, BACK_IN - CRADLE_H, BACK_IN + 0.01,
@@ -512,24 +507,38 @@ for (_, cx, cz, w, h, label, side) in CRADLES:
         off = ih / 2 + CRADLE_WALL + LABEL_GAP + LABEL_SIZE * 0.4
         tr = tr + bezel_label(label, cx, cz + (off if side == "above" else -off), BACK_IN, -1)
 if LABELS:
-    # amp: above the board; right-angle USB-C adapter: beside the notch, reading upward
     tr = tr + bezel_label("KABD-430 AMP", JX, JZ + 34.3 + LABEL_GAP + 3.5 + LABEL_SIZE * 0.4, BACK_IN, -1)
-    tr = tr + bezel_label("USB-C 90°", USB_SIDE * (PW / 2 - 4.0), TAB_CZ, BACK_IN, -1, angle=90 * USB_SIDE)
-# vents in the back wall
+    tr = tr + bezel_label("USB-C FPC", USB_SIDE * (PW / 2 - 4.0), TAB_CZ, BACK_IN, -1, angle=90 * USB_SIDE)
+# bosses for the spine bolts: inserts pressed in from the back face, bolts come from the spine's rear
+for (x, z) in SPINE_PTS:
+    tr = tr + lcyl_a(x, z, BACK_IN - 7.0, T - 0.01, 8.0)
+    tr = tr - lcyl_a(x, z, T - INSERT_DEPTH, T + 1, M3_INSERT)
+# chin screw bosses: vertical columns against the back wall, split with the body below
+CHIN_BOSS_A = BACK_IN - 6.5                  # boss center depth: keeps the counterbore clear of the back round-over
+for x in CHIN_SCREW_X:
+    boss = cyl_z(x, CHIN_BOSS_A, TRAY_WALL - 0.5, CHIN_TOP + 12.0, 9.0) + \
+           lbox(x - 2.5, x + 2.5, CHIN_BOSS_A, BACK_IN + 0.5, TRAY_WALL - 0.5, CHIN_TOP + 12.0)   # rib to the back wall
+    tr = tr + (boss ^ body_outer)                                                             # sunk into the floor
+# vents in the back wall, kept clear of the chin bosses
 for i in range(9):
     x = -112 + i * 28
     if abs(x) < 40:
         continue
-    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, 12, 34)
+    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, CHIN_TOP + 3, CHIN_TOP + 13)
 for i in range(16):
     x = -112 + i * 15
-    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, EH - 37, EH - 15)   # ends clear of the top screw counterbores
-# spine bolts (heads inside tray, inserts in spine)
-SPINE_PTS = [(-18, 25), (18, 25), (-18, 85), (18, 85)]
-for (x, z) in SPINE_PTS:
-    tr = tr - lcyl_a(x, z, T - TRAY_WALL - 1, T + 1, M3_CLR)
+    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, EH - 37, EH - 15)
 CH_H = 60.0                                     # cable channel enters tray here
 tr = tr - lcyl_a(0, CH_H, T - TRAY_WALL - 1, T + 1, 13)
+# split: shell above the top of the chin, chin cap below it
+above = box(-EW, EW, -10, T + 10, CHIN_TOP, EH + 10)
+below = box(-EW, EW, -10, T + 10, -10, CHIN_TOP)
+chin = tr ^ below
+tr = (tr ^ above) - pocket_ext - usb_channel
+for x in CHIN_SCREW_X:
+    tr = tr - cyl_z(x, CHIN_BOSS_A, CHIN_TOP - 1, CHIN_TOP + INSERT_DEPTH, M3_INSERT)          # insert from below
+    chin = chin - cyl_z(x, CHIN_BOSS_A, -1, CHIN_TOP + 1, M3_CLR)
+    chin = chin - cyl_z(x, CHIN_BOSS_A, -1, CHIN_TOP - 6.0, 6.2)                              # head counterbore
 
 # --- place bezel in world
 st, ct = math.sin(math.radians(TILT)), math.cos(math.radians(TILT))
@@ -538,7 +547,7 @@ def place(part):
     return part.rotate([-TILT, 0, 0]).translate([0, BEZ_Y0, Z0])
 def to_world(x, a, h):
     return np.array([x, BEZ_Y0 + a * ct + h * st, Z0 - a * st + h * ct])
-bezel_front_w, bezel_tray_w = place(bf), place(tr)
+bezel_shell_w, bezel_chin_w = place(tr), place(chin)
 
 # ======================= SPINE =======================
 bp0 = to_world(0, T, 0)              # bottom of tray back face
@@ -551,11 +560,9 @@ prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + REAR_FA
 SW = 60.0
 spine = prof.extrude(SW).rotate([90, 0, 90]).translate([-SW/2, 0, 0])   # profile (Y,Z) extruded along X
 spine = spine.translate([0, 0, -0.5])     # sink 0.5 mm into the lid so they fuse
-# inserts for tray bolts, drilled along the bezel normal
+# bolt holes for the bezel, drilled along the bezel normal from the spine's rear, with head counterbores
 for (x, h) in SPINE_PTS:
-    p = to_world(x, T, h)
-    c = M.cylinder(INSERT_DEPTH + 1, M3_INSERT/2, M3_INSERT/2, SEG).rotate([-90, 0, 0]).rotate([-TILT, 0, 0])
-    spine = spine - c.translate((to_world(x, T - 1, h)).tolist())
+    spine = spine - place(lcyl_a(x, h, T - 0.5, T + 120, M3_CLR)) - place(lcyl_a(x, h, T + SPINE_GRIP, T + 160, 6.4))
 # cable channel: hull of two spheres, lid hole -> tray
 p_low = np.array([0, WIRE_HOLE[1], TOPZ - 2])
 p_high = to_world(0, T - 6, CH_H)
@@ -628,16 +635,19 @@ def export(man, name):
 
 parts_world = {
     "base_tub": tub, "lid_spine": lid_spine, "grille_ring": gf, "grille_shell": shell,
-    "bezel_front": bezel_front_w, "bezel_tray": bezel_tray_w, "power_plate": pwr_plate_w,
+    "bezel_shell": bezel_shell_w, "bezel_chin": bezel_chin_w, "power_plate": pwr_plate_w,
 }
 meshes = {k: export(v, k) for k, v in parts_world.items()}
 export(fabric, "_render_fabric")
 # tablet placeholder for renders: glass face at the back of the lip
 tablet = place(rr_xz(TAB_W, TAB_H, TAB_R, LIP + 0.05, LIP + TAB_T, cz=TAB_CZ))
 export(tablet, "_render_tablet")
+# lit screen area for renders: the 11 in 16:10 active area, centered on the glass
+screen = place(rr_xz(236.9, 148.1, 1.0, LIP + 0.0, LIP + 0.06, cz=TAB_CZ))
+export(screen, "_render_screen")
 # print-ready orientations
-export(bf.rotate([90, 0, 0]), "print_bezel_front")          # face down
-export(tr.rotate([-90, 0, 0]), "print_bezel_tray")             # back wall down
+export(tr.rotate([-90, 0, 0]), "print_bezel_shell")            # back wall down, front rim on top
+export(chin.rotate([-90, 0, 0]), "print_bezel_chin")           # back wall down
 export(gf.rotate([180, 0, 0]), "print_grille_ring")          # top edge down
 export(shell.rotate([180, 0, 0]), "print_grille_shell")       # top edge down
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")

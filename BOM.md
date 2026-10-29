@@ -9,7 +9,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
 | E1 | 1 | Samsung Galaxy Tab A9+ (11", SM-X210 / X216) | 257.1 x 168.7 x 6.9 mm. Bezel pocket is sized to this | `TAB_*` parameters |
-| E2 | 1 | Dayton Audio KABD-430 amplifier board (325-430) | 4 x 30 W from two TPA3118, ADAU1701 DSP, Bluetooth 5.0 aptX HD, 10 to 26 V (24 V typical). Board 91.4 x 68.6 mm, 3.5 mm holes on 83.8 x 61.0 mm. Height 20 mm per the user guide, 23 mm per listings. Fed from its AUX input (J13). Run it in 2.1 mode | `AMP_*` parameters, tray standoffs |
+| E2 | 1 | Dayton Audio KABD-430 amplifier board (325-430) | 4 x 30 W from two TPA3118, ADAU1701 DSP, Bluetooth 5.0 aptX HD, 10 to 26 V (24 V typical). Board 91.4 x 68.6 mm, 3.5 mm holes on 83.8 x 61.0 mm. Height 20 mm from the bottom of the PCB, per Dayton's spec sheet. Fed from its AUX input (J13). Run it in 2.1 mode | `AMP_*` parameters, tray standoffs |
 | E3 | 1 | ESP32-C3 SuperMini | 22.5 x 18 mm. Runs `esphome/counter-presence.yaml` | `esp32_c3` cradle |
 | E4 | 1 | HLK-LD2410C 24 GHz mmWave radar | 22 x 16 mm. Solder wires directly to the pads, no headers | 23 x 17 mm chin pocket |
 | E5 | 1 | 5 V buck module, MP1584EN | 22 x 17 mm. 20 V in, 5 V out, feeds the ESP32-C3 5V pin and the radar | `buck_5v` cradle |
@@ -18,13 +18,13 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | E8a | 1 | USB-C to USB-C cable, 3 A (60 W) or 5 A (100 W) | Long enough to reach the outlet | |
 | E9 | 1 | Adafruit USB Type C Power Delivery Dummy, I2C or Switchable, HUSB238 (product 5991) | 20.32 x 27.81 mm, four 2.5 mm holes, DIP switch set to 20 V, screw terminal output, up to 5 A | `TRIG_*` parameters, `power_plate` sled |
 | E9a | 4 | M2.5 x 6 thread-forming screws | PD trigger to the power plate sled | `TRIG_PILOT` |
-| E10 | 1 | Dayton Audio ICP1 or KPX programmer, optional | Only needed to change the KABD-430 DSP program in SigmaStudio, which runs on Windows: crossover, high-pass, limiter, Bluetooth input | J5 programming port |
+| E10 | 1 | Dayton Audio KPX (or ICP1) in-circuit programmer, USB | Bench tool, not mounted in the enclosure. It plugs into the KABD-430's 6-pin J5 port only while SigmaStudio loads a DSP program, which the amp keeps after unplugging. J5 is reachable through the open front of the shell before the tablet goes in | J5 programming port |
 
 ## 2. Audio path
 
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
-| A1 | 1 | Right-angle USB-C adapter, male to female, 90° | Plugs into the tablet and turns back into the tray. Must fit within 10 mm of the tablet edge, and carry audio and PD | `USB_CLEAR` notch |
+| A1 | 1 | Flat FPC USB-C extension, male to female, 90°, 5 to 10 cm | Ultra-thin ribbon type. The plug must stick out no more than 4 mm past the tablet's edge. Needs USB 2.0 data (for audio) and 3 A | `USB_CLEAR` channel |
 | A2 | 1 | UGREEN 2-in-1 USB-C to 3.5 mm audio adapter with PD charging | Splits the tablet port into a 3.5 mm output and a USB-C charging input. The cradle is set to a 45 x 30 mm body; change it to fit yours | `audio_adapter` cradle |
 | A3 | 1 | Dayton KABD functional cable kit, plus a short 3.5 mm stereo cable | The kit's 3.5 mm aux-in jack plugs into J13. The cable runs from the UGREEN audio jack to that jack | |
 | A4 | 1 | 3.5 mm ground loop isolator, optional | Only if the speakers hum or pick up charging noise | |
@@ -50,16 +50,16 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
-| H1 | 14 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 8 in the bezel front, 4 for the tray bolts in the spine, 2 for the power plate | `M3_INSERT`, `INSERT_DEPTH` |
-| H2 | 8 | M3 x 25 socket head cap screws | Tray to bezel front. The counterbores deepen with the tray, so M3 x 25 always gives about 4 mm insert engagement | `SCREWS` |
-| H3 | 4 | M3 x 8 socket or button head screws | Tray to spine. Heads inside the tray | `SPINE_PTS` |
+| H1 | 9 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 3 in the shell's chin bosses, 4 in the shell's spine-bolt bosses, 2 in the power plate pocket | `M3_INSERT`, `INSERT_DEPTH` |
+| H2 | 3 | M3 x 12 socket head cap screws | Chin to shell, from underneath | `CHIN_SCREW_X` |
+| H3 | 4 | M3 x 16 socket head cap screws | Bezel to spine, from the spine's rear. The lower pair sits in deep counterbores, so use a long 2.5 mm hex key | `SPINE_PTS`, `SPINE_GRIP` |
 | H3a | 2 | M3 x 8 countersunk (flat head) screws | Power plate to spine, flush with the plate | `PWR_SCREW_X` |
 | H4 | 4 | M3 x 6 thread-forming screws | KABD-430 into its 2.6 mm standoff pilots, which are about 4.9 mm deep. Longer screws bottom out | Amp standoffs |
 | H5 | 6 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm | `BOSSES` |
 | H6 | 12 | Neodymium disc magnets, 6 x 2 mm, N52 | One per tub pocket. Sits 0.2 mm below the surface | `MAG_T_TUB` |
 | H7 | 12 | Neodymium disc magnets, 6 x 1 mm, N52 | One per grille ring or grille shell pocket, flush. Opposite polarity to H6 | `MAG_T_FRAME` |
 | H8 | 4 | Silicone bumper feet, 10 mm diameter, about 3 mm tall | Lift the fabric edge off the counter | 10.5 mm recesses |
-| H9 | 1 sheet | Adhesive foam, 1.5 mm | Pads on the six tablet back-stop posts, 8 mm diameter | Tray posts |
+| H9 | 1 sheet | Adhesive felt, 0.5 mm | Pads on the six tablet back-stop posts, 8 mm diameter. Thin and slippery, so the tablet slides in | Tray posts |
 | H10 | 1 roll | VHB double-sided tape | Holds the PD module, UGREEN adapter, buck and ESP32-C3 in their cradles | `CRADLES` |
 
 ## 5. Wiring
@@ -77,16 +77,16 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
 | P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 910 cm³ |
-| P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 346 cm³ |
+| P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 344 cm³ |
 | P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 112 | 92 cm³ |
 | P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 214 cm³ |
-| P4 | 1 | `bezel_front.stl` | 284 x 203 x 10 | 137 cm³ |
-| P5 | 1 | `bezel_tray.stl` | 284 x 203 x 30 | 209 cm³ |
+| P4 | 1 | `bezel_shell.stl` | 272 x 176 x 36 | 190 cm³ |
+| P5 | 1 | `bezel_chin.stl` | 272 x 21 x 36 | 78 cm³ |
 | P6 | 1 | `power_plate.stl` | 44 x 26 x 33 | 4.5 cm³ |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| M1 | 2 kg | PETG, PLA or ASA filament | About 1.6 L of solid volume in total (1.75 L with the grille shell), which is 2 to 2.2 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the tray in PETG or ASA. Avoid carbon or metal-filled filament on the bezel front |
+| M1 | 2 kg | PETG, PLA or ASA filament | About 1.6 L of solid volume in total (1.75 L with the grille shell), which is 2 to 2.2 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the bezel shell in PETG or ASA. Avoid carbon or metal-filled filament on the chin, which the radar looks through |
 | M2 | 1 piece | Linen version only. Acoustically transparent linen or speaker grille cloth, about 950 x 160 mm | Wraps the grille ring. The perimeter is about 870 mm and the band is 112 mm tall |
 | M3 | 1 can | Linen version only. Spray adhesive or thin double-sided tape | Fixes the fabric to the grille ring |
 | M4 | 1 tube | Two-part epoxy | Glues the lid to the tub. The seal must be airtight |
