@@ -25,7 +25,7 @@ Parts marked "same" are identical to the Counter Display on the `main` branch.
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
 | A1 | 1 | Flat FPC USB-C extension, male to female, 90°, 5 to 10 cm | Same. Ultra-thin ribbon type, 3 A. The plug must stick out no more than 4 mm past the tablet's edge. Here it only charges | `USB_CLEAR` channel |
-| A2 | 1 | 3.5 mm stereo cable with a slim 90° 3-pole TRS plug | The plug must stick out no more than 7 mm past the tablet's edge. Not a 4-pole TRRS headset plug. Cut about 25 cm from the plug and solder to the amp | `JACK_CLEAR` channel |
+| A2 | 1 | 3.5 mm stereo cable with a slim 90° 3-pole TRS plug | The plug must stick out no more than 7 mm past the tablet's edge, and the cable must be 4 mm thick or less. Not a 4-pole TRRS headset plug. Cut about 25 cm from the plug and solder to the amp | `JACK_CLEAR` channel, `JACK_CABLE_NOTCH` |
 | A3 | 2 | 1 kΩ resistors, 1/4 W | Sum left and right into the amp's A+ input | |
 | A4 | 1 | 3.5 mm ground loop isolator, optional | Only if the speaker hums or picks up charging noise. Needs a second short 3.5 mm cable | |
 
@@ -42,8 +42,8 @@ Parts marked "same" are identical to the Counter Display on the `main` branch.
 
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
-| H1 | 9 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 3 in the shell's chin bosses, 4 in the shell's spine-bolt bosses, 2 in the power plate pocket | `M3_INSERT`, `INSERT_DEPTH` |
-| H2 | 3 | M3 x 12 socket head cap screws | Chin to shell, from underneath | `CHIN_SCREW_X` |
+| H1 | 10 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 4 in the chin bar's back face, 4 in the shell's spine-bolt bosses, 2 in the power plate pocket | `M3_INSERT`, `INSERT_DEPTH` |
+| H2 | 4 | M3 x 16 socket head cap screws | Chin bar to shell, from the back of the tray. Same size as H3 | `CHIN_SCREW_X`, `CHIN_SCREW_LEN` |
 | H3 | 4 | M3 x 16 socket head cap screws | Bezel to spine, from the spine's rear. The lower pair sits in deep counterbores, so use a long 2.5 mm hex key | `SPINE_PTS`, `SPINE_GRIP` |
 | H3a | 2 | M3 x 8 countersunk (flat head) screws | Power plate to spine, flush with the plate | `PWR_SCREW_X` |
 | H5 | 4 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm | `DOWELS` |
@@ -69,13 +69,13 @@ Parts marked "same" are identical to the Counter Display on the `main` branch.
 | P1 | 1 | `base_tub.stl` | 170 x 110 x 76 | 288 cm³ |
 | P2 | 1 | `lid_spine.stl` | 170 x 110 x 111 | 218 cm³ |
 | P3 | 1 | `grille_shell.stl` | 170 x 110 x 73 | 90 cm³ |
-| P4 | 1 | `bezel_shell.stl` | 232 x 136 x 27 | 136 cm³ |
-| P5 | 1 | `bezel_chin.stl` | 232 x 21 x 27 | 65 cm³ |
+| P4 | 1 | `bezel_shell.stl` | 232 x 157 x 27 | 168 cm³ |
+| P5 | 1 | `bezel_chin.stl` | 232 x 23 x 10 | 43 cm³ |
 | P6 | 1 | `power_plate.stl` | 44 x 26 x 33 | 4.5 cm³ |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| M1 | 1 kg | PETG, PLA or ASA filament | About 0.80 L of solid volume in total, which is about 1 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the bezel shell in PETG or ASA. Avoid carbon or metal-filled filament on the chin, which the radar looks through |
+| M1 | 1 kg | PETG, PLA or ASA filament | About 0.81 L of solid volume in total, which is about 1 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the bezel shell in PETG or ASA. Avoid carbon or metal-filled filament on the chin, which the radar looks through |
 | M4 | 1 tube | Two-part epoxy | Glues the lid to the tub. The seal must be airtight |
 
 ## 7. Tools and software

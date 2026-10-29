@@ -89,8 +89,8 @@ already oriented for printing.
 | `base_tub` | 170 x 110 x 76 | Sealed speaker box for the ND65. Prints floor down, supports only in the outside driver recess |
 | `lid_spine` | 170 x 110 x 111 | Top plate and tilted stand in one piece. Glued to the tub |
 | `grille_shell` | 170 x 110 x 73 | Prints bottom edge down, no supports. Slides on from below, held by magnets |
-| `bezel_shell` | 232 x 136 x 27 | Prints back wall down, front rim on top. Rim, tablet pocket and tray in one piece |
-| `bezel_chin` | 232 x 21 x 27 | Prints back wall down. Holds the radar and closes the bottom of the shell |
+| `bezel_shell` | 232 x 157 x 27 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
+| `bezel_chin` | 232 x 23 x 10 | Prints back face down, no supports. The chin bar: holds the radar and the lip along the bottom of the glass |
 | `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger. Same part as the Counter Display |
 
 The bezel is the widest part at 232 mm, so a 256 mm bed works, such as a Bambu Lab A1 or P1S or a
@@ -111,11 +111,34 @@ check three things on your tablet:
 
 **Frameless bezel.** It works like the Counter Display's. The front rim and tray are one part, with
 a 1.2 mm lip that overlaps the glass by 1.5 mm. The tablet slides up into the shell from below with
-both plugs already in, then the chin closes the bottom with three M3 screws. The bezel bolts to the
-spine from the spine's rear with four M3 bolts. The rim is 10 mm wide all round, because the 3.5 mm
+both plugs already in, through the slot the chin bar fills. The chin bar then goes in from the front
+and is held by four M3 screws from the back of the tray. The bar also carries the strip of lip along
+the bottom of the glass, so that strip sits on solid plastic instead of spanning 209 mm on its own.
+The bezel bolts to the spine from the spine's rear with four M3 bolts. The rim is 10 mm wide all round, because the 3.5 mm
 plug needs 7 mm of room beside the tablet (`JACK_CLEAR`). The USB-C side needs 4 mm (`USB_CLEAR`).
 The tray is 17 mm deep, set by `PARTS_H`, the tallest board on its back wall. Each board has a
 cradle with a raised label. Change the cradle sizes in `CRADLES` to the boards you buy.
+
+![Chin bar out of its slot](enclosure/renders/mini_chin.png)
+
+**Cable paths.** The flat USB-C ribbon folds straight back behind the tablet's edge into the tray.
+The 3.5 mm plug's body points down its channel. Its cable runs down to the chin bar, through a notch
+in the top of the bar at that end, and out of the bar's back face into the lower tray. A check with
+a tablet, both plugs and a 4 mm cable model shows no interference along the slide-in path, the bar's
+path in, or either cable route.
+
+**Printing the bezel without supports.** Print the shell back wall down and the chin bar back face
+down. Where the rim meets the tray, the inside tapers at 45°, so there is no flat ledge. An overhang
+check of both parts in those orientations finds only these spots past 2 mm:
+- **Microphone slot tops.** These are 12 mm bridges.
+- **Plug channel ceilings.** Hidden faces behind the rim: 4 mm on the USB-C side and 7 mm on the
+  3.5 mm side, which is wider than on the Counter Display. They may sag a little, out of sight.
+- **Bottom corners of the lip.** Two small triangles over the gaps that let the tablet's corners
+  slide in. They are attached on two sides and sit behind the glass corners.
+- **Chin bar.** The radar pocket's ceiling is a 17 mm bridge, closed on all four sides, and the cable
+  notch's roof is a 13 mm bridge.
+
+All of these print without supports. Expect at most slight sag on surfaces you don't see.
 
 **Base.** The ND65 sits in a recess shaped to its frame, 4 mm behind the inner face of the grille
 shell, with blind pilot holes on its 66 mm bolt circle and a notch on top for its solder tabs. The
@@ -166,9 +189,8 @@ through. Copy the `print_*.stl` files over the ones in `enclosure/stl/`, droppin
 
 ### 2. Assemble
 
-1. Press the M3 heat-set inserts into the bezel shell: three from below into the chin bosses, and
-   four from the back into the spine-bolt bosses. Press two more into the power plate pocket on
-   the spine's rear face.
+1. Press the M3 heat-set inserts in: four into the back face of the chin bar, four from the back
+   into the shell's spine-bolt bosses, and two into the power plate pocket on the spine's rear face.
 2. Glue a 6 x 2 mm magnet into each of the 8 tub pockets and a 6 x 1 mm magnet into each grille
    shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface
    and the shell magnets sit flush.
@@ -194,12 +216,15 @@ through. Copy the `print_*.stl` files over the ones in `enclosure/stl/`, droppin
    Solder the speaker pair to the amp's output terminals. The PAM8302 is a bridge-tied output, so
    never connect either speaker wire to ground.
 11. Plug the flat FPC 90° adapter into the tablet's USB-C port and connect it to the PD module.
-    Plug the 3.5 mm plug into the jack. Use a 3-pole TRS plug: a 4-pole headset plug can switch the
-    tablet to a headset microphone that isn't there, and Assist would stop hearing you.
+    Plug the 3.5 mm plug into the jack with its body pointing down along the tablet's edge. Use a
+    3-pole TRS plug: a 4-pole headset plug can switch the tablet to a headset microphone that isn't
+    there, and Assist would stop hearing you.
 12. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the
-    bottom, glass toward the lip, with each plug riding in its channel.
-13. Fit the radar into the chin, run its wires up to the ESP32-C3, and screw the chin on from below
-    with three M3 x 12 screws.
+    bottom, glass toward the lip, with each plug riding in its channel. Let the audio cable hang out
+    of the bottom, then tuck it back into the lower tray behind the slot and up to the amp.
+13. Fit the radar into the chin bar's pocket. Lay the audio cable in the notch at the jack end of the
+    bar, push the bar into its slot from the front, run the radar wires up to the ESP32-C3, and screw
+    the bar on from the back of the tray with four M3 x 16 screws.
 14. Thread the speaker pair and power leads down the spine's cable channel, then bolt the bezel to
     the spine from the spine's rear with four M3 x 16 bolts. The lower pair sits in deep
     counterbores, so use a long 2.5 mm hex key.
@@ -379,10 +404,11 @@ Android tablet. A factory reset also clears it.
 
 Nothing on this branch has been printed or assembled yet. Check these before a full print:
 
-- **Tablet fit.** `TAB_R`, the port sides and the port heights are estimates. Print the bezel chin
+- **Tablet fit.** `TAB_R`, the port sides and the port heights are estimates. Print the chin bar
   and the bottom 30 mm of the shell first to test the fit.
 - **Plug sizes.** The 3.5 mm plug must stick out no more than 7 mm past the tablet's edge, and the
-  USB-C FPC plug no more than 4 mm.
+  USB-C FPC plug no more than 4 mm. The audio cable must be 4 mm thick or less to pass the notch in
+  the chin bar. Change `JACK_CABLE_NOTCH` for a thicker cable.
 - **Board sizes.** The PD module, buck and amp cradles are set to typical board sizes. Measure yours
   and update `CRADLES`. The tallest board must stay under 13 mm, or raise `PARTS_H`.
 - **Volume warning.** The 60 % cap is a starting point. If the hearing-safety dialog still appears,
