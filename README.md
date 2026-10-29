@@ -184,7 +184,9 @@ python enclosure/enclosure.py enclosure/out
 ```
 
 The script prints part volumes and the air volume of each chamber: about 0.55 L per full-range
-chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
+chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Those volumes assume a
+closed box, so it also prints the open area through the lid. That should be only the 6 mm speaker
+wire hole (28.3 mm²), which you seal with hot glue during assembly. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
 
 ### 2. Assemble
 
@@ -193,29 +195,35 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
 2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
    or shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
    ring magnets sit flush.
-3. Wire the drivers, pass the full-range leads through the chamber holes, and seal them with hot glue.
-   Mount the drivers from the outside on 1 mm gasket tape with M3 x 6 screws in the pilot holes.
-   Turn the ND65 solder tabs up, into the notch.
-4. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
-5. Linen version: wrap the linen around the grille ring, then slide the ring onto the tub.
+3. Cut three pairs of speaker wire, one each for the woofer and the two full-range drivers. Each pair
+   runs from its driver out through the lid and up the spine's cable channel, so make it long enough
+   to reach the amp in the tray with 10 cm to spare. With the lid off the tub, push the pairs up
+   through the 6 mm hole in the lid from underneath until they come out of the top of the channel.
+   Pass the full-range pairs through the chamber holes. Seal the chamber holes and the lid hole with
+   hot glue around the wires, from the inside. Fill the lid hole completely. It opens into the woofer
+   chamber, and any gap left there acts as a port and spoils the passive radiator tuning.
+4. Wire the drivers and mount them from the outside on 1 mm gasket tape with M3 x 6 screws in the
+   pilot holes. Turn the ND65 solder tabs up, into the notch.
+5. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
+6. Linen version: wrap the linen around the grille ring, then slide the ring onto the tub.
    Fabric-free version: slide the grille shell onto the tub from below.
-6. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
+7. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
    plate's sled with four M2.5 x 6 thread-forming screws, USB-C socket toward the opening. Put 18 AWG
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
    then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
    the charger and check for 20 V at the leads.
-7. With the bezel shell off the stand and face down, mount the amp on its standoffs. Stick the PD module,
-   UGREEN adapter, 5 V buck and ESP32-C3 into their cradles with VHB tape. Feed the speaker and power
-   leads out through the cable hole in the back wall.
-8. Plug the flat FPC 90° adapter into the tablet. Connect the UGREEN adapter to it, the PD module to the
+8. With the bezel shell off the stand and face down, mount the amp on its standoffs. Stick the PD module,
+   UGREEN adapter, 5 V buck and ESP32-C3 into their cradles with VHB tape. Bring the speaker and power
+   leads from the top of the spine's cable channel in through the cable hole in the back wall.
+9. Plug the flat FPC 90° adapter into the tablet. Connect the UGREEN adapter to it, the PD module to the
    UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
-9. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
-   glass toward the lip, with the FPC plug riding in the channel on the right.
-10. Fit the radar into the chin bar's pocket, push the bar into its slot below the tablet, run the
+10. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
+    glass toward the lip, with the FPC plug riding in the channel on the right.
+11. Fit the radar into the chin bar's pocket, push the bar into its slot below the tablet, run the
     radar wires up to the ESP32-C3, and screw the bar on from the back of the tray with four M3 x 20 screws.
-11. Thread the leads down the spine's cable channel, then bolt the bezel to the spine from the spine's
-    rear with four M3 x 16 bolts.
+12. Tuck the slack in the leads back down the spine's cable channel, then bolt the bezel to the spine
+    from the spine's rear with four M3 x 16 bolts.
 
 The flat FPC adapter has to fit within 4 mm of the tablet's edge (`USB_CLEAR`). If yours sticks out
 further, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
@@ -418,3 +426,4 @@ These items came out of reviewing the Cowork export.
 | KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth follows the amp height: 27 mm for the 20 mm board on Dayton's spec sheet |
 | Wide printed frame covered the tablet's glass, light sensor and camera | Changed to a frameless bezel: a thin rim, the tablet glass showing, and a one-piece shell plus chin |
 | 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |
+| The 12 mm lid hole left the woofer chamber open to the bezel tray through the cable channel, which spoiled the passive radiator alignment | Fixed. The hole is 6 mm, sized for three 20 AWG pairs, the channel no longer cuts through the lid, and assembly step 3 seals the hole with hot glue |
