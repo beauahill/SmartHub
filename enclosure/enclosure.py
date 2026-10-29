@@ -260,12 +260,14 @@ for s in (-1, 1):
     xb0, xb1 = sorted((s * FR_CH_X0, s * (IX + 1)))
     tub = tub + box(xb0, xb1, FR_CH_Y1 - CHAMBER_WALL, FR_CH_Y1, FLOOR - 1, TUB_H)
 
-# brace columns, which also take the lid locating pins
+# brace columns, which also take the lid locating pins. Each one is webbed out to the side wall, so
+# none stands free and the front ones leave no thin slot against the curved corner wall.
 # (+-139, 100) overlaps the side wall by 1 mm. At 138 the column only touched the wall along a line,
 # which made the mesh non-manifold.
 BOSSES = [(-135, 22), (135, 22), (-139, 100), (139, 100), (-130, 128), (130, 128)]
 for (x, y) in BOSSES:
-    tub = tub + (cyl_z(x, y, FLOOR - 1, TUB_H, 10) ^ extrude(inner.offset(1, m3.JoinType.Round), 0, TUB_H))
+    col = M.batch_hull([cyl_z(x, y, FLOOR - 1, TUB_H, 10), cyl_z(math.copysign(IX + 1, x), y, FLOOR - 1, TUB_H, 10)])
+    tub = tub + (col ^ extrude(inner.offset(1, m3.JoinType.Round), 0, TUB_H))
 for (x, y) in BOSSES:
     tub = tub - cyl_z(x, y, TUB_H - 4, TUB_H + 1, 4.3)
 

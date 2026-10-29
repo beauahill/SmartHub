@@ -33,7 +33,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
-| S1 | 2 | Dayton Audio ND65-4, 2-1/2" aluminum full-range, 4 Ω | 64 mm frame with corner ears, 4.2 mm holes on a 66 mm bolt circle, 52 mm cutout. 48 mm deep, 43 mm behind the mounting face. 1 mm flange; surround 3.1 mm proud of it. Xmax 3.5 mm, 15 W. Left and right, each in a sealed 0.55 L chamber. Solder tabs face up | `DRIVERS["nd65"]` |
+| S1 | 2 | Dayton Audio ND65-4, 2-1/2" aluminum full-range, 4 Ω | 64 mm frame with corner ears, 4.2 mm holes on a 66 mm bolt circle, 52 mm cutout. 48 mm deep, 43 mm behind the mounting face. 1 mm flange; surround 3.1 mm proud of it. Xmax 3.5 mm, 15 W. Left and right, each in a sealed 0.54 L chamber. Solder tabs face up | `DRIVERS["nd65"]` |
 | S2 | 1 | Dayton Audio ND105-4, 4" aluminum midbass, 4 Ω | 105 mm frame with ears to 120 mm, 4.2 mm holes on a 108.5 mm bolt circle, 93 mm cutout. 67 mm deep, 57 mm behind the mounting face. Xmax 4 mm, 30 W. Front center | `DRIVERS["nd105"]` |
 | S3 | 1 | Dayton Audio ND105-PR, 4" passive radiator | Same frame and bolt circle as the ND105-4, 93 mm cutout. 40.5 mm deep, 30.5 mm behind the mounting face. Fs 51.5 Hz, Vas 2.6 L, Xmax 11 mm. Rear center | `DRIVERS["nd105pr"]` |
 | S4 | 16 | M3 x 6 pan head thread-forming screws, or #4 x 1/4" | 4 per driver, through the 4.2 mm frame holes into 6 mm deep, 2.5 mm blind pilots | `PILOT_D`, `PILOT_DEPTH` |
@@ -76,7 +76,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
-| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 916 cm³ |
+| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 943 cm³ |
 | P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 344 cm³ |
 | P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 111 | 81 cm³ |
 | P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 196 cm³ |

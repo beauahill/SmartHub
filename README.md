@@ -207,8 +207,8 @@ pip install -r enclosure/requirements.txt
 python enclosure/enclosure.py enclosure/out
 ```
 
-The script prints part volumes and the air volume of each chamber: about 0.55 L per full-range
-chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Those volumes assume a
+The script prints part volumes and the air volume of each chamber: about 0.54 L per full-range
+chamber and 2.65 L for the woofer chamber, before subtracting the drivers. Those volumes assume a
 closed box, so it also prints the open area through the lid. That should be only the 8 mm speaker
 wire hole (50.3 mm²), which you seal with hot glue during assembly. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
 
