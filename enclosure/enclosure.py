@@ -347,8 +347,11 @@ CH = 1.2   # top edge chamfer
 lid = M.batch_hull([extrude(outline, LID_Z0, TOPZ - CH), extrude(outline.offset(-CH, m3.JoinType.Round), TOPZ - CH, TOPZ)])
 for (x, y) in BOSSES:                      # 4 mm dowel holes (dowels align lid to tub for gluing)
     lid = lid - cyl_z(x, y, LID_Z0 - 1, LID_Z0 + 2.0, 4.3)
+# Speaker wire hole into the woofer chamber, at the bottom of the spine's cable channel. Sized for three
+# 20 AWG pairs (six ~1.8 mm conductors) and hot-glued shut around them: any gap here acts as a port.
 WIRE_HOLE = (0, 74)
-lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, 12)
+WIRE_HOLE_D = 6.0
+lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
 
 # ======================= GRILLE RING =======================
 frame_outer = inset.offset(RECESS - FABRIC, m3.JoinType.Round)
@@ -572,8 +575,9 @@ spine = spine.translate([0, 0, -0.5])     # sink 0.5 mm into the lid so they fus
 # bolt holes for the bezel, drilled along the bezel normal from the spine's rear, with head counterbores
 for (x, h) in SPINE_PTS:
     spine = spine - place(lcyl_a(x, h, T - 0.5, T + 120, M3_CLR)) - place(lcyl_a(x, h, T + SPINE_GRIP, T + 160, 6.4))
-# cable channel: hull of two spheres, lid hole -> tray
-p_low = np.array([0, WIRE_HOLE[1], TOPZ - 2])
+# cable channel: hull of two spheres, lid hole -> tray. The low sphere dips only 1 mm into the lid, so the
+# lid stays closed around the wire hole and the dip makes a cup for the glue.
+p_low = np.array([0, WIRE_HOLE[1], TOPZ + 5])
 p_high = to_world(0, T - 6, CH_H)
 chan = M.batch_hull([M.sphere(6, 48).translate(p_low.tolist()), M.sphere(6, 48).translate(p_high.tolist())])
 spine = spine - chan
@@ -628,7 +632,7 @@ for sx in (-PWR_SCREW_X, PWR_SCREW_X):
 # don't let the spine poke into the tray
 spine = spine - place(rounded_slab(EW, EH, ER, -1, T, f1=BEZEL_BACK_FILLET, bed="a1"))   # hugs the curved tray back
 lid_spine = lid + spine
-lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, 12)
+lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
 
 # ======================= EXPORT =======================
 def export(man, name):
@@ -667,6 +671,11 @@ export(pwr_plate, "print_power_plate")                         # outside face do
 air = extrude(inner, FLOOR, TUB_H) - tub - union(PASS_THROUGHS)   # pass-throughs hot-glued shut
 chambers = sorted((c.volume() / 1e6 for c in air.decompose()), reverse=True)
 print("chamber air volumes (L, driver bodies not subtracted):", [round(v, 3) for v in chambers[:3]])
+# The volumes above assume a closed lid. Anything open through the lid over the chambers leaks; only the
+# wire hole should show here, and it gets glued shut. Sampled between the dowel holes and the channel's dip.
+lid_open = (extrude(inner, LID_Z0 + 2.45, LID_Z0 + 2.55) - lid_spine).volume() / 0.1
+print(f"open area through the lid: {lid_open:.1f} mm2 (the {WIRE_HOLE_D:.0f} mm wire hole is "
+      f"{math.pi * WIRE_HOLE_D ** 2 / 4:.1f} mm2; hot-glue it shut)")
 print("mounting faces (Y):", {k: round(v, 1) for k, v in SEATS.items()})
 print("bezel thickness", T, "bezel outer", EW, EH, "Z0", Z0, "top Z", to_world(0, 0, EH)[2], "top-back", to_world(0, T, EH))
 print("lowest bezel corner Z", to_world(0, T, 0)[2], "Yb0", Yb0)
