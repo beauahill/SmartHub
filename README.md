@@ -195,6 +195,10 @@ own four mounting holes. The board geometry comes from Adafruit's published PCB 
 sits just behind a 14.4 x 8.8 mm chamfered opening that the plug's molded body passes through, so
 the plug seats fully. A cavity in the spine clears the board and its screw terminal and opens into
 the cable channel. If you use a different trigger board, change the `TRIG_*` parameters.
+A clip on the lid behind the spine keeps the charger cable tidy. The cable drops from the plug onto
+the lid, then runs back through the clip and over the rear edge. A right-angle cable that points down
+works best. The clip is sized for a 4.5 mm cable, with two flexible posts and small hooks. Measure
+yours and set `CABLE_D`.
 
 **Two base finishes, same tub.** Print either the grille ring and wrap it in linen, or print the
 grille shell. The shell is a 2.65 mm printed skin, flush with the tub's top band, with a honeycomb
@@ -286,7 +290,7 @@ wire hole (50.3 mm²), which you seal with hot glue during assembly. Copy the `p
    plate's sled with four M2.5 x 6 thread-forming screws, USB-C socket toward the opening. Put 18 AWG
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
    then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
-   the charger and check for 20 V at the leads.
+   the charger and check for 20 V at the leads. Press the charger cable down into the clip on the lid.
 8. With the bezel shell off the stand and face down, mount the amp on its standoffs. Stick the PD module,
    UGREEN adapter, 5 V buck and ESP32-C3 into their cradles with VHB tape. Bring the speaker and power
    leads from the top of the spine's cable channel in through the cable hole in the back wall.

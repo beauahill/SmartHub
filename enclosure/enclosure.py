@@ -388,6 +388,24 @@ WIRE_HOLE = (0, 74)
 WIRE_HOLE_D = 8.0
 lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
 
+# Power cable clip on the lid behind the spine: the USB-C cable drops from the plug onto the lid and runs
+# back through it to the rear edge. Two posts with small 45 deg hooks; pushing the cable in flexes them
+# about 0.3 mm each (1.2 mm PLA posts stay well under yield). Measure your cable and set CABLE_D.
+CABLE_D = 4.5                              # USB-C cable outer diameter
+CLIP_Y, CLIP_L = 132.0, 10.0               # start (Y) and length of the clip, clear of the plug's strain relief
+CLIP_POST, CLIP_HOOK = 1.2, 0.4            # post thickness, hook reach
+def clip_post(side):
+    g = (CABLE_D + 0.2) / 2                # inner face of the post
+    za = TOPZ + CABLE_D + 0.2              # hook starts just above the cable
+    pts = [(g, TOPZ - 0.5), (g + CLIP_POST, TOPZ - 0.5), (g + CLIP_POST, za + 2 * CLIP_HOOK),
+           (g, za + 2 * CLIP_HOOK), (g - CLIP_HOOK, za + CLIP_HOOK), (g, za)]
+    pts = [(side * x, -z) for x, z in pts] # prism_y maps profile +y to -Z
+    if side > 0:                           # one flip (z) leaves the winding clockwise; mirroring x too undoes it
+        pts.reverse()
+    return prism_y(CS([pts]), 0, 0, CLIP_Y, CLIP_Y + CLIP_L)
+cable_clip = clip_post(1) + clip_post(-1)
+lid = lid + cable_clip
+
 # ======================= GRILLE RING =======================
 frame_outer = inset.offset(RECESS - FABRIC, m3.JoinType.Round)
 GZ0, GZ1 = 0.5, REC_Z1 - 0.5
