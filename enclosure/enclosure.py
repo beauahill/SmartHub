@@ -133,8 +133,9 @@ BEZEL_R = TAB_R + TAB_CLR + FRAME_SIDE       # corner radius in plan: an even ri
 BEZEL_FRONT_FILLET = 3.0                     # round-over on the front edge
 BEZEL_BACK_FILLET = 6.0                      # round-over on the tray's back edge
 WINDOW_CHAMFER = 0.5                         # 45 deg chamfer on the lip's inner edge
-# Chin cap: 3 screws from underneath into inserts in the shell. x positions sit between the vents.
-CHIN_SCREW_X = (-98.0, 0.0, 98.0)
+# Chin bar: 4 screws from the back of the tray, through bosses, into inserts in the bar's back face.
+CHIN_SCREW_X = (-100.0, -40.0, 40.0, 100.0)  # clear of the radar pocket in the middle
+CHIN_SCREW_LEN = 20.0                         # M3 x 20; ~5 mm goes into the insert
 # Bezel to spine: M3 bolts from the back of the spine into inserts in the tray's back wall.
 SPINE_PTS = [(-18, 45), (18, 45), (-18, 80), (18, 80)]    # (x, height up the tray back)
 SPINE_GRIP = 12.0                            # spine material under the bolt heads -> M3 x 16 bolts
@@ -460,8 +461,14 @@ assert FRAME_SIDE >= USB_CLEAR + TRAY_WALL + 0.4 - 1e-6, "FRAME_SIDE too thin fo
 # Prints back down: the front edge is on top, so it gets a full round-over; the back edge is on the bed.
 body_outer = rounded_slab(EW, EH, ER, 0, T, f0=BEZEL_FRONT_FILLET, f1=BEZEL_BACK_FILLET, bed="a1")
 tray_outer = body_outer
-tray_inner = rounded_slab(EW - 2*TRAY_WALL, EH - 2*TRAY_WALL, ER - TRAY_WALL, T_FRONT, T - TRAY_WALL,
-                          f1=BEZEL_BACK_FILLET - TRAY_WALL)
+# The rim is wider than the tray wall, so where they meet the tray's inside tapers at 45 deg instead
+# of leaving a flat 4.4 mm ledge, which would overhang when printing back down.
+RIM_STEP = FRAME_SIDE - TRAY_WALL
+tray_inner = M.batch_hull([
+    rounded_slab(EW - 2*TRAY_WALL, EH - 2*TRAY_WALL, ER - TRAY_WALL, T_FRONT + RIM_STEP, T - TRAY_WALL,
+                 f1=BEZEL_BACK_FILLET - TRAY_WALL),
+    rr_xz(PW - 0.1, (TAB_CZ + PH / 2) - TRAY_WALL - 0.05, TAB_R + TAB_CLR - 0.05, T_FRONT - 0.01, T_FRONT,
+          cz=(TAB_CZ + PH / 2 + TRAY_WALL) / 2 - 0.025)])   # 0.05 inside the pocket outline: no coincident arcs
 c = WINDOW_CHAMFER
 window = M.batch_hull([rr_xz(WIN_W + 2*c, WIN_H + 2*c, WIN_R + c, -1, 0.0, cz=TAB_CZ),
                        rr_xz(WIN_W, WIN_H, WIN_R, c, LIP + 0.01, cz=TAB_CZ)])
@@ -476,12 +483,12 @@ for x in (-60, -20, 20, 60):
 # USB-C: room for a flat FPC 90 deg plug beside the port. It runs down to the bottom of the pocket,
 # because the tablet slides in from below with the plug already in.
 ux0, ux1 = sorted((USB_SIDE * PW/2 - USB_SIDE * 1, USB_SIDE * (PW/2 + USB_CLEAR)))
-usb_channel = lbox(ux0, ux1, LIP + 0.2, T_FRONT + 1, CHIN_TOP - 1, TAB_CZ + USB_NOTCH_H / 2)   # cut after the split
+usb_channel = lbox(ux0, ux1, LIP + 1.0, T_FRONT + 1, CHIN_TOP - 1, TAB_CZ + USB_NOTCH_H / 2)   # cut after the split
 # mmWave radar pocket in the chin, open to the tray; the radar looks out through RADAR_LIP of plastic
 RADAR_Z = CHIN_TOP / 2
 tr = tr - lbox(-RADAR_W / 2, RADAR_W / 2, RADAR_LIP, T_FRONT + 1, RADAR_Z - RADAR_H / 2, RADAR_Z + RADAR_H / 2)
 if LABELS:   # on the back of the chin, beside the radar pocket (read from the tray side)
-    tr = tr + bezel_label("LD2410C", RADAR_W / 2 + 18.0, RADAR_Z, T_FRONT, +1)
+    tr = tr + bezel_label("LD2410C", 0.0, RADAR_Z + 2.0, T - TRAY_WALL, -1)     # on the back wall, behind the radar
 BACK_IN = T - TRAY_WALL
 # tablet back-stop posts (0.5 mm felt on the tips, so the tablet slides in)
 for x in (-115, 0, 115):
@@ -514,11 +521,10 @@ for (x, z) in SPINE_PTS:
     tr = tr + lcyl_a(x, z, BACK_IN - 7.0, T - 0.01, 8.0)
     tr = tr - lcyl_a(x, z, T - INSERT_DEPTH, T + 1, M3_INSERT)
 # chin screw bosses: vertical columns against the back wall, split with the body below
-CHIN_BOSS_A = BACK_IN - 6.5                  # boss center depth: keeps the counterbore clear of the back round-over
+# chin bar screw bosses: through the tray depth, head counterbores from the back face
+CHIN_SCREW_Z = CHIN_TOP / 2 + 0.5       # off the line where the inner floor round-over meets the back wall
 for x in CHIN_SCREW_X:
-    boss = cyl_z(x, CHIN_BOSS_A, TRAY_WALL - 0.5, CHIN_TOP + 12.0, 9.0) + \
-           lbox(x - 2.5, x + 2.5, CHIN_BOSS_A, BACK_IN + 0.5, TRAY_WALL - 0.5, CHIN_TOP + 12.0)   # rib to the back wall
-    tr = tr + (boss ^ body_outer)                                                             # sunk into the floor
+    tr = tr + (lcyl_a(x, CHIN_SCREW_Z, T_FRONT + 0.5, T - 0.01, 9.0) ^ body_outer)
 # vents in the back wall, kept clear of the chin bosses
 for i in range(9):
     x = -112 + i * 28
@@ -531,14 +537,17 @@ for i in range(16):
 CH_H = 60.0                                     # cable channel enters tray here
 tr = tr - lcyl_a(0, CH_H, T - TRAY_WALL - 1, T + 1, 13)
 # split: shell above the top of the chin, chin cap below it
-above = box(-EW, EW, -10, T + 10, CHIN_TOP, EH + 10)
-below = box(-EW, EW, -10, T + 10, -10, CHIN_TOP)
-chin = tr ^ below
-tr = (tr ^ above) - pocket_ext - usb_channel
+# Split: the chin is the solid bar in front of the tray below the tablet, plus the strip of lip along
+# the bottom of the glass (so that strip sits on solid plastic instead of spanning 255 mm on its own).
+# The tablet slides up through the bar's slot before the bar goes in.
+chin_region = lbox(-EW, EW, -10, T_FRONT, -10, CHIN_TOP) + \
+              lbox(-PW / 2, PW / 2, -10, LIP, CHIN_TOP - 1, CHIN_TOP + LIP_OVERLAP + TAB_CLR + 0.5)
+chin = tr ^ chin_region
+tr = tr - chin_region - pocket_ext - usb_channel
+head_a = T_FRONT + (CHIN_SCREW_LEN - 5.0)    # where the screw head seats
 for x in CHIN_SCREW_X:
-    tr = tr - cyl_z(x, CHIN_BOSS_A, CHIN_TOP - 1, CHIN_TOP + INSERT_DEPTH, M3_INSERT)          # insert from below
-    chin = chin - cyl_z(x, CHIN_BOSS_A, -1, CHIN_TOP + 1, M3_CLR)
-    chin = chin - cyl_z(x, CHIN_BOSS_A, -1, CHIN_TOP - 6.0, 6.2)                              # head counterbore
+    chin = chin - lcyl_a(x, CHIN_SCREW_Z, T_FRONT - INSERT_DEPTH, T_FRONT + 1, M3_INSERT)    # insert in the bar's back
+    tr = tr - lcyl_a(x, CHIN_SCREW_Z, T_FRONT - 1, T + 1, M3_CLR) - lcyl_a(x, CHIN_SCREW_Z, head_a, T + 1, 6.2)
 
 # --- place bezel in world
 st, ct = math.sin(math.radians(TILT)), math.cos(math.radians(TILT))

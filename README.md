@@ -75,8 +75,8 @@ already oriented for printing.
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
 | `grille_ring` | 299 x 149 x 112 | Linen version. Linen wraps around it. Slides on from below, held by magnets |
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints top edge down |
-| `bezel_shell` | 272 x 176 x 36 | Prints back wall down, front rim on top. Rim, tablet pocket and tray in one piece |
-| `bezel_chin` | 272 x 21 x 36 | Prints back wall down. Holds the radar and closes the bottom of the shell |
+| `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
+| `bezel_chin` | 272 x 23 x 9 | Prints back face down, no supports. The chin bar: holds the radar and the lip along the bottom of the glass |
 | `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
@@ -84,12 +84,24 @@ The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one pie
 Use PETG or ASA for the bezel shell, because it sits behind a charging tablet and an amplifier.
 Do not use carbon-fiber or metal-filled filament for the chin: the radar looks through 1.6 mm of it.
 
-**Frameless bezel.** The front rim and the tray are one part, so there is no seam on the front.
-The tablet slides up into the shell from below, then the chin closes the bottom with three M3
-screws from underneath. Because the tablet blocks the inside of the tray, the bezel bolts to the
-spine from the spine's rear, through four counterbored holes, into inserts in the tray's back wall.
-The pocket is square below the tablet's center, so its rounded corners slide in; the lip hides the
-gaps. A slide-in check with a tablet and plug model shows no interference along the whole path.
+**Frameless bezel.** The front rim and the tray are one part, so there is no seam on the front
+above the chin. The tablet slides up into the shell from below, through the slot the chin bar fills.
+The chin bar then goes in and is held by four M3 screws from the back of the tray. The bar also
+carries the strip of lip along the bottom of the glass, so that strip sits on solid plastic instead
+of spanning 255 mm on its own. Because the tablet blocks the inside of the tray, the bezel bolts to
+the spine from the spine's rear, through four counterbored holes, into inserts in the tray's back
+wall. The pocket is square below the tablet's center, so its rounded corners slide in; the lip
+hides the gaps. A slide-in check with a tablet and plug model shows no interference along the path.
+
+**Printing the bezel without supports.** Print the shell back wall down and the chin bar back face
+down. Where the rim meets the tray, the inside tapers at 45°, so there is no flat ledge. An overhang
+check of both parts in those orientations finds only three spots past 2 mm:
+- **Microphone slot tops.** These are 12 mm bridges.
+- **USB-C channel ceiling.** A 4 mm overhang on a hidden face.
+- **Bottom corners of the lip.** Two small triangles, up to 6 mm, over the gaps that let the
+  tablet's corners slide in. They are attached on two sides and sit behind the glass corners.
+
+All three print without supports. Expect at most slight sag on surfaces you don't see.
 
 The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm from the bottom of
 the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
@@ -142,9 +154,8 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
 
 ### 2. Assemble
 
-1. Press the M3 heat-set inserts into the bezel shell: three from below into the chin bosses, and
-   four from the back into the spine-bolt bosses. Press two more into the power plate pocket on
-   the spine's rear face.
+1. Press the M3 heat-set inserts in: four into the back face of the chin bar, four from the back into
+   the shell's spine-bolt bosses, and two into the power plate pocket on the spine's rear face.
 2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
    or shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
    ring magnets sit flush.
@@ -167,8 +178,8 @@ chamber and 2.68 L for the woofer chamber, before subtracting the drivers. Copy 
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
 9. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
    glass toward the lip, with the FPC plug riding in the channel on the right.
-10. Fit the radar into the chin, run its wires up to the ESP32-C3, and screw the chin on from below
-    with three M3 x 12 screws.
+10. Fit the radar into the chin bar's pocket, push the bar into its slot below the tablet, run the
+    radar wires up to the ESP32-C3, and screw the bar on from the back of the tray with four M3 x 20 screws.
 11. Thread the leads down the spine's cable channel, then bolt the bezel to the spine from the spine's
     rear with four M3 x 16 bolts.
 
