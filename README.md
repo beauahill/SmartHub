@@ -72,7 +72,7 @@ already oriented for printing.
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
 | `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers. Prints floor down, supports only in the outside driver recesses |
-| `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub |
+| `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub. Prints lid down, no supports |
 | `grille_ring` | 299 x 149 x 111 | Linen version. Linen wraps around it. Slides on from below, held by magnets. Prints bottom edge down |
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints bottom edge down |
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
@@ -136,6 +136,29 @@ Suggested settings for PLA+ on a Bambu H2S, 0.4 mm nozzle:
 When the drivers are in and the lid is glued on, check the seal: push the woofer cone in gently and
 let go. It should come back slowly. If it springs straight back, there is a leak. Brush a thin coat
 of epoxy or wood glue inside the chambers to seal it.
+
+**Printing the lid and spine.** Print it lid down, as exported, with supports off. Everything
+above the lid is either 45° or steeper, or a short bridge:
+- The ceiling of the PD trigger cavity is a 25 mm bridge.
+- The top of the power plate pocket is a 44 mm bridge, 3 mm deep.
+- The dowel holes and the bolt counterbores are small round holes.
+
+Other details:
+- **Spine top.** It ends in a 5 mm flat instead of a knife edge.
+- **Fit to the bezel.** The face the bezel sits on is 0.2 mm behind the tray back. That way the
+  curved bottom edge of the tray can't hold the flat faces apart; the four bolts pull the bezel tight.
+- **Lid edge.** The bottom outer edge has a 0.4 mm chamfer, so elephant's foot doesn't leave a lip
+  at the joint with the tub.
+- **Dowels.** The lid's dowel holes are 2.8 mm deep and the tub's are 4 mm. The 6 mm dowels
+  therefore have 0.8 mm of slack and can't hold the lid off the tub.
+
+For PLA+ on the H2S, use the same settings as the tub, either nozzle, but with these changes:
+- **Supports:** off.
+- **Wall loops:** 4. They give solid walls around the heat-set inserts for the power plate and
+  under the bezel bolt heads.
+- **Infill:** 20 to 25 % gyroid if you want a stiffer stand. 15 % is enough.
+
+Keep the bed clean so the lid prints flat. The lid's bottom face is the glue joint.
 
 The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm from the bottom of
 the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
@@ -229,6 +252,7 @@ wire hole (50.3 mm²), which you seal with hot glue during assembly. Copy the `p
 4. Wire the drivers and mount them from the outside on 1 mm gasket tape with M3 x 6 screws in the
    pilot holes. Turn the ND65 solder tabs up, into the notch.
 5. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
+   Run epoxy along the tops of the two full-range chamber walls as well as the outer rim, so each chamber seals on its own.
 6. Linen version: wrap the linen around the grille ring, then slide the ring onto the tub.
    Fabric-free version: slide the grille shell onto the tub from below.
 7. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
