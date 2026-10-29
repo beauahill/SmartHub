@@ -24,7 +24,7 @@ fits a 256 mm print bed. The full parts list is in [BOM.md](BOM.md).
 | Tablet | Galaxy Tab A9+, 11" | Galaxy Tab A9, 8.7" |
 | Audio out | USB-C to 3.5 mm adapter on a flat FPC plug | The tablet's own 3.5 mm jack |
 | Amplifier | Dayton KABD-430 DSP, 20 V, Bluetooth | Adafruit PAM8302, 2.5 W mono, 5 V, no Bluetooth |
-| Speakers | Two ND65s, an ND105 woofer and an ND105 passive radiator | One ND65 in a sealed 0.98 L box |
+| Speakers | Two ND65s, an ND105 woofer and an ND105 passive radiator | One ND65 in a sealed 0.97 L box |
 | Base finish | Linen on a grille ring, or a printed grille shell | Printed grille shell |
 | Footprint | 300 x 150 mm, 324 mm tall | 232 x 110 mm, 240 mm tall |
 | Print bed | 300 mm or more | 256 mm |
@@ -86,9 +86,9 @@ already oriented for printing.
 
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
-| `base_tub` | 170 x 110 x 76 | Sealed speaker box for the ND65 |
-| `lid_spine` | 170 x 110 x 102 | Top plate and tilted stand in one piece. Glued to the tub |
-| `grille_shell` | 170 x 110 x 73 | Prints top edge down. Slides on from below, held by magnets |
+| `base_tub` | 170 x 110 x 76 | Sealed speaker box for the ND65. Prints floor down, supports only in the outside driver recess |
+| `lid_spine` | 170 x 110 x 111 | Top plate and tilted stand in one piece. Glued to the tub |
+| `grille_shell` | 170 x 110 x 73 | Prints bottom edge down, no supports. Slides on from below, held by magnets |
 | `bezel_shell` | 232 x 136 x 27 | Prints back wall down, front rim on top. Rim, tablet pocket and tray in one piece |
 | `bezel_chin` | 232 x 21 x 27 | Prints back wall down. Holds the radar and closes the bottom of the shell |
 | `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger. Same part as the Counter Display |
@@ -119,10 +119,40 @@ cradle with a raised label. Change the cradle sizes in `CRADLES` to the boards y
 
 **Base.** The ND65 sits in a recess shaped to its frame, 4 mm behind the inner face of the grille
 shell, with blind pilot holes on its 66 mm bolt circle and a notch on top for its solder tabs. The
-whole tub is one sealed chamber of 0.98 L, before subtracting the driver. The grille shell is a
-2.85 mm printed skin with a honeycomb of 2.6 mm hexagonal holes over the front. Its eight magnets
+whole tub is one sealed chamber of 0.97 L, before subtracting the driver. The driver sits 3 mm
+below the middle of the box, so its recess stays under the chamfer below the top band and the frame
+can pass under it on the way in. The grille shell is a
+2.65 mm printed skin with a honeycomb of 2.6 mm hexagonal holes over the front. Its eight magnets
 sit on the rear and sides, so the honeycomb can run the full height of the driver. Set
 `SHELL_SIDES = True` to perforate the sides too.
+
+**Printing the tub.** Print it floor down. The tub follows the same rules as the Counter Display's
+tub on `main`, so nothing inside the sealed chamber needs support:
+- **Top band.** The band overhangs the grille recess by 3 mm, so its underside is a 45° chamfer
+  instead of a flat ledge. The shell's top is beveled to match, with a 0.21 mm gap.
+- **Mounting ring.** The underside of the ring behind the driver tapers at 45° down to the floor.
+- **Driver cutout.** It has 45° sides and a flat top that prints as a 22 mm bridge. The solder-tab
+  notch above it is a 33 mm bridge, and it starts 1.2 mm behind the seat, so the tabs clear with the
+  gasket fitted.
+- **Bottom edge.** The outer bottom edge has a 0.6 mm chamfer, so elephant's foot doesn't stop the
+  shell from sliding on. The shell's clearance to the tub is 0.35 mm per side.
+- **Walls.** The thinnest wall of the chamber is 1.8 mm, behind the side magnet pockets.
+
+Only the arched top of the driver recess on the front needs support, and it is open to the build
+plate. The feet recesses under the floor are 10.5 mm bridges. The grille shell has no overhang
+larger than its 1 mm magnet pockets.
+
+Suggested settings for PLA+ or PETG with a 0.4 mm nozzle:
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Supports | Tree (auto), **On build plate only**, threshold 30°, Don't support bridges on | Supports reach the driver recess from the plate. Nothing grows inside the chamber |
+| Wall generator | Arachne | Prints the 1 mm skins behind the pilot holes and the shell's top land cleanly |
+| Wall loops | 4 | The box must be airtight |
+| Top / bottom shells | 5 / 5 | |
+| Infill | 15 % gyroid, or 25 % for a stiffer front baffle | |
+| Elephant foot compensation | 0.15 mm | Works with the bottom chamfer |
+| Seam | Aligned, on the rear | |
 
 To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenerate:
 
@@ -146,28 +176,31 @@ through. Copy the `print_*.stl` files over the ones in `enclosure/stl/`, droppin
    screws in the pilot holes, solder tabs up into the notch. Add a loose handful of polyfill.
 4. Feed the speaker pair up through the 6 mm hole in the lid, then glue the lid to the tub using the
    four dowels for alignment. Seal the hole around the wire with hot glue. The box must be airtight.
-5. Slide the grille shell onto the tub from below.
-6. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
+5. Check the seal. Push the ND65's cone in gently and let go. It should come back slowly. If it
+   springs straight back, there is a leak: brush a thin coat of epoxy or wood glue inside the box,
+   or reseal the wire hole.
+6. Slide the grille shell onto the tub from below.
+7. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
    plate's sled with four M2.5 x 6 thread-forming screws, USB-C socket toward the opening. Put 18 AWG
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
    then screw the plate flush with two M3 x 8 countersunk screws. Before connecting anything else,
    plug in the charger and check for 20 V at the leads.
-7. Set the MP1584 buck to 5.0 V before connecting it. These modules ship at a random output voltage.
-8. With the bezel shell face down, stick the PD module, buck, amp and ESP32-C3 into their cradles
+8. Set the MP1584 buck to 5.0 V before connecting it. These modules ship at a random output voltage.
+9. With the bezel shell face down, stick the PD module, buck, amp and ESP32-C3 into their cradles
    with VHB tape. Wire 20 V to the PD module and the buck, and 5 V from the buck to the amp's VIN,
    the ESP32-C3's 5V pin and the radar.
-9. Wire the audio. Cut the 3.5 mm cable about 25 cm from the slim 90° plug. Solder tip and ring
+10. Wire the audio. Cut the 3.5 mm cable about 25 cm from the slim 90° plug. Solder tip and ring
    each through a 1 kΩ resistor to the amp's A+ input, and the sleeve to A−. Leave SD unconnected.
    Solder the speaker pair to the amp's output terminals. The PAM8302 is a bridge-tied output, so
    never connect either speaker wire to ground.
-10. Plug the flat FPC 90° adapter into the tablet's USB-C port and connect it to the PD module.
+11. Plug the flat FPC 90° adapter into the tablet's USB-C port and connect it to the PD module.
     Plug the 3.5 mm plug into the jack. Use a 3-pole TRS plug: a 4-pole headset plug can switch the
     tablet to a headset microphone that isn't there, and Assist would stop hearing you.
-11. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the
+12. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the
     bottom, glass toward the lip, with each plug riding in its channel.
-12. Fit the radar into the chin, run its wires up to the ESP32-C3, and screw the chin on from below
+13. Fit the radar into the chin, run its wires up to the ESP32-C3, and screw the chin on from below
     with three M3 x 12 screws.
-13. Thread the speaker pair and power leads down the spine's cable channel, then bolt the bezel to
+14. Thread the speaker pair and power leads down the spine's cable channel, then bolt the bezel to
     the spine from the spine's rear with four M3 x 16 bolts. The lower pair sits in deep
     counterbores, so use a long 2.5 mm hex key.
 

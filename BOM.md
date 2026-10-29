@@ -36,7 +36,7 @@ Parts marked "same" are identical to the Counter Display on the `main` branch.
 | S1 | 1 | Dayton Audio ND65-4, 2-1/2" aluminum full-range, 4 Ω | Same driver as the Counter Display's full-range pair. 64 mm frame with corner ears, 4.2 mm holes on a 66 mm bolt circle, 52 mm cutout, 43 mm behind the mounting face. Solder tabs face up | `DRIVERS["nd65"]` |
 | S4 | 4 | M3 x 6 pan head thread-forming screws, or #4 x 1/4" | Through the frame holes into 6 mm deep, 2.5 mm blind pilots | `PILOT_D`, `PILOT_DEPTH` |
 | S5 | 1 short length | Closed-cell foam gasket tape, about 3 mm wide, 1 mm thick when compressed | Seals the driver flange to the baffle | `GASKET_T` |
-| S6 | 1 handful | Polyfill or acoustic wool | Loose fill in the 0.98 L box | |
+| S6 | 1 handful | Polyfill or acoustic wool | Loose fill in the 0.97 L box | |
 
 ## 4. Hardware
 
@@ -49,7 +49,7 @@ Parts marked "same" are identical to the Counter Display on the `main` branch.
 | H5 | 4 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm | `DOWELS` |
 | H6 | 8 | Neodymium disc magnets, 6 x 2 mm, N52 | One per tub pocket: four on the rear, two on each side. Sits 0.2 mm below the surface | `MAG_REAR`, `MAG_SIDE` |
 | H7 | 8 | Neodymium disc magnets, 6 x 1 mm, N52 | One per grille shell pocket, flush. Opposite polarity to H6 | `MAG_T_FRAME` |
-| H8 | 4 | Silicone bumper feet, 10 mm diameter, about 3 mm tall | Lift the shell's edge off the furniture | `FEET` |
+| H8 | 4 | Silicone bumper feet, 10 mm diameter, about 3 mm tall | Lift the shell's edge off the furniture. The recesses are 10.5 mm across, 1 mm deep | `FEET` |
 | H9 | 1 small sheet | Adhesive felt, 0.5 mm | Pads on the six tablet back-stop posts, 8 mm diameter | Tray posts |
 | H10 | 1 roll | VHB double-sided tape | Holds the PD module, buck, amp and ESP32-C3 in their cradles | `CRADLES` |
 
@@ -66,16 +66,16 @@ Parts marked "same" are identical to the Counter Display on the `main` branch.
 
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
-| P1 | 1 | `base_tub.stl` | 170 x 110 x 76 | 275 cm³ |
-| P2 | 1 | `lid_spine.stl` | 170 x 110 x 102 | 207 cm³ |
-| P3 | 1 | `grille_shell.stl` | 170 x 110 x 73 | 99 cm³ |
+| P1 | 1 | `base_tub.stl` | 170 x 110 x 76 | 288 cm³ |
+| P2 | 1 | `lid_spine.stl` | 170 x 110 x 111 | 218 cm³ |
+| P3 | 1 | `grille_shell.stl` | 170 x 110 x 73 | 90 cm³ |
 | P4 | 1 | `bezel_shell.stl` | 232 x 136 x 27 | 136 cm³ |
 | P5 | 1 | `bezel_chin.stl` | 232 x 21 x 27 | 65 cm³ |
 | P6 | 1 | `power_plate.stl` | 44 x 26 x 33 | 4.5 cm³ |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| M1 | 1 kg | PETG, PLA or ASA filament | About 0.79 L of solid volume in total, which is just under 1 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the bezel shell in PETG or ASA. Avoid carbon or metal-filled filament on the chin, which the radar looks through |
+| M1 | 1 kg | PETG, PLA or ASA filament | About 0.80 L of solid volume in total, which is about 1 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the bezel shell in PETG or ASA. Avoid carbon or metal-filled filament on the chin, which the radar looks through |
 | M4 | 1 tube | Two-part epoxy | Glues the lid to the tub. The seal must be airtight |
 
 ## 7. Tools and software

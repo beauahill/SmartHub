@@ -34,7 +34,7 @@ os.makedirs(OUT, exist_ok=True)
 BW, BD = 170.0, 110.0          # outer width, depth
 TUB_H, LID_T = 76.0, 4.0       # tub height, lid thickness (total base height 80)
 R_FRONT, R_REAR = 20.0, 10.0   # plan view corner radii
-WALL_SIDE, WALL_REAR, FLOOR = 6.0, 8.0, 4.0
+WALL_SIDE, WALL_REAR, FLOOR = 7.0, 8.0, 4.0   # side wall leaves 1.8 mm behind the side magnet pockets
 FRONT_INNER_Y = 12.0           # front baffle inner face (outer face at Y=0, recess to Y=3 -> 9 mm baffle)
 RECESS = 3.0                   # the grille shell sits in this recess, flush with the top band
 REC_Z1 = 74.0                  # recess runs from the counter up to here; a 2 mm band stays above it
@@ -45,6 +45,9 @@ SHELL_Z = (6.0, 70.0)          # perforated band on the front. No magnets on the
 SHELL_FIELD_R = 8.0            # corner radius of each perforated field
 SHELL_SIDES = False            # also perforate the side faces (decorative; the box is sealed)
 SHELL_TOP_GAP = 0.3            # reveal line between the shell and the tub's top band
+TOP_LAND = 0.6                 # flat strip on the shell's outer top edge, under the band chamfer
+BAND_CHAMFER = RECESS          # 45 deg chamfer under the top band (the band overhangs the recess by RECESS)
+FOOT_CHAMFER = 0.6             # 45 deg chamfer on the tub's bottom outer edge (elephant foot, eases the shell on)
 
 # Driver, from Dayton's spec sheet and the ND65 3D model (same numbers as the Counter Display).
 # Its frame is a round body with four mounting ears on the diagonals:
@@ -60,12 +63,16 @@ SHELL_TOP_GAP = 0.3            # reveal line between the shell and the tub's top
 #   well_clr   clearance around the frame in its recess
 DRIVERS = {
     # ND65-4: 64 mm frame, 52 mm cutout, 48 mm deep (43 behind the mounting face), Xmax 3.5 mm.
-    "nd65": dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.5, 28.0, 2.0),
+    # The solder tabs reach 27 mm from the axis within +-15.7 mm, from 2.4 mm behind the flange (1.4 mm
+    # behind the seat, with the gasket under the flange).
+    "nd65": dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.5, 28.0, 1.2),
                  bc=66.0, cover_clear=4.0, well_clr=0.5),
 }
 DRIVER = "nd65"
 DRV_X = 0.0                            # driver centered on the front
-DRV_Z = (FLOOR + TUB_H) / 2.0          # driver center height
+# Driver center height. Below the middle of the box, so its well stays under the band chamfer, which
+# starts at REC_Z1 - BAND_CHAMFER = 71: the driver has to pass under it on the way in.
+DRV_Z = 37.0
 MOUNT_MEAT = 7.0                       # baffle material behind the mounting face, for the screws
 GASKET_T = 1.0                         # foam gasket under the flange (compressed); the seat sits this much deeper
 PILOT_D = 2.5                          # blind pilots for M3 thread-forming or #4 screws
@@ -161,7 +168,7 @@ TRIG_TALL = 9.5                              # tallest part above the PCB (the s
 MAG_D = 6.4                                  # pocket diameter for 6 mm discs
 MAG_T_TUB, MAG_T_FRAME = 2.0, 1.0            # magnet thicknesses
 MAG_GLUE = 0.2                               # tub magnet sits this far below the surface
-RING_GAP = 0.15                              # clearance between the grille shell and the tub recess
+RING_GAP = 0.35                              # clearance between the grille shell and the tub recess
 MAG_TUB = MAG_T_TUB + MAG_GLUE               # pocket depth into the tub
 MAG_FRAME = MAG_T_FRAME + RING_GAP           # pocket cut, measured from the tub surface; flush in the shell
 MAG_REAR = [(-45, 12), (45, 12), (-45, 62), (45, 62)]      # (x, z)
@@ -233,7 +240,11 @@ inner = rrect(-BW/2 + WALL_SIDE, BW/2 - WALL_SIDE, FRONT_INNER_Y, BD - WALL_REAR
 IX = BW/2 - WALL_SIDE
 IY0, IY1 = FRONT_INNER_Y, BD - WALL_REAR
 
-tub = extrude(inset, 0, REC_Z1) + extrude(outline, REC_Z1, TUB_H)
+# Prints floor down. The band overhangs the recess, so its underside is a 45 deg chamfer instead of a
+# flat ledge; the shell's top is beveled to match. The bottom outer edge is chamfered too.
+CH_Z = REC_Z1 - BAND_CHAMFER
+tub = (M.batch_hull([extrude(inset.offset(-FOOT_CHAMFER, m3.JoinType.Round), 0, 0.01), extrude(inset, FOOT_CHAMFER, CH_Z)])
+       + M.batch_hull([extrude(inset, CH_Z - 0.01, CH_Z), extrude(outline, REC_Z1, TUB_H)]))
 tub = tub - extrude(inner, FLOOR, TUB_H + 1)
 
 # brace columns, which also take the lid dowels
@@ -251,8 +262,19 @@ def frame_outline(d, grow=0.0):
     return CS.batch_hull([CS.circle(d["body_r"] + grow, SEG)] + ears)
 
 def prism_y(cs, x, z, y0, y1):
-    """extrude an X-Z profile (drawn in X-Y) along +Y from y0 to y1, centered at (x, z)"""
+    """extrude an X-Z profile (drawn in X-Y) along +Y from y0 to y1, centered at (x, z).
+    Profile +y ends up as -Z."""
     return cs.extrude(y1 - y0).rotate([-90, 0, 0]).translate([x, y0, z])
+
+def teardrop_down(d, grow):
+    """Frame outline with a 45 deg V below it, so the underside of the mounting ring prints unsupported."""
+    h = max(d["body_r"], d["ear_c"] + d["ear_r"]) + grow     # extent along the 45 deg diagonals
+    return CS.batch_hull([frame_outline(d, grow), CS.circle(0.01, 4).translate([0, h * math.sqrt(2)])])
+
+def teardrop_up(r):
+    """Circle of radius r with 45 deg sides above it, capped flat at its own top (a bridge)."""
+    tip = CS.batch_hull([CS.circle(r, SEG), CS.circle(0.01, 4).translate([0, -r * math.sqrt(2)])])
+    return tip ^ CS.square([4 * r, 2 * r]).translate([-2 * r, -r])
 
 INTERIOR = box(-IX, IX, IY0 - 1, IY1 + 1, FLOOR - 1, TUB_H)
 
@@ -262,17 +284,19 @@ def mount_driver(tub, name, x):
     surface = RECESS                                           # recessed tub surface under the shell
     seat = cover_in + d["cover_clear"] + d["proud"] + GASKET_T # baffle face under the gasket
     back = seat + MOUNT_MEAT                                   # back of the mounting ring
-    ring = prism_y(frame_outline(d, 4.0), x, DRV_Z, IY0 - 1, back) ^ INTERIOR
+    ring = prism_y(teardrop_down(d, 4.0), x, DRV_Z, IY0 - 1, back) ^ INTERIOR
     tub = tub + ring
     # well: from the recessed surface down to the mounting face, plus the skin in front of it
     tub = tub - prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, surface + 0.3, seat)
     tub = tub - (prism_y(frame_outline(d, d["well_clr"]), x, DRV_Z, surface - 1.0, surface + 0.3)
-                 ^ box(-BW, BW, -10, BD + 10, -10, REC_Z1 - 0.01))
-    # cutout through the ring, plus the solder-tab relief on the top side
-    tub = tub - cyl_y(x, DRV_Z, seat - 1.0, back + 5.0, d["cut"])
+                 ^ box(-BW, BW, -10, BD + 10, -10, CH_Z - 0.01))
+    # cutout through the ring (45 deg sides and a flat top, so it bridges), plus the solder-tab relief
+    # on the top side. The notch floor sits below where its sides meet the cutout, so no sliver is left.
+    tub = tub - prism_y(teardrop_up(d["cut"] / 2), x, DRV_Z, seat - 1.0, back + 5.0)
     if d["tab_notch"]:
         hw, reach, depth = d["tab_notch"]
-        tub = tub - box(x - hw, x + hw, seat + depth, back + 5.0, DRV_Z + d["cut"] / 2 - 2.0, DRV_Z + reach)
+        tub = tub - box(x - hw, x + hw, seat + depth, back + 5.0,
+                        DRV_Z + math.sqrt((d["cut"] / 2) ** 2 - hw ** 2) - 0.5, DRV_Z + reach)
     # blind pilot holes on the bolt circle
     for k in range(4):
         a = math.radians(45 + 90 * k)
@@ -282,7 +306,8 @@ def mount_driver(tub, name, x):
 
 tub, SEAT = mount_driver(tub, DRIVER, DRV_X)
 WELL_TOP = DRV_Z + DRIVERS[DRIVER]["body_r"] + DRIVERS[DRIVER]["well_clr"]
-assert WELL_TOP < REC_Z1 and DRV_Z - (WELL_TOP - DRV_Z) > 1.0, "driver well does not fit the tub height"
+assert WELL_TOP < CH_Z - 0.5 and DRV_Z - (WELL_TOP - DRV_Z) > FOOT_CHAMFER + 1.0, \
+    "driver well does not fit under the band chamfer; lower DRV_Z or raise TUB_H"
 
 # magnet pockets: rear (x, z) and both sides (y, z)
 YR, XS = BD - RECESS, BW/2 - RECESS
@@ -322,6 +347,17 @@ SZ0, SZ1 = 0.5, REC_Z1 - SHELL_TOP_GAP
 shell = extrude(outline, SZ0, SZ1) - extrude(inset.offset(RING_GAP, m3.JoinType.Round), -1, 200)
 for c in mag_cuts(True):
     shell = shell - c
+
+def top_bevel(gap, outer):
+    """Everything the shell must stay out of under the band: the band chamfer lowered by gap, and
+    above a flat land of TOP_LAND in from the part's outer face (outer = its offset from outline)."""
+    def zc(o):
+        return REC_Z1 - gap + o
+    cham = M.batch_hull([extrude(outline.offset(-6, m3.JoinType.Round), zc(-6) - 0.01, zc(-6)),
+                         extrude(outline.offset(3, m3.JoinType.Round), zc(3), zc(3) + 0.01)])
+    return cham + extrude(outline.offset(3, m3.JoinType.Round), zc(outer - TOP_LAND), 300)
+
+shell = shell - top_bevel(SHELL_TOP_GAP, 0)
 
 def hex_field(u0, u1, z0, z1, place_hole):
     """Honeycomb hole centers inside a rounded rectangle (u = along the face, z = height)."""
@@ -589,7 +625,7 @@ export(screen, "_render_screen")
 # print-ready orientations
 export(tr.rotate([-90, 0, 0]), "print_bezel_shell")            # back wall down, front rim on top
 export(chin.rotate([-90, 0, 0]), "print_bezel_chin")           # back wall down
-export(shell.rotate([180, 0, 0]), "print_grille_shell")        # top edge down
+export(shell, "print_grille_shell")                            # bottom edge down, beveled top up
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
 export(pwr_plate, "print_power_plate")                         # outside face down, sled standing up
