@@ -95,13 +95,40 @@ hides the gaps. A slide-in check with a tablet and plug model shows no interfere
 
 **Printing the bezel without supports.** Print the shell back wall down and the chin bar back face
 down. Where the rim meets the tray, the inside tapers at 45°, so there is no flat ledge. An overhang
-check of both parts in those orientations finds only three spots past 2 mm:
+check of both parts in those orientations finds only these spots past 2 mm:
 - **Microphone slot tops.** These are 12 mm bridges.
-- **USB-C channel ceiling.** A 4 mm overhang on a hidden face.
+- **Radar window in the chin.** The 1.6 mm of plastic in front of the radar is a 17 x 23 mm bridge,
+  held on all four sides. Bridge layers make no difference to the radar.
+- **USB-C channel ceiling.** The front rim over the plug channel is a 2.2 mm thick roof, held only
+  on the outer wall. It sticks out 5.5 mm, along the 100 mm of the channel. A 45° slope would cut
+  into the plug's path as the tablet slides in, so the roof stays flat. The plug clears it by about
+  1.1 mm.
 - **Bottom corners of the lip.** Two small triangles, up to 6 mm, over the gaps that let the
   tablet's corners slide in. They are attached on two sides and sit behind the glass corners.
 
-All three print without supports. Expect at most slight sag on surfaces you don't see.
+All of them print without supports, with slight sag on surfaces you don't see. The USB-C roof sags
+the most. If yours comes out drooping or curled at the window edge on that side, reprint with
+painted supports there:
+- Set the support type to Tree (manual).
+- Paint only the channel ceiling.
+- Pull the supports out through the pocket. The channel is open to it along its whole length.
+
+Settings for the bezel shell on the H2S:
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Material | PETG, or ASA in the closed chamber | It sits behind a charging tablet and the amp. PLA+ works if the display stays out of sun and away from the oven, but PLA softens near 55 °C and the lip would creep |
+| Nozzle | 0.4 mm | For the 1.2 mm lip, the 4 mm label text and the 1.6 mm cradle walls |
+| Layer height | 0.2 mm, with variable layer height down to about 0.12 mm over the top 4 mm | The front face prints last, as the top surface, and its 3 mm round-over steps visibly at 0.2 mm |
+| Top surface | Monotonic lines. Ironing is optional | This is the face you look at |
+| Wall loops | 3 | Fills the 2.4 mm tray walls with walls, and puts solid walls around the inserts and counterbores |
+| Infill | 15 % gyroid | Almost all of the part is walls |
+| Supports | Off, or painted on the USB-C roof only (see above) | |
+| Brim | None for PETG on textured PEI. A 5 mm brim for ASA | |
+| Seam | Aligned, on the bottom edge (the chin side) | Hidden by the chin bar |
+
+The heat-set inserts for the spine bolts go in from the back face, which is the first layer. Push
+them in a little below flush, so elephant's foot at the hole mouth doesn't matter.
 
 **Printing the tub.** Print it floor down, long side along X. It is laid out so nothing inside the
 chambers needs support, so the supports stay outside where you can reach them:

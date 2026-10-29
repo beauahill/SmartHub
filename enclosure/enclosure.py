@@ -717,8 +717,8 @@ export(tablet, "_render_tablet")
 screen = place(rr_xz(236.9, 148.1, 1.0, LIP + 0.0, LIP + 0.06, cz=TAB_CZ))
 export(screen, "_render_screen")
 # print-ready orientations
-export(tr.rotate([-90, 0, 0]), "print_bezel_shell")            # back wall down, front rim on top
-export(chin.rotate([-90, 0, 0]), "print_bezel_chin")           # back wall down
+export(tr.rotate([-90, 0, 0]).translate([0, 0, T]), "print_bezel_shell")            # back wall down, front rim on top
+export(chin.rotate([-90, 0, 0]).translate([0, 0, T_FRONT]), "print_bezel_chin")     # back wall down
 export(gf.translate([0, 0, -GZ0]), "print_grille_ring")         # bottom edge down, beveled top up
 export(shell.translate([0, 0, -SZ0]), "print_grille_shell")     # bottom edge down, beveled top up
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
