@@ -61,6 +61,7 @@ The full parts list is in [BOM.md](BOM.md).
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
 | `enclosure/renders/` | `current_*` renders of the current design, plus the original Cowork renders |
 | [`BOM.md`](BOM.md) | Bill of materials |
+| [`docs/diagrams/`](docs/diagrams) | Assembly and wiring diagrams (PNG and a printable PDF) |
 
 ## Build order
 
@@ -267,6 +268,17 @@ closed box, so it also prints the open area through the lid. That should be only
 wire hole (50.3 mm²), which you seal with hot glue during assembly. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
 
 ### 2. Assemble
+
+The assembly diagrams in [`docs/diagrams/`](docs/diagrams) go with these steps. They are also in one
+printable file, [`assembly_diagrams.pdf`](docs/diagrams/assembly_diagrams.pdf).
+
+| Sheet | Shows |
+| --- | --- |
+| [1. General assembly](docs/diagrams/1_general_assembly.png) | How the bezel, lid and spine, tub, drivers and grille shell fit together |
+| [2. Base and spine](docs/diagrams/2_base_and_spine.png) | Rear view: passive radiator, power plate, PD trigger, bolts, dowels, magnets, cable clip |
+| [3. Bezel assembly](docs/diagrams/3_bezel_assembly.png) | Tray contents, felt pads, tablet and FPC adapter, chin bar and radar |
+| [4. Wiring](docs/diagrams/4_wiring.png) | Every circuit, with wire gauges and colors, splices and sealed pass-throughs |
+
 
 1. Press the M3 heat-set inserts in: four into the back face of the chin bar, four from the back into
    the shell's spine-bolt bosses, and two into the power plate pocket on the spine's rear face.

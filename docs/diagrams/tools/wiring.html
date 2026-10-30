@@ -1,0 +1,200 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Wiring diagram</title></head>
+<body><script type="module">
+import { frame, CSS, DRAW } from './sheet.js';
+const q = new URLSearchParams(location.search);
+document.head.insertAdjacentHTML('beforeend', `<style>${CSS}
+  .wk td{font-size:14px;padding:4px 6px} .sw{display:inline-block;width:34px;height:0;border-top:4px solid;vertical-align:middle}
+  .usb{display:inline-block;width:34px;height:7px;background:#888;border-radius:4px;vertical-align:middle;box-shadow:inset 0 0 0 2px #888, inset 0 0 0 3px #fff}
+</style>`);
+const ui = frame({title: 'WIRING DIAGRAM', subtitle: 'Power, audio and sensor circuits', sheet: q.get('total') || 4,
+                  total: q.get('total') || 4, dwg: 'SH-WIR-01', rev: q.get('rev') || 'A', date: q.get('date') || '',
+                  commit: q.get('commit') || ''});
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(NS, 'svg');
+svg.setAttribute('width', DRAW.w); svg.setAttribute('height', DRAW.h); ui.draw.appendChild(svg);
+const F = 'DejaVu Sans, Arial, sans-serif';
+const el = (t, a, parent = svg) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); parent.appendChild(e); return e; };
+const text = (x, y, s, o = {}) => { const t = el('text', {x, y, 'font-family': F, 'font-size': o.size || 14, 'font-weight': o.bold ? 700 : 400,
+  'text-anchor': o.anchor || 'start', fill: o.fill || '#111', ...(o.rot ? {transform: `rotate(${o.rot} ${x} ${y})`} : {})}); t.textContent = s; return t; };
+const COLOR = {RD: '#d0202a', BK: '#111', YE: '#e0b000', GN: '#1f9a3a', USB: '#8a8a8a', AUD: '#444'};
+
+// zones
+function zone(x, y, w, h, title, fill, bottom = false) {
+  el('rect', {x, y, width: w, height: h, rx: 10, fill, stroke: '#666', 'stroke-width': 1.6, 'stroke-dasharray': '10 6'});
+  text(x + 12, bottom ? y + h - 12 : y + 24, title, {bold: true, size: 14, fill: '#555'});
+}
+zone(10, 10, 230, 300, 'WALL', '#fafafa');
+zone(260, 10, 330, 1420, 'SPINE (lid and spine)', '#f6f6f2');
+zone(610, 10, 980, 905, 'BEZEL TRAY', '#f3f6f9');
+zone(610, 945, 980, 485, 'BASE TUB  (woofer chamber, sealed)', '#f7f4f0');
+zone(650, 1105, 250, 300, 'FR CHAMBER L (sealed)', '#efe9e1', true);
+zone(1170, 1105, 250, 300, 'FR CHAMBER R (sealed)', '#efe9e1', true);
+el('rect', {x: 405, y: 110, width: 100, height: 940, fill: '#e9e7df', stroke: 'none'});
+text(455, 600, 'CABLE CHANNEL', {rot: -90, anchor: 'middle', size: 13, fill: '#777', bold: true});
+
+// components: box with an ID tag and pins
+const pins = {};
+function comp(id, x, y, w, h, title, sub, p = [], o = {}) {
+  el('rect', {x, y, width: w, height: h, rx: 4, fill: '#fff', stroke: '#111', 'stroke-width': 2.2, ...(o.dashed ? {'stroke-dasharray': '8 5'} : {})});
+  el('rect', {x, y: y - 22, width: 54, height: 22, fill: '#111'});
+  text(x + 27, y - 6, id, {fill: '#fff', bold: true, size: 13, anchor: 'middle'});
+  const topPins = p.some(q => q[1] === 'T' && q[3]), ty = topPins ? 46 : 26;
+  text(x + w / 2, y + ty, title, {bold: true, size: 15, anchor: 'middle'});
+  (Array.isArray(sub) ? sub : [sub]).forEach((s, i) => s && text(x + w / 2, y + ty + 20 + i * 17, s, {size: 12.5, anchor: 'middle', fill: '#444'}));
+  for (const [name, side, at, label] of p) {
+    let px, py, lx, ly, anc = 'middle';
+    if (side === 'L') { px = x; py = at; lx = x + 8; ly = at + 4.5; anc = 'start'; }
+    if (side === 'R') { px = x + w; py = at; lx = x + w - 8; ly = at + 4.5; anc = 'end'; }
+    if (side === 'T') { px = at; py = y; lx = at; ly = y + 20; }
+    if (side === 'B') { px = at; py = y + h; lx = at; ly = y + h - 8; }
+    el('rect', {x: px - 5, y: py - 5, width: 10, height: 10, fill: '#fff', stroke: '#111', 'stroke-width': 1.6});
+    if (label) text(lx, ly, label, {size: 11.5, anchor: anc, fill: '#222', bold: true});
+    pins[`${id}.${name}`] = [px, py];
+  }
+}
+// wires: orthogonal polylines through points; P('ID.pin') looks up a pin
+const P = k => pins[k];
+function wire(pts, kind, label, at = 0.5, o = {}) {
+  pts = pts.map(p => typeof p === 'string' ? P(p) : p);
+  const d = 'M' + pts.map(p => p.join(',')).join(' L');
+  if (kind === 'USB') {
+    el('path', {d, fill: 'none', stroke: COLOR.USB, 'stroke-width': 9, 'stroke-linejoin': 'round'});
+    el('path', {d, fill: 'none', stroke: '#fff', 'stroke-width': 3, 'stroke-linejoin': 'round'});
+  } else if (kind === 'AUD') {
+    el('path', {d, fill: 'none', stroke: COLOR.AUD, 'stroke-width': 6, 'stroke-linejoin': 'round', ...(o.dashed ? {'stroke-dasharray': '10 6'} : {})});
+  } else {
+    el('path', {d, fill: 'none', stroke: COLOR[kind], 'stroke-width': 3, 'stroke-linejoin': 'round', ...(o.dashed ? {'stroke-dasharray': '9 6'} : {})});
+  }
+  if (label) {
+    const seg = o.seg ?? Math.floor((pts.length - 1) / 2), a = pts[seg], b = pts[seg + 1];
+    const x = a[0] + (b[0] - a[0]) * at, y = a[1] + (b[1] - a[1]) * at, vert = a[0] === b[0];
+    const w = label.length * 7.6 + 10;
+    const g = el('g', {transform: vert ? `rotate(-90 ${x} ${y})` : ''});
+    el('rect', {x: x - w / 2, y: y - 10, width: w, height: 20, fill: '#fff', stroke: kind === 'USB' || kind === 'AUD' ? '#777' : COLOR[kind], 'stroke-width': 1.2, rx: 3}, g);
+    const t = el('text', {x, y: y + 4.5, 'font-family': F, 'font-size': 12, 'font-weight': 700, 'text-anchor': 'middle', fill: '#111'}, g);
+    t.textContent = label;
+  }
+}
+const splice = (x, y, name, dx = 8, dy = -8) => { el('circle', {cx: x, cy: y, r: 6, fill: '#111'}); text(x + dx, y + dy, name, {size: 12, bold: true}); return [x, y]; };
+function grommet(x, y, w, h, tag, note, side = 'R') {
+  el('rect', {x: x - w / 2, y: y - h / 2, width: w, height: h, rx: Math.min(w, h) / 2, fill: 'none', stroke: '#111', 'stroke-width': 2.4});
+  if (side === 'T') { text(x, y - h / 2 - 7, tag, {bold: true, size: 13, anchor: 'middle'}); return; }
+  const tx = side === 'R' ? x + w / 2 + 6 : x - w / 2 - 6;
+  text(tx, y - (note ? 4 : -4), tag, {bold: true, size: 13, anchor: side === 'R' ? 'start' : 'end'});
+  if (note) text(tx, y + 12, note, {size: 11.5, anchor: side === 'R' ? 'start' : 'end', fill: '#444'});
+}
+
+// ---- components
+comp('E8', 30, 90, 170, 150, 'USB-C CHARGER', ['65 W+', 'must offer 20 V'], [['out', 'R', 215, '']]);
+comp('E9', 300, 70, 265, 175, 'PD TRIGGER', ['Adafruit HUSB238', 'DIP switch: 20 V only', 'behind the power plate'],
+     [['in', 'L', 215, 'USB-C'], ['p', 'R', 115, '+'], ['n', 'R', 185, '−']]);
+comp('E2', 960, 300, 260, 300, 'KABD-430 AMP', ['Dayton, 2.1 mode', '10–26 V in'],
+     [['pp', 'L', 330, 'PWR +'], ['pn', 'L', 370, 'PWR −'], ['aux', 'T', 1190, 'J13'],
+      ['lp', 'B', 985, 'L+'], ['ln', 'B', 1005, 'L−'], ['sp', 'B', 1045, 'S+'], ['sn', 'B', 1065, 'S−'],
+      ['rp', 'B', 1105, 'R+'], ['rn', 'B', 1125, 'R−'], ['j5', 'B', 1190, 'J5']]);
+comp('E1', 1330, 30, 240, 90, 'TABLET', ['Galaxy Tab A9+'], [['usb', 'B', 1450, '']]);
+comp('A1', 1385, 140, 130, 42, 'FPC 90°', '', [['a', 'T', 1450, ''], ['b', 'B', 1450, '']]);
+comp('A2', 1330, 205, 240, 125, 'UGREEN 2-in-1', [],
+     [['plug', 'T', 1450, ''], ['jack', 'L', 240, '3.5 mm'], ['pd', 'B', 1450, 'PD IN']]);
+comp('E6', 1330, 460, 240, 140, 'USB-C PD MODULE', ['20 V in, USB-C PD out', '15 W or more'],
+     [['out', 'T', 1450, 'USB-C OUT'], ['ip', 'L', 545, 'IN +'], ['in', 'L', 580, 'IN −']]);
+comp('E10', 1170, 680, 230, 80, 'KPX PROGRAMMER', ['bench only, not fitted'], [['j', 'T', 1300, '']], {dashed: true});
+comp('E5', 650, 290, 200, 110, '5 V BUCK', ['MP1584EN', 'set 5.0 V first'],
+     [['ip', 'R', 330, 'IN +'], ['in', 'R', 370, 'IN −'], ['on', 'B', 700, 'OUT −'], ['op', 'B', 780, 'OUT +']]);
+comp('E3', 650, 480, 200, 140, 'ESP32-C3', ['SuperMini', 'USB-C: flash only'],
+     [['g', 'T', 700, 'GND'], ['v', 'T', 780, '5V'], ['rx', 'B', 740, 'IO20'], ['tx', 'B', 800, 'IO21']]);
+comp('E4', 650, 700, 200, 100, 'LD2410C RADAR', ['in the chin bar'],
+     [['tx', 'T', 740, 'TX'], ['rx', 'T', 800, 'RX'], ['g', 'L', 785, 'GND'], ['v', 'R', 780, 'VCC']]);
+comp('S1', 690, 1250, 170, 100, 'ND65-4  LEFT', ['4 Ω full range'], [['p', 'T', 745, '+'], ['n', 'T', 795, '−']]);
+comp('S2', 950, 1250, 170, 100, 'ND105-4  WOOFER', ['4 Ω'], [['p', 'T', 1005, '+'], ['n', 'T', 1055, '−']]);
+comp('S1 ', 1210, 1250, 170, 100, 'ND65-4  RIGHT', ['4 Ω full range'], [['p', 'T', 1265, '+'], ['n', 'T', 1315, '−']]);
+comp('S3', 1440, 1250, 130, 100, 'ND105-PR', ['passive, no wires'], [], {dashed: true});
+
+// ---- 20 V power
+wire(['E8.out', 'E9.in'], 'USB');
+text(130, 270, 'E8a USB-C cable', {size: 12.5, bold: true, anchor: 'middle'});
+grommet(250, 215, 14, 34, 'G1', '', 'T');
+const S1 = splice(900, 115, 'SP1', 8, -8), S1b = splice(900, 330, 'SP2', 8, -8);
+const S2 = splice(870, 185, 'SP3', -40, -8), S2b = splice(870, 370, 'SP4', 8, 20);
+wire(['E9.p', S1], 'RD', '18 RD', 0.45);
+wire(['E9.n', S2], 'BK', '18 BK', 0.45);
+grommet(600, 150, 18, 96, 'G2', '', 'T');
+wire([S1, S1b], 'RD');
+wire([S1b, 'E2.pp'], 'RD');
+wire([S1b, 'E5.ip'], 'RD');
+wire([S1, [1290, 115], [1290, 545], 'E6.ip'], 'RD', '18 RD', 0.5, {seg: 0});
+wire([S2, S2b], 'BK');
+wire([S2b, 'E2.pn'], 'BK');
+wire([S2b, 'E5.in'], 'BK');
+wire([S2, [1310, 185], [1310, 580], 'E6.in'], 'BK', '18 BK', 0.55, {seg: 0});
+
+// ---- tablet and audio
+wire(['E1.usb', 'A1.a'], 'USB');
+wire(['A1.b', 'A2.plug'], 'USB');
+wire(['E6.out', 'A2.pd'], 'USB', 'USB-C', 0.5);
+wire(['A2.jack', [1190, 240], 'E2.aux'], 'AUD', 'A3 3.5 mm', 0.5, {seg: 0});
+el('rect', {x: 1176, y: 252, width: 28, height: 36, fill: 'none', stroke: '#111', 'stroke-width': 1.6, 'stroke-dasharray': '5 3'});
+text(1170, 276, 'A4 opt.', {size: 11.5, anchor: 'end', bold: true});
+wire(['E2.j5', [1190, 640], [1300, 640], 'E10.j'], 'AUD', '', 0.5, {dashed: true});
+
+// ---- 5 V and radar
+const S5 = splice(780, 445, 'SP5', 8, 22), S6 = splice(700, 445, 'SP6', -48, 22);
+wire(['E5.op', S5, 'E3.v'], 'RD', '');
+wire(['E5.on', S6, 'E3.g'], 'BK', '');
+wire([S5, [880, 445], [880, 780], 'E4.v'], 'RD', '26 RD', 0.5, {seg: 1});
+wire([S6, [630, 445], [630, 785], 'E4.g'], 'BK', '26 BK', 0.5, {seg: 1});
+wire(['E4.tx', 'E3.rx'], 'YE', 'YE', 0.5);
+wire(['E4.rx', 'E3.tx'], 'GN', 'GN', 0.5);
+
+// ---- speaker pairs: amp -> tray cable hole -> spine channel -> lid hole -> tub
+const spk = [  // amp pin, tray level, spine x, tub level, speaker pin, colour
+  ['E2.lp', 820, 420, 1080, 'S1.p', 'RD'], ['E2.ln', 830, 430, 1070, 'S1.n', 'BK'],
+  ['E2.sp', 850, 450, 1040, 'S2.p', 'RD'], ['E2.sn', 860, 460, 1030, 'S2.n', 'BK'],
+  ['E2.rp', 880, 480, 1000, 'S1 .p', 'RD'], ['E2.rn', 890, 490, 990, 'S1 .n', 'BK']];
+for (const [a, ty, sx, tl, b, c] of spk) {
+  const A = P(a), B = P(b);
+  wire([A, [A[0], ty], [sx, ty], [sx, tl], [B[0], tl], B], c);
+}
+text(1140, 872, 'W1  20 AWG pairs ×3', {size: 12.5, bold: true});
+grommet(600, 855, 18, 90, 'G2', '', 'T');
+grommet(600, 1035, 18, 112, 'G3', '', 'T');
+grommet(770, 1105, 70, 16, 'G4', '', 'R');
+grommet(1290, 1105, 70, 16, 'G4', '', 'R');
+
+// ---- panel: components, wire codes, pass-throughs, notes
+ui.key.innerHTML = `
+<table class="wk"><tr><th>ID</th><th>COMPONENT</th><th>WHERE</th></tr>
+<tr><td>E8</td><td>USB-C PD charger, 65 W+</td><td>wall</td></tr>
+<tr><td>E9</td><td>PD trigger, HUSB238</td><td>spine</td></tr>
+<tr><td>E2</td><td>KABD-430 amplifier</td><td>tray</td></tr>
+<tr><td>E6</td><td>USB-C PD module</td><td>tray</td></tr>
+<tr><td>E5</td><td>5 V buck, MP1584EN</td><td>tray</td></tr>
+<tr><td>E3</td><td>ESP32-C3 SuperMini</td><td>tray</td></tr>
+<tr><td>E4</td><td>LD2410C radar</td><td>chin</td></tr>
+<tr><td>A1 / A2</td><td>FPC 90° adapter / UGREEN 2-in-1</td><td>tray</td></tr>
+<tr><td>A3 / A4</td><td>3.5 mm cable / ground loop isolator (opt.)</td><td>tray</td></tr>
+<tr><td>S1–S3</td><td>ND65-4 ×2, ND105-4, ND105-PR</td><td>tub</td></tr>
+<tr><td>E10</td><td>KPX programmer (to J5, bench only)</td><td>—</td></tr>
+</table>
+<table class="wk" style="margin-top:14px"><tr><th>WIRE</th><th>CODE</th><th>USE</th></tr>
+<tr><td><span class="sw" style="border-color:${COLOR.RD}"></span></td><td>18 RD</td><td>+20 V (W2)</td></tr>
+<tr><td><span class="sw" style="border-color:${COLOR.BK}"></span></td><td>18 BK</td><td>Ground (W2)</td></tr>
+<tr><td><span class="sw" style="border-color:${COLOR.RD}"></span><span class="sw" style="border-color:${COLOR.BK};margin-left:4px;width:14px"></span></td><td>20 pair</td><td>Speaker, + / − (W1)</td></tr>
+<tr><td><span class="sw" style="border-color:${COLOR.RD};border-top-width:2px"></span></td><td>26 RD / BK</td><td>5 V / ground (W3)</td></tr>
+<tr><td><span class="sw" style="border-color:${COLOR.YE};border-top-width:2px"></span><span class="sw" style="border-color:${COLOR.GN};border-top-width:2px;margin-left:4px;width:14px"></span></td><td>26 YE / GN</td><td>Radar TX → IO20, RX ← IO21</td></tr>
+<tr><td><span class="usb"></span></td><td>USB-C</td><td>Cables and adapters</td></tr>
+<tr><td><span class="sw" style="border-color:${COLOR.AUD};border-top-width:6px"></span></td><td>3.5 mm</td><td>Line-level audio</td></tr>
+</table>`;
+ui.notes.innerHTML = `<div class="nh">PASS-THROUGHS</div>
+<div class="note"><span class="nkey" style="width:34px">G1</span><span>Power plate opening on the spine's rear.</span></div>
+<div class="note"><span class="nkey" style="width:34px">G2</span><span>Ø13 cable hole in the tray's back wall, at the top of the spine channel.</span></div>
+<div class="note"><span class="nkey" style="width:34px">G3</span><span>Ø8 lid hole into the woofer chamber. <b>Fill with hot glue.</b></span></div>
+<div class="note"><span class="nkey" style="width:34px">G4</span><span>Full-range chamber wall holes ×2. <b>Fill with hot glue.</b></span></div>
+<div class="nh" style="margin-top:16px">NOTES</div>
+<div class="note"><span class="nkey">1</span><span>Check for 20 V at E9's terminal before connecting anything.</span></div>
+<div class="note"><span class="nkey">2</span><span>If the buck is adjustable, set it to 5.0 V before connecting E3 and E4.</span></div>
+<div class="note"><span class="nkey">3</span><span>Output channels follow the DSP program loaded through J5. Check the board's silkscreen. J13 is the AUX input.</span></div>
+<div class="note"><span class="nkey">4</span><span>Speaker + goes to each driver's red-marked terminal.</span></div>
+<div class="note"><span class="nkey">5</span><span>Fit A4 only if you hear hum while the tablet charges.</span></div>`;
+window.__done = true;
+</script></body></html>

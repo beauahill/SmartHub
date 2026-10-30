@@ -1,0 +1,138 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Assembly diagram</title>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script></head>
+<body><script type="module">
+import * as THREE from 'three';
+import { STLLoader } from './node_modules/three/examples/jsm/loaders/STLLoader.js';
+import { frame, partsKey, notesKey, CSS, DRAW } from './sheet.js';
+const q = new URLSearchParams(location.search);
+const data = q.get('data') || 'diag', sheetId = q.get('sheet') || 'sheet1';
+document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`);
+const man = await (await fetch(`${data}/manifest.json`)).json();
+const sh = man.sheets.find(s => s.id === sheetId);
+const idx = man.sheets.indexOf(sh) + 1;
+const total = Number(q.get('total') || man.sheets.length);
+const ui = frame({title: sh.title, subtitle: sh.subtitle, sheet: idx, total, dwg: `SH-ASM-0${idx}`,
+                  rev: q.get('rev') || 'A', date: q.get('date') || '', commit: q.get('commit') || ''});
+partsKey(ui.key, sh.items); notesKey(ui.notes, sh.notes || []);
+
+const PR = 2, DW = DRAW.w, DH = DRAW.h;
+const renderer = new THREE.WebGLRenderer({antialias: false, preserveDrawingBuffer: true});
+renderer.setPixelRatio(PR); renderer.setSize(DW, DH); renderer.setClearColor(0xffffff, 1);
+ui.draw.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x9a9a9a, 2.2));
+const sun = new THREE.DirectionalLight(0xffffff, 1.0); scene.add(sun);
+const COL = {print: 0xf3f3f1, print2: 0xe4e8ee, driver: 0xcdcdcd, metal: 0xaab0b6, pcb: 0xcfe2cb, pcb2: 0xdcd6ea,
+             glass: 0x3b3f45, magnet: 0x8c949e, felt: 0xeadfc4};
+const loader = new STLLoader();
+const meshes = [];
+await Promise.all(sh.items.flatMap(it => it.parts.map(p => new Promise(res => loader.load(`${data}/${p.file}.stl`, geo => {
+  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({color: COL[p.style] || 0xeeeeee, side: THREE.DoubleSide}));
+  m.position.set(...p.offset); m.userData.item = it.n; m.userData.offset = p.offset;
+  geo.computeBoundingBox(); scene.add(m); meshes.push(m); res();
+}, undefined, () => res())))));
+
+// orthographic camera looking along -cam, fitted to everything
+const dir = new THREE.Vector3(...sh.cam).normalize();
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000); cam.up.set(0, 0, 1);
+const box = new THREE.Box3(); meshes.forEach(m => box.expandByObject(m));
+const ctr = box.getCenter(new THREE.Vector3()), rad = box.getSize(new THREE.Vector3()).length();
+cam.position.copy(ctr).addScaledVector(dir, rad * 1.5); cam.lookAt(ctr); cam.updateMatrixWorld();
+sun.position.copy(dir).multiplyScalar(1000).add(new THREE.Vector3(-300, -200, 600));
+let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+const v = new THREE.Vector3();
+meshes.forEach(m => { const bb = m.geometry.boundingBox;
+  for (const cx of [bb.min.x, bb.max.x]) for (const cy of [bb.min.y, bb.max.y]) for (const cz of [bb.min.z, bb.max.z]) {
+    v.set(cx, cy, cz).add(m.position).applyMatrix4(cam.matrixWorldInverse);
+    x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); } });
+const MARGIN_X = 190, MARGIN_Y = 50;                       // room for the balloon columns
+const sx = (x1 - x0) / (DW - 2 * MARGIN_X), sy = (y1 - y0) / (DH - 2 * MARGIN_Y), s = Math.max(sx, sy);
+const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+Object.assign(cam, {left: mx - s * DW / 2, right: mx + s * DW / 2, top: my + s * DH / 2, bottom: my - s * DH / 2,
+                    near: 1, far: rad * 3});
+cam.updateProjectionMatrix();
+
+// passes: normals + depth, colour, then an edge shader over both
+const size = new THREE.Vector2(DW * PR, DH * PR);
+const rtN = new THREE.WebGLRenderTarget(size.x, size.y, {depthTexture: new THREE.DepthTexture(size.x, size.y)});
+const rtC = new THREE.WebGLRenderTarget(size.x, size.y);
+scene.overrideMaterial = new THREE.MeshNormalMaterial({side: THREE.DoubleSide});
+renderer.setRenderTarget(rtN); renderer.render(scene, cam);
+scene.overrideMaterial = null;
+renderer.setRenderTarget(rtC); renderer.render(scene, cam);
+renderer.setRenderTarget(null);
+const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+  uniforms: {tC: {value: rtC.texture}, tN: {value: rtN.texture}, tD: {value: rtN.depthTexture},
+             px: {value: new THREE.Vector2(1 / size.x, 1 / size.y)}, span: {value: cam.far - cam.near}},
+  vertexShader: `varying vec2 u; void main(){u = uv; gl_Position = vec4(position.xy, 0., 1.);}`,
+  fragmentShader: `uniform sampler2D tC, tN, tD; uniform vec2 px; uniform float span; varying vec2 u;
+    float dep(vec2 p){return texture2D(tD, p).r * span;}
+    void main(){
+      vec3 n = texture2D(tN, u).rgb; float d = dep(u); float e = 0.;
+      for (int i = 0; i < 8; i++) {
+        float a = float(i) * 0.785398; vec2 o = vec2(cos(a), sin(a)) * px * 2.2;
+        vec3 n2 = texture2D(tN, u + o).rgb; float d2 = dep(u + o);
+        e = max(e, smoothstep(0.25, 0.45, length(n - n2)));
+        e = max(e, smoothstep(1.5, 3.0, abs(d - d2)));
+      }
+      vec3 c = pow(texture2D(tC, u).rgb, vec3(1.0 / 2.2));          // render targets are linear
+      gl_FragColor = vec4(mix(c, vec3(0.07), e), 1.);
+    }`}));
+const qs = new THREE.Scene(); qs.add(quad);
+renderer.render(qs, new THREE.Camera());
+
+// callouts
+const toPx = p => { const w = new THREE.Vector3(...p).project(cam); return [(w.x + 1) / 2 * DW, (1 - w.y) / 2 * DH]; };
+const ray = new THREE.Raycaster();
+function visibleAnchor(it) {
+  const own = meshes.filter(m => m.userData.item === it.n);
+  const bb = new THREE.Box3(); own.forEach(m => bb.expandByObject(m));
+  const c = bb.getCenter(new THREE.Vector3());
+  const [cx, cy] = toPx(c.toArray());
+  for (let r = 0; r < 260; r += 6) for (let k = 0; k < (r ? 16 : 1); k++) {
+    const a = k / 16 * Math.PI * 2, X = cx + r * Math.cos(a), Y = cy + r * Math.sin(a);
+    ray.setFromCamera(new THREE.Vector2(X / DW * 2 - 1, 1 - Y / DH * 2), cam);
+    const hit = ray.intersectObjects(meshes, false)[0];
+    if (hit && hit.object.userData.item === it.n) return [X, Y];
+  }
+  return [cx, cy];
+}
+const calls = [];
+for (const it of sh.items) calls.push({label: String(it.n), kind: 'item',
+  at: it.anchor ? toPx(it.anchor) : visibleAnchor(it)});
+for (const n of sh.notes || []) calls.push({label: n.k, kind: 'note', at: toPx(n.anchor)});
+const svgNS = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(svgNS, 'svg');
+svg.setAttribute('width', DW); svg.setAttribute('height', DH);
+svg.style.cssText = 'position:absolute;left:0;top:0';
+ui.draw.appendChild(svg);
+const el = (t, a) => { const e = document.createElementNS(svgNS, t); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+// explode trace lines: from each moved part's home position to where it is drawn
+for (const it of sh.items) for (const p of it.parts) {
+  const o = p.offset; if (Math.hypot(...o) < 1) continue;
+  const m = meshes.find(mm => mm.userData.item === it.n && mm.userData.offset === o); if (!m) continue;
+  const c = m.geometry.boundingBox.getCenter(new THREE.Vector3());
+  const a = toPx(c.toArray()), b = toPx([c.x + o[0], c.y + o[1], c.z + o[2]]);
+  el('line', {x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: '#9a9a9a', 'stroke-width': 1.3, 'stroke-dasharray': '14 5 3 5'});
+}
+const cxMid = DW / 2;
+for (const side of ['L', 'R']) {
+  const g = calls.filter(c => (c.at[0] < cxMid) === (side === 'L')).sort((a, b) => a.at[1] - b.at[1]);
+  const gap = 50, top = 40, bot = DH - 40;
+  let y = top - gap;
+  for (const c of g) { c.y = Math.max(c.at[1], y + gap); y = c.y; }
+  let over = (g.length ? g[g.length - 1].y : 0) - bot;
+  for (let i = g.length - 1; i >= 0 && over > 0; i--) { const lim = i < g.length - 1 ? g[i + 1].y - gap : bot; if (g[i].y > lim) g[i].y = lim; }
+  for (const c of g) c.x = side === 'L' ? 70 : DW - 70;
+}
+for (const c of calls) {
+  const r = 19, dx = c.at[0] - c.x, dy = c.at[1] - c.y, L = Math.hypot(dx, dy) || 1;
+  el('line', {x1: c.x + dx / L * r, y1: c.y + dy / L * r, x2: c.at[0], y2: c.at[1], stroke: '#111', 'stroke-width': 1.6});
+  el('circle', {cx: c.at[0], cy: c.at[1], r: 3.5, fill: '#111'});
+  if (c.kind === 'item') el('circle', {cx: c.x, cy: c.y, r, fill: '#fff', stroke: '#111', 'stroke-width': 2.4});
+  else el('rect', {x: c.x - 17, y: c.y - 17, width: 34, height: 34, fill: '#fff', stroke: '#111', 'stroke-width': 2.4});
+  const t = el('text', {x: c.x, y: c.y + 6.5, 'text-anchor': 'middle', 'font-size': 19, 'font-weight': 700,
+                         'font-family': 'DejaVu Sans, Arial, sans-serif'}); t.textContent = c.label;
+}
+window.__done = true;
+</script></body></html>
