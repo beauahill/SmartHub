@@ -296,8 +296,33 @@ printable file, [`assembly_diagrams.pdf`](docs/diagrams/assembly_diagrams.pdf).
    pilot holes. Turn the ND65 solder tabs up, into the notch.
 5. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
    Run epoxy along the tops of the two full-range chamber walls as well as the outer rim, so each chamber seals on its own.
-6. Linen version: wrap the linen around the grille ring, then slide the ring onto the tub.
-   Fabric-free version: slide the grille shell onto the tub from below.
+6. Linen version: cover the outside of the grille ring with linen (below), then slide the ring onto
+   the tub. Fabric-free version: slide the grille shell onto the tub from below.
+
+**Covering the grille ring.** The linen goes on the outer face only. The ring's outer face sits 0.6 mm
+inside the tub's top band, so the fabric finishes flush with the band. There's no room to fold it
+over an edge:
+- Inside, the ring clears the tub by 0.35 mm.
+- At the top, the beveled edge clears the band's chamfer by about the same.
+- Trim the fabric flush at the top and bottom edges instead.
+
+1. Iron the linen flat. Cut a strip about 900 x 130 mm with the weave square to the edges. The ring
+   is about 866 mm around and 111 mm tall on its outer face.
+2. Run a thin bead of fabric glue or Fray Check along a straight thread, about 3 mm in from one short
+   end. That end becomes the visible edge of the seam.
+3. Lightly mist the ring's outer face with spray adhesive. Spray the ring, not the fabric. Any glue on
+   the linen over the windows clogs its weave and muffles the drivers. Overspray just passes through
+   the open windows.
+4. Start at the rear right corner, a solid part of the ring away from the windows. Lay the linen on
+   with the weave level and keep it taut across the windows as you work around. Smooth it onto the
+   solid rails and posts only.
+5. Finish back at the rear right corner. Overlap the sealed end about 10 mm, cut through both layers
+   with a fresh blade and peel out the offcut, so the ends butt without a double layer. Press the seam
+   down.
+6. Once the glue has set, trim the top and bottom flush with the ring edges, using a fresh blade held
+   against the plastic. Seal both cut edges with a thin line of Fray Check.
+7. Check the fit before the glue fully cures. The ring should slide on from below without the fabric
+   catching. The linen's top edge should sit just under the band, with the face flush.
 7. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
    plate's sled with four M2.5 x 6 thread-forming screws, USB-C socket toward the opening. Put 18 AWG
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,

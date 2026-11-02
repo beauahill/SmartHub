@@ -87,8 +87,8 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |
 | M1 | 2 kg | PETG, PLA or ASA filament | About 1.6 L of solid volume in total (1.75 L with the grille shell), which is 2 to 2.2 kg of PLA at 100 % infill. A contrasting color for the grille shell works well. Print the bezel shell in PETG or ASA. Avoid carbon or metal-filled filament on the chin, which the radar looks through |
-| M2 | 1 piece | Linen version only. Acoustically transparent linen or speaker grille cloth, about 950 x 160 mm | Wraps the grille ring. The perimeter is about 870 mm and the band is 112 mm tall |
-| M3 | 1 can | Linen version only. Spray adhesive or thin double-sided tape | Fixes the fabric to the grille ring |
+| M2 | 1 piece | Linen version only. Acoustically transparent linen or speaker grille cloth, about 0.6 mm thick, at least 900 x 130 mm | Covers the grille ring's outer face only, trimmed flush at the top and bottom edges. The ring is about 866 mm around and 111 mm tall |
+| M3 | 1 can | Linen version only. Spray adhesive (sprayed on the ring, not the fabric), plus Fray Check or fabric glue for the cut edges | Fixes the fabric to the grille ring |
 | M4 | 1 tube | Two-part epoxy | Glues the lid to the tub. The seal must be airtight |
 
 ## 7. Tools and software
