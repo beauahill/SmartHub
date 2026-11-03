@@ -162,8 +162,8 @@ chambers needs support, so the supports stay outside where you can reach them:
   (0.21 mm for the shell). Under the band there is a reveal line of about 1 mm.
 - **Mounting rings.** The undersides of the rings inside the chambers taper at 45° down to the floor.
 - **Driver cutouts.** These have 45° sides and a flat top that prints as a bridge: 22 mm for the
-  ND65s, 39 mm for the woofer and radiator. On the ND65s, the solder-tab notch above them is a
-  33 mm bridge.
+  ND65s, 39 mm for the woofer and radiator. On the ND65s, the solder-tab opening through the
+  mounting face above them is a 32 mm bridge.
 - **Woofer and radiator.** Their centers are at Z 56.25, 4.25 mm below the full-range drivers. This
   keeps their recesses under the band chamfer.
 - **Bottom edge.** The outer bottom edge has a 0.6 mm chamfer, so elephant's foot doesn't stop the
@@ -261,8 +261,16 @@ shaped to its frame, deep enough that the surround clears the inside of the cove
 excursion: 4 mm for the ND65s, 5 mm for the woofer and 9 mm for the passive radiator. Clearance is
 measured to the inner face of the ring or shell, which is closer than the linen, so it holds for
 both finishes. A thickened ring behind each
-recess carries blind pilot holes on the published bolt circles. The ND65 recesses have a notch on
-the top side for the solder tabs, so mount the ND65s with their tabs up. Each recess allows for a
+recess carries blind pilot holes on the published bolt circles.
+
+The ND65's solder tabs stand 0.7 mm outside its 52.6 mm cutout and are square-cornered. So each
+ND65 recess has an opening through the mounting face above the cutout: 32.8 mm wide, reaching
+27.8 mm from the axis, with 45° top corners. The tabs pass through it as the driver goes in, and
+the flange still covers it. Behind a 2 mm strip of mounting face, the relief opens up through the
+top of the mounting ring for the solder joints and wires. Mount the ND65s with their tabs up.
+Fitting Dayton's ND65 model along its whole insertion path shows no contact, with or without the
+gasket. The opening's corners come within about 0.5 mm of the flange edge, so the gasket seal there
+is thin. Assembly step 4 seals it with glue from inside. Each recess allows for a
 1 mm compressed gasket under the flange (`GASKET_T`). The ND105 ear shape is inferred from the
 drawing, so its recesses have 1 mm of extra clearance.
 
@@ -316,8 +324,15 @@ printable file, [`assembly_diagrams.pdf`](docs/diagrams/assembly_diagrams.pdf).
    Pass the full-range pairs through the chamber holes. Seal the chamber holes and the lid hole with
    hot glue around the wires, from the inside. Fill the lid hole completely. It opens into the woofer
    chamber, and any gap left there acts as a port and spoils the passive radiator tuning.
-4. Wire the drivers and mount them from the outside on 1 mm gasket tape with M3 x 6 screws in the
-   pilot holes. Turn the ND65 solder tabs up, into the notch.
+4. Mount the drivers from the outside on 1 mm gasket tape with M3 x 6 screws in the pilot holes.
+   Lay the tape around the outer edge of each mounting face, under the flange.
+   - **Woofer and radiator:** wire them first.
+   - **ND65s:** put them in unwired, tabs up, so the tabs pass through the opening above the
+     cutout. Solder blobs on the tabs won't fit through it. Solder the leads afterwards, reaching in
+     through the open top of each full-range chamber; the lid isn't on yet.
+   - **Seal each ND65 opening:** run a bead of hot glue or silicone from inside, along the top of
+     the opening where the flange covers it. The opening's corners come within about 0.5 mm of the
+     flange edge, so the gasket alone won't seal them.
 5. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
    Run epoxy along the tops of the two full-range chamber walls as well as the outer rim, so each chamber seals on its own.
 6. Linen version: cover the outside of the grille ring with linen (below), then slide the ring onto

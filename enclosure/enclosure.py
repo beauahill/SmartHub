@@ -63,8 +63,11 @@ FR_CH_Y1 = 80.0                # full range chamber back wall outer face
 #   flange_t   frame flange thickness
 #   proud      how far the surround stands in front of the mounting face, at rest
 #   cut        baffle cutout
-#   tab_notch  (half width, reach from the axis, depth behind the mounting face where it starts):
-#              relief on the top side for solder tabs that stick out past the cutout
+#   tab_notch  (half width and top through the mounting face, half width and reach behind it, skin):
+#              relief on the top side for solder tabs that stick out past the cutout. It opens through the
+#              mounting face just enough for the tabs to pass as the driver goes in, with its top corners
+#              cut at 45 deg, so the flange still covers it. Behind the face (past the skin) it opens
+#              up through the top of the mounting ring, for the solder joints and wires.
 #   bc         screw bolt circle (4 x 4.2 mm holes at 45 deg)
 #   cover_clear    gap from the surround (at rest) to the inside of the covering, for cone excursion.
 #                  Measured to the inner face of the grille ring / grille shell (RECESS - RING_GAP from
@@ -74,8 +77,9 @@ DRIVERS = {
     # ND65-4: 64 mm frame, 52 mm cutout, 48 mm deep (43 behind the mounting face), Xmax 3.5 mm.
     # Outline, proud height and solder tabs measured from Dayton's STEP/STL. The tabs reach 27 mm from
     # the axis within +-15.7 mm, from 2.4 mm behind the flange (1.4 mm behind the seat, with the gasket
-    # under the flange). Mount the ND65s with the tabs up.
-    "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.5, 28.0, 1.2),
+    # under the flange). They pass through the mounting face as the driver goes in, so the notch opens
+    # through it. Mount the ND65s with the tabs up.
+    "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.4, 27.8, 18.0, 42.0, 2.0),
                    bc=66.0, cover_clear=4.0, well_clr=0.5),
     # ND105-4: 105 mm frame, ears to 120 mm, 93 mm cutout, 67 mm deep (57 behind the mounting face),
     # Xmax 4 mm. Ear shape inferred from the drawing, so the recess has extra clearance.
@@ -322,9 +326,15 @@ def mount_driver(tub, name, x, z, rear=False):
     c0, c1 = sorted((seat + sgn * 1.0, back - sgn * 5.0))
     tub = tub - prism_y(teardrop_up(d["cut"] / 2), x, z, c0, c1)
     if d["tab_notch"]:
-        hw, reach, depth = d["tab_notch"]
-        n0, n1 = sorted((seat - sgn * depth, back - sgn * 5.0))
-        tub = tub - box(x - hw, x + hw, n0, n1, z + math.sqrt((d["cut"] / 2) ** 2 - hw ** 2) - 0.5, z + reach)
+        fw, ftop, hw, reach, skin = d["tab_notch"]
+        zf = math.sqrt((d["cut"] / 2) ** 2 - hw ** 2) - 0.5          # below where the sides meet the cutout
+        band = lambda w, top: CS.square([2 * w, top - zf]).translate([-w, -top])   # prism_y: profile +y is -Z
+        k = fw + ftop - 0.5                                            # 45 deg corner cuts: |x| + z <= k
+        clip = CS([[(-k, 0), (0, -k), (k, 0), (0, k)]])                # diamond |x| + |z| <= k
+        f0, f1 = sorted((seat + sgn * 0.5, seat - sgn * (skin + 0.01)))
+        tub = tub - prism_y(band(fw, ftop) ^ clip, x, z, f0, f1)
+        n0, n1 = sorted((seat - sgn * skin, back - sgn * 5.0))
+        tub = tub - prism_y(band(hw, reach), x, z, n0, n1)
     # blind pilot holes on the bolt circle
     for k in range(4):
         a = math.radians(45 + 90 * k)

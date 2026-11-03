@@ -138,7 +138,7 @@ sheets = [
          dict(k="A", text="Bezel bolts to the spine from the rear (sheet 2).", anchor=[-30, 75, 165 + 75]),
          dict(k="B", text="Epoxy the lid to the tub: outer rim and both full-range chamber walls. Airtight.", anchor=[-148, 70, 116 + 75.5]),
          dict(k="C", text="Tablet slides up into the shell from below, then the chin bar closes the slot.", anchor=add(wpt(0, 0, 5), bez, [0, -40, -60])),
-         dict(k="D", text="ND65 solder tabs up, into the notch above the cutout.", anchor=[FR_X, -125 + 8, DRV_Z + 30]),
+         dict(k="D", text="ND65: tabs up, through the opening above the cutout. Solder after mounting, then seal the opening from inside.", anchor=[FR_X, -125 + 8, DRV_Z + 30]),
        ]),
   dict(id="sheet2", title="BASE AND SPINE", subtitle="Exploded view, rear", cam=[0.50, 0.76, 0.42],
        items=[

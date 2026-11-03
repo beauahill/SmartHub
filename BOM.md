@@ -76,7 +76,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
-| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 943 cm³ |
+| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 940 cm³ |
 | P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 354 cm³ |
 | P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 111 | 81 cm³ |
 | P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 196 cm³ |
