@@ -114,22 +114,46 @@ painted supports there:
 - Paint only the channel ceiling.
 - Pull the supports out through the pocket. The channel is open to it along its whole length.
 
-Settings for the bezel shell on the H2S:
+Settings for the bezel shell and chin bar in PETG on the H2S, 0.4 mm nozzle. Start from Bambu
+Studio's profile for your PETG and change these. Both parts fit on one plate, side by side.
 
-| Setting | Value | Why |
-| --- | --- | --- |
-| Material | PETG, or ASA in the closed chamber | It sits behind a charging tablet and the amp. PLA+ works if the display stays out of sun and away from the oven, but PLA softens near 55 °C and the lip would creep |
-| Nozzle | 0.4 mm | For the 1.2 mm lip, the 4 mm label text and the 1.6 mm cradle walls |
-| Layer height | 0.2 mm, with variable layer height down to about 0.12 mm over the top 4 mm | The front face prints last, as the top surface, and its 3 mm round-over steps visibly at 0.2 mm |
-| Top surface | Monotonic lines. Ironing is optional | This is the face you look at |
-| Wall loops | 3 | Fills the 2.4 mm tray walls with walls, and puts solid walls around the inserts and counterbores |
-| Infill | 15 % gyroid | Almost all of the part is walls |
-| Supports | Off, or painted on the USB-C roof only (see above) | |
-| Brim | None for PETG on textured PEI. A 5 mm brim for ASA | |
-| Seam | Aligned, on the bottom edge (the chin side) | Hidden by the chin bar |
+| Setting | Bezel shell | Chin bar | Why |
+| --- | --- | --- | --- |
+| Orientation | Back wall down, as exported | Back face down, as exported | |
+| Plate | Textured PEI | Textured PEI | PETG can fuse to smooth PEI. The texture lands on the back faces |
+| Nozzle / bed | 240–250 °C / 70–80 °C | Same | Use your filament's profile values |
+| Chamber | Unheated | Unheated | Follow Studio if it says to open the door or top vent for PETG |
+| Layer height | 0.2 mm, with variable layer height down to about 0.12 mm over the top 4 mm | 0.2 mm | The shell's front face prints last, and its 3 mm round-over steps visibly at 0.2 mm |
+| Wall generator | Arachne | Arachne | Prints the 1.2 mm lip, the 1.6 mm cradle walls and radar window, and the label text as solid walls instead of gap fill |
+| Wall loops | 3 | 4 | Fills the 2.4 mm tray walls. On the chin, solid walls around the four inserts |
+| Top / bottom shells | 5 / 4 | 5 / 4 | |
+| Infill | 15 % gyroid | 30 % gyroid | The shell is almost all walls |
+| Supports | Off, or painted on the USB-C roof only (see above) | Off | |
+| Brim | None | 3 mm | The chin is 271 mm long and narrow. The brim lands on its hidden back face |
+| Seam | Aligned, on the bottom edge | Aligned, on the bottom edge | Hidden by the chin bar and the base |
+| Outer wall speed | About 80 mm/s | About 80 mm/s | A clean front face |
+| Top surface | Monotonic lines, no ironing | Same | Ironing tends to drag and smear on PETG |
+| Cooling | Profile defaults, bridges at 100 % fan | Same | For the mic slots, the radar window and the USB-C roof |
+| Elephant foot compensation | 0.15–0.2 mm | Same | PETG squishes more than PLA |
+| Avoid crossing walls | On | On | Less stringing across the labels and cradles |
 
-The heat-set inserts for the spine bolts go in from the back face, which is the first layer. Push
-them in a little below flush, so elephant's foot at the hole mouth doesn't matter.
+PETG notes:
+- **Dry the filament first,** about 65 °C for 6–8 hours. Wet PETG strings across the vents, label
+  text and mic slots, and black shows every blob.
+- **USB-C roof supports.** If you need them, don't use PETG supports, because they weld to the part.
+  Set the support interface to PLA; the AMS swaps filament for the interface layers, and PLA peels
+  cleanly off PETG.
+- **Heat-set inserts.** The spine-bolt inserts go in from the shell's back face, and the chin-screw
+  inserts into the chin's back face. Both of those faces are first layers. Push the inserts in a
+  little below flush, so elephant's foot at the hole mouth doesn't matter.
+- **Black filament and the radar.** Black filament is colored with carbon black. That isn't the
+  carbon-fiber fill to avoid, and through 1.6 mm it is usually fine at 24 GHz, but some black
+  filaments weaken the signal noticeably. Before final assembly, power the LD2410C behind the
+  printed chin and compare its distance and presence readings in ESPHome with and without the chin
+  in front. If the range drops a lot, print the chin in an uncolored or lighter PETG.
+- **PLA+ instead.** It works only if the display stays out of sun and away from the oven. PLA
+  softens near 55 °C, and the lip would creep. ASA also works, in the closed chamber with a 5 mm
+  brim.
 
 **Printing the tub.** Print it floor down, long side along X. It is laid out so nothing inside the
 chambers needs support, so the supports stay outside where you can reach them:
