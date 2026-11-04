@@ -131,13 +131,14 @@ x = -94, and the bottom of the entry slot has a shallow relief groove for the bu
   estimates. Measure your tablet and regenerate.
 - **Slide check:** a slide-in check with a tablet and camera-bump model finds no contact.
 
-**Side-key pin holes.** The power and volume-down keys sit on the tablet's top edge, under the rim.
-Two 2.2 mm holes through the top rim let you press them with a paperclip or SIM tool. A forced
-restart is both held for about 7 seconds; a tablet that has shut down fully needs a long press on
-power.
-- **Position:** the holes are countersunk on the outside, at the middle of the tablet's thickness.
-  Their positions (`KEY_FROM_LEFT`, from the tablet's left edge, front view with USB-C on the right)
-  are estimates. Measure your tablet and regenerate before printing.
+**Power-key pin hole.** The tablet's side keys sit on its top edge, under the rim. A 2.2 mm hole
+through the top rim, over the power key, lets you press it with a paperclip or SIM tool. Use it to
+start a tablet that has shut down fully: Samsung tablets don't boot on their own when the charger is
+plugged in.
+- **Position:** the hole is countersunk on the outside, at the middle of the tablet's thickness,
+  49 mm from the tablet's left edge (measured, front view with USB-C on the right; `KEY_FROM_LEFT`).
+- **Volume keys:** they get no hole. A forced restart (power and volume down) means taking the
+  tablet out. To add one, put `"volume_down"` in `KEY_FROM_LEFT`.
 - **Under a mic slot:** if a key sits under one of the four mic slots, no hole is cut for it. Press
   it through the slot.
 
@@ -398,8 +399,10 @@ over an edge:
 7. Check the fit before the glue fully cures. The ring should slide on from below without the fabric
    catching. The linen's top edge should sit just under the band, with the face flush.
 7. Set the PD trigger's DIP switches to 20 V, using the voltage table printed on the board. Never
-   use 28 V: the amp's maximum is 26 V. Screw the board to the power plate's sled with four M2.5 x 6
-   thread-forming screws (M2 if its holes are smaller), USB-C socket toward the opening. Put 18 AWG
+   use 28 V: the amp's maximum is 26 V. Screw the board to the power plate's sled, USB-C socket toward the opening:
+   - **Front holes (by the USB port, 3.6 mm):** two M3 x 6 thread-forming screws.
+   - **Rear holes (1.8 mm):** two M1.7 x 5 self-tapping screws. These are optional; the front pair
+     holds the board. Put 18 AWG
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
    then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
    the charger and check for 20 V at the leads. Press the charger cable down into the clip on the lid.

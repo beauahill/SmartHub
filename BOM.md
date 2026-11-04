@@ -17,7 +17,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | E8 | 1 | USB-C PD charger, single port, 65 W or more, GaN | Must list 20 V among its outputs. Single-port, so plugging in another device never cuts the voltage | |
 | E8a | 1 | USB-C to USB-C cable, 3 A (60 W) or 5 A (100 W) | Long enough to reach the outlet | |
 | E9 | 1 | USB-C PD trigger board with DIP switches and screw terminal (HUNSOOL PD3.1 trigger, 5 to 28 V, 5 A) | 40.3 x 20.5 mm, USB-C socket on top of the board. DIP switches set to 20 V; never 28 V, which is over the amp's 26 V limit | `TRIG_*` parameters, `power_plate` sled |
-| E9a | 4 | M2.5 x 6 thread-forming screws | PD trigger to the power plate sled | `TRIG_PILOT` |
+| E9a | 2 + 2 | M3 x 6 thread-forming screws (front holes, 3.6 mm), M1.7 x 5 self-tapping screws (rear holes, 1.8 mm, optional) | PD trigger to the power plate sled | `TRIG_HOLES` |
 | E10 | 1 | Dayton Audio KPX (or ICP1) in-circuit programmer, USB | Bench tool, not mounted in the enclosure. It plugs into the KABD-430's 6-pin J5 port only while SigmaStudio loads a DSP program, which the amp keeps after unplugging. J5 is reachable through the open front of the shell before the tablet goes in | J5 programming port |
 
 ## 2. Audio path

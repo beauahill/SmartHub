@@ -122,9 +122,9 @@ CAM_X = -TAB_W / 2 + CAM_FROM_LEFT
 CAM_LANE = (CAM_X - CAM_D / 2 - 2.0, CAM_X + CAM_D / 2 + 2.0)
 POST_X = (-94.0, 0.0, 115.0)                 # left pair inboard of the camera's path
 POST_D, POST_FILLET, POST_TIP = 8.0, 3.0, 0.8  # 45 deg fillet at the back wall, 45 deg chamfer at the tip
-# Side keys: power and volume-down sit on the tablet's top edge in landscape. Key centers from the
-# tablet's left edge (front view, USB-C on the right). Estimated; measure your tablet.
-KEY_FROM_LEFT = {"power": 40.0, "volume_down": 55.0}
+# Side keys sit on the tablet's top edge in landscape. Key centers from the tablet's left edge (front
+# view, USB-C on the right). Measured; only the power key gets a pin hole. Add "volume_down" for one.
+KEY_FROM_LEFT = {"power": 49.0}
 KEY_HOLE_D = 2.2
 KEY_X = [-TAB_W / 2 + v for v in KEY_FROM_LEFT.values()]
 TRAY_WALL = 2.4
@@ -192,11 +192,12 @@ TRIG_USB_OVERHANG = 1.14                     # socket mouth beyond the PCB edge
 TRIG_USB_OFFSET = TRIG_T / 2 + 1.6           # socket center above the PCB mid-plane (socket on top of the board)
 # board coords: x across the width, y along the length with the USB edge at y = TRIG_L. Measured: front
 # holes 15 mm apart, 4.0 mm behind the socket mouth; rear holes 15.7 mm apart, 38 mm behind it.
-TRIG_HOLES = [(TRIG_W / 2 - 7.5, TRIG_L - (4.0 - TRIG_USB_OVERHANG)), (TRIG_W / 2 + 7.5, TRIG_L - (4.0 - TRIG_USB_OVERHANG)),
-              (TRIG_W / 2 - 7.85, TRIG_L - (38.0 - TRIG_USB_OVERHANG)), (TRIG_W / 2 + 7.85, TRIG_L - (38.0 - TRIG_USB_OVERHANG))]
+# Third field: pilot diameter. The front holes are 3.6 mm (M3 thread-forming, 2.6 mm pilot); the rear
+# ones are 1.8 mm (M1.7 self-tapping, 1.3 mm pilot).
+TRIG_HOLES = [(TRIG_W / 2 - 7.5, TRIG_L - (4.0 - TRIG_USB_OVERHANG), 2.6), (TRIG_W / 2 + 7.5, TRIG_L - (4.0 - TRIG_USB_OVERHANG), 2.6),
+              (TRIG_W / 2 - 7.85, TRIG_L - (38.0 - TRIG_USB_OVERHANG), 1.3), (TRIG_W / 2 + 7.85, TRIG_L - (38.0 - TRIG_USB_OVERHANG), 1.3)]
 TRIG_TERM = (5.0, 15.5, 0.5, 9.0)            # relief under the terminal's pins (x0, x1, y0, y1, board coords)
 TRIG_PAD, TRIG_PAD_H = 5.0, 2.2              # standoff pads under the mounting holes
-TRIG_PILOT = 2.1                             # for M2.5 thread-forming screws
 TRIG_SLED_T = 2.5
 TRIG_TALL = 10.5                             # tallest part above the PCB (the screw terminal)
 # Magnet pairs: a 6x2 mm disc in the tub and a 6x1 mm disc in the grille ring at each position.
@@ -584,8 +585,8 @@ tr = body_outer - window - pocket - tray_inner
 MIC_X = (-60, -20, 20, 60)
 for x in MIC_X:
     tr = tr - lbox(x - 6, x + 6, LIP + 2.6, LIP + 5.6, TAB_CZ + PH / 2 - 1, EH + 1)   # behind the front round-over
-# pin holes through the top rim onto the power and volume-down keys, for a paperclip or SIM tool
-# (forced restart: hold both about 7 s). Countersunk on the outside so the pin finds them.
+# pin holes through the top rim onto the side keys, for a paperclip or SIM tool. Countersunk on the
+# outside so the pin finds them.
 for x in KEY_X:
     if any(abs(x - m) < 6 - KEY_HOLE_D for m in MIC_X):
         continue                             # the key is under a mic slot: press it through the slot
@@ -747,10 +748,10 @@ sled = box(-TRIG_W / 2 - 0.7, TRIG_W / 2 + 0.7, sled_top - TRIG_SLED_T, sled_top
 sled = sled - box(-5.3, 5.3, sled_top - 1.2, sled_top + 1, PWR_PLATE_T - 1, edge_z + 8.0)          # socket shell
 tx0, tz0 = board_xz(TRIG_TERM[0], TRIG_TERM[3]); tx1, tz1 = board_xz(TRIG_TERM[1], TRIG_TERM[2])
 sled = sled - box(tx0, tx1, sled_top - 1.2, sled_top + 1, tz0, tz1)                              # terminal pins
-for bx, by in TRIG_HOLES:
+for bx, by, pilot in TRIG_HOLES:
     x, z = board_xz(bx, by)
     sled = sled + box(x - TRIG_PAD/2, x + TRIG_PAD/2, sled_top - 0.01, pcb_bot, z - TRIG_PAD/2, z + TRIG_PAD/2)
-    sled = sled - M.cylinder(20, TRIG_PILOT/2, TRIG_PILOT/2, 24).rotate([90, 0, 0]).translate([x, pcb_bot + 1, z])
+    sled = sled - M.cylinder(20, pilot / 2, pilot / 2, 24).rotate([90, 0, 0]).translate([x, pcb_bot + 1, z])
 pwr_plate = pp + sled
 pwr_plate_w = pwr_plate.rotate([90, 0, 0]).translate([0, REAR_FACE, PWR_ZW])
 
