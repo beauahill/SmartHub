@@ -39,9 +39,9 @@ The full parts list is in [BOM.md](BOM.md).
   full-range drivers in sealed side chambers, plus a Dayton ND105 woofer loaded by a rear ND105
   passive radiator.
 - **Power.** A small single-port USB-C charger at the wall feeds one thin USB-C cable into a flush
-  port on the rear of the spine. Behind the port, an Adafruit HUSB238 PD trigger set to 20 V asks
-  the charger for 20 V. That feeds the amp directly, a USB-C PD module that charges the tablet
-  through the UGREEN adapter, and a small 5 V buck for the ESP32 and radar.
+  port on the rear of the spine. Behind the port, a PD trigger board set to 20 V asks the charger
+  for 20 V. That feeds the amp directly, a 5 V USB-C converter that charges the tablet through the
+  UGREEN adapter, and a small 5 V buck for the ESP32 and radar.
 - **Volume cap.** The tablet's media volume sets the amp's input level. Counter Home holds media
   volume at or below a cap, 80 % by default, so the 15 W full-range drivers are not overdriven.
 - **Camera.** The tablet's front camera, looking out through the bezel, can act as a security camera
@@ -78,7 +78,7 @@ already oriented for printing.
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints bottom edge down |
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
 | `bezel_chin` | 272 x 23 x 9 | Prints back face down, no supports. The chin bar: holds the radar and the lip along the bottom of the glass |
-| `power_plate` | 44 x 26 x 33 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
+| `power_plate` | 44 x 26 x 45 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
@@ -243,10 +243,18 @@ The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm 
 the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
 
 **USB-C power plate.** The PD trigger mounts on a sled molded onto the back of the plate, using its
-own four mounting holes. The board geometry comes from Adafruit's published PCB files. The socket
-sits just behind a 14.4 x 8.8 mm chamfered opening that the plug's molded body passes through, so
-the plug seats fully. A cavity in the spine clears the board and its screw terminal and opens into
-the cable channel. If you use a different trigger board, change the `TRIG_*` parameters.
+own four mounting holes. The geometry is the HUNSOOL PD3.1 trigger as measured:
+- **Board:** 40.3 x 20.5 mm, with the screw terminal at the far end.
+- **Socket:** sits on top of the board, its mouth 1.14 mm past the edge.
+- **Holes:** front pair 15 mm apart, 4 mm behind the socket mouth; rear pair 15.7 mm apart, 38 mm
+  behind it.
+
+The socket sits just behind a 14.4 x 8.8 mm chamfered opening that the plug's molded body passes
+through, so the plug seats fully. A cavity in the spine clears the board and its screw terminal and
+opens into the cable channel. The spine's depth follows the board: it is deep enough for the board,
+6 mm of wire room behind it and a 3 mm wall to the bezel face. For this board that makes the spine
+11 mm deeper than for the shorter Adafruit HUSB238. If you use a different trigger board, change
+the `TRIG_*` parameters.
 A clip on the lid behind the spine keeps the charger cable tidy. The cable drops from the plug onto
 the lid, then runs back through the clip and over the rear edge. A right-angle cable that points down
 works best. The clip is sized for a 4.5 mm cable, with two flexible posts and small hooks. Measure
@@ -389,15 +397,18 @@ over an edge:
    against the plastic. Seal both cut edges with a thin line of Fray Check.
 7. Check the fit before the glue fully cures. The ring should slide on from below without the fabric
    catching. The linen's top edge should sit just under the band, with the face flush.
-7. Set the PD trigger's DIP switch to 20 V, with only the 20 V switch on. Screw the board to the power
-   plate's sled with four M2.5 x 6 thread-forming screws, USB-C socket toward the opening. Put 18 AWG
+7. Set the PD trigger's DIP switches to 20 V, using the voltage table printed on the board. Never
+   use 28 V: the amp's maximum is 26 V. Screw the board to the power plate's sled with four M2.5 x 6
+   thread-forming screws (M2 if its holes are smaller), USB-C socket toward the opening. Put 18 AWG
    leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
    then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
    the charger and check for 20 V at the leads. Press the charger cable down into the clip on the lid.
-8. With the bezel shell off the stand and face down, mount the amp on its standoffs. Stick the PD module,
-   UGREEN adapter, 5 V buck and ESP32-C3 into their cradles with VHB tape. Bring the speaker and power
+8. With the bezel shell off the stand and face down, mount the amp on its standoffs. Screw the 5 V USB-C
+   converter label out onto its two bosses with M3 x 8 thread-forming screws. Its wires and USB-C
+   cable leave the bottom edge. Stick the UGREEN adapter, 5 V buck and ESP32-C3 into their cradles
+   with VHB tape. Bring the speaker and power
    leads from the top of the spine's cable channel in through the cable hole in the back wall.
-9. Plug the flat FPC 90° adapter into the tablet. Connect the UGREEN adapter to it, the PD module to the
+9. Plug the flat FPC 90° adapter into the tablet. Connect the UGREEN adapter to it, the 5 V converter's plug to the
    UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
 10. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,

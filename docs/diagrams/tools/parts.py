@@ -86,9 +86,13 @@ amp += lbox(JX - 40, JX - 8, pcb_a - AH, pcb_a - 1.6, JZ - 30, JZ - 6)        # 
 amp += lbox(JX - 4, JX + 26, pcb_a - 9, pcb_a - 1.6, JZ - 18, JZ + 12)        # DSP and BT module
 amp += lbox(JX - 42, JX + 42, pcb_a - 10, pcb_a - 1.6, JZ + 22, JZ + 32)      # terminal strip
 bez_local = {"amp": amp}
-thick = {"pd_module": 10.0, "audio_adapter": 9.8, "buck_5v": 5.0, "esp32_c3": 4.0}
+thick = {"audio_adapter": 9.8, "buck_5v": 5.0, "esp32_c3": 4.0}
 for (name, cx, cz, w, h, label, side, *_) in g["CRADLES"]:
     bez_local[name] = lbox(cx - w / 2, cx + w / 2, BACK_IN - thick[name], BACK_IN, cz - h / 2, cz + h / 2)
+C = g["CONV"]                                 # 5 V USB-C converter: potted body on two bosses, with its ears
+ca = BACK_IN - C["boss"]
+bez_local["conv"] = lbox(C["cx"] - C["L"] / 2, C["cx"] + C["L"] / 2, ca - 16.0, ca, C["cz"] - C["W"] / 2, C["cz"] + C["W"] / 2) + \
+                    lbox(C["cx"] - C["span"] / 2 - 4, C["cx"] + C["span"] / 2 + 4, ca - 2.5, ca, C["cz"] - 6, C["cz"] + 6)
 RZ, RL = g["RADAR_Z"], g["RADAR_LIP"]
 bez_local["radar"] = lbox(-11, 11, RL + 0.2, RL + 1.8, RZ - 8, RZ + 8) + lbox(-4, 4, RL + 1.8, RL + 3.0, RZ - 4, RZ + 4)
 PW, TAB_CZ, USB_SIDE = g["PW"], g["TAB_CZ"], g["USB_SIDE"]
@@ -147,7 +151,7 @@ sheets = [
          dict(n=3, name="Bezel bolt, M3 x 16 socket head", qty=4, ref="H3", parts=[("spine_bolts_w", add(lift, mul(nrm, 70)), "metal")]),
          dict(n=4, name="Chin bar screw, M3 x 20 socket head", qty=4, ref="H2", parts=[("chin_screws_w", add(lift, mul(nrm, 45)), "metal")]),
          dict(n=5, name="Power plate", qty=1, ref="P6", parts=[("power_plate", add(lift, [0, 75, 45]), "print")]),
-         dict(n=6, name="PD trigger, Adafruit HUSB238 (DIP = 20 V)", qty=1, ref="E9", parts=[("pd_trigger", add(lift, [0, 75, 45]), "pcb")],
+         dict(n=6, name="PD trigger, HUNSOOL (DIP = 20 V)", qty=1, ref="E9", parts=[("pd_trigger", add(lift, [0, 75, 45]), "pcb")],
               anchor=add(lift, [0, 75, 45], [8, g["REAR_FACE"] - 20, g["PWR_ZW"] + 6])),
          dict(n=7, name="Plate screw, M3 x 8 countersunk", qty=2, ref="H3a", parts=[("plate_screws", add(lift, [0, 120, 45]), "metal")]),
          dict(n=8, name="Dowel pin, 4 x 6 mm", qty=6, ref="H5", parts=[("dowels", [0, 0, 45], "metal")], anchor=[130, 128, TUB_H + 46]),
@@ -168,7 +172,7 @@ sheets = [
          dict(n=1, name="Bezel shell", qty=1, ref="P4", parts=[("shell_l", [0, 0, 0], "print")]),
          dict(n=2, name="Amplifier, Dayton KABD-430", qty=1, ref="E2", parts=[("amp", [0, -75, 0], "pcb")]),
          dict(n=3, name="Amp screw, M3 x 6 thread-forming", qty=4, ref="H4", parts=[], anchor=[JX - 41.9, BACK_IN - AS - 75 - 2, JZ + 30.5]),
-         dict(n=4, name="USB-C PD module (20 V in)", qty=1, ref="E6", parts=[("pd_module", [0, -75, 0], "pcb")]),
+         dict(n=4, name="5 V USB-C converter (charges the tablet)", qty=1, ref="E6", parts=[("conv", [0, -75, 0], "pcb")]),
          dict(n=5, name="UGREEN 2-in-1 USB-C audio + PD adapter", qty=1, ref="A2", parts=[("audio_adapter", [0, -75, 0], "pcb2")]),
          dict(n=6, name="5 V buck, MP1584EN", qty=1, ref="E5", parts=[("buck_5v", [0, -75, 0], "pcb")]),
          dict(n=7, name="ESP32-C3 SuperMini", qty=1, ref="E3", parts=[("esp32_c3", [0, -75, 0], "pcb")]),

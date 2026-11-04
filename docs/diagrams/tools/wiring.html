@@ -86,7 +86,7 @@ function grommet(x, y, w, h, tag, note, side = 'R') {
 
 // ---- components
 comp('E8', 30, 90, 170, 150, 'USB-C CHARGER', ['65 W+', 'must offer 20 V'], [['out', 'R', 215, '']]);
-comp('E9', 300, 70, 265, 175, 'PD TRIGGER', ['Adafruit HUSB238', 'DIP switch: 20 V only', 'behind the power plate'],
+comp('E9', 300, 70, 265, 175, 'PD TRIGGER', ['HUNSOOL PD3.1', 'DIP switches: 20 V', 'behind the power plate'],
      [['in', 'L', 215, 'USB-C'], ['p', 'R', 115, '+'], ['n', 'R', 185, '−']]);
 comp('E2', 960, 300, 260, 300, 'KABD-430 AMP', ['Dayton, 2.1 mode', '10–26 V in'],
      [['pp', 'L', 330, 'PWR +'], ['pn', 'L', 370, 'PWR −'], ['aux', 'T', 1190, 'J13'],
@@ -96,8 +96,8 @@ comp('E1', 1330, 30, 240, 90, 'TABLET', ['Galaxy Tab A9+'], [['usb', 'B', 1450, 
 comp('A1', 1385, 140, 130, 42, 'FPC 90°', '', [['a', 'T', 1450, ''], ['b', 'B', 1450, '']]);
 comp('A2', 1330, 205, 240, 125, 'UGREEN 2-in-1', [],
      [['plug', 'T', 1450, ''], ['jack', 'L', 240, '3.5 mm'], ['pd', 'B', 1450, 'PD IN']]);
-comp('E6', 1330, 460, 240, 140, 'USB-C PD MODULE', ['20 V in, USB-C PD out', '15 W or more'],
-     [['out', 'T', 1450, 'USB-C OUT'], ['ip', 'L', 545, 'IN +'], ['in', 'L', 580, 'IN −']]);
+comp('E6', 1330, 460, 240, 140, '5 V USB-C CONVERTER', ['20 V in, 5 V USB-C plug', 'charges the tablet'],
+     [['out', 'T', 1450, 'USB-C PLUG'], ['ip', 'L', 545, 'IN +'], ['in', 'L', 580, 'IN −']]);
 comp('E10', 1170, 680, 230, 80, 'KPX PROGRAMMER', ['bench only, not fitted'], [['j', 'T', 1300, '']], {dashed: true});
 comp('E5', 650, 290, 200, 110, '5 V BUCK', ['MP1584EN', 'set 5.0 V first'],
      [['ip', 'R', 330, 'IN +'], ['in', 'R', 370, 'IN −'], ['on', 'B', 700, 'OUT −'], ['op', 'B', 780, 'OUT +']]);
@@ -165,9 +165,9 @@ grommet(1290, 1105, 70, 16, 'G4', '', 'R');
 ui.key.innerHTML = `
 <table class="wk"><tr><th>ID</th><th>COMPONENT</th><th>WHERE</th></tr>
 <tr><td>E8</td><td>USB-C PD charger, 65 W+</td><td>wall</td></tr>
-<tr><td>E9</td><td>PD trigger, HUSB238</td><td>spine</td></tr>
+<tr><td>E9</td><td>PD trigger, HUNSOOL (DIP 20 V)</td><td>spine</td></tr>
 <tr><td>E2</td><td>KABD-430 amplifier</td><td>tray</td></tr>
-<tr><td>E6</td><td>USB-C PD module</td><td>tray</td></tr>
+<tr><td>E6</td><td>5 V USB-C converter</td><td>tray</td></tr>
 <tr><td>E5</td><td>5 V buck, MP1584EN</td><td>tray</td></tr>
 <tr><td>E3</td><td>ESP32-C3 SuperMini</td><td>tray</td></tr>
 <tr><td>E4</td><td>LD2410C radar</td><td>chin</td></tr>

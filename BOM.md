@@ -13,10 +13,10 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | E3 | 1 | ESP32-C3 SuperMini | 22.5 x 18 mm. Runs `esphome/counter-presence.yaml` | `esp32_c3` cradle |
 | E4 | 1 | HLK-LD2410C 24 GHz mmWave radar | 22 x 16 mm. Solder wires directly to the pads, no headers | 23 x 17 mm chin pocket |
 | E5 | 1 | 5 V buck module, MP1584EN | 22 x 17 mm. 20 V in, 5 V out, feeds the ESP32-C3 5V pin and the radar | `buck_5v` cradle |
-| E6 | 1 | 12/24 V to 5 V USB-C step-down converter, 5 A, captive USB-C plug (for example Klnuoxj 25 W, potted) | Runs from the 20 V bus. Charges the tablet through the UGREEN adapter's charging port at 5 V (no PD), about 10–15 W, enough to keep it topped up. If the battery drains with the screen at full brightness, use a PD-output module instead. The cradle is set to 40 x 25 mm until the module is measured | `pd_module` cradle |
+| E6 | 1 | 12/24 V to 5 V USB-C step-down converter, 5 A, captive USB-C plug (for example Klnuoxj 25 W, potted) | Runs from the 20 V bus. Charges the tablet through the UGREEN adapter's charging port at 5 V (no PD), about 10–15 W, enough to keep it topped up. If the battery drains with the screen at full brightness, use a PD-output module instead. Body 46.3 x 32 mm, ear holes 3.7 mm at 53.8 mm centers; up to 20 mm tall fits the tray. Two M3 x 8 thread-forming screws, for ears up to 2.5 mm thick (the pilots are 6.4 mm deep) | `CONV` mount |
 | E8 | 1 | USB-C PD charger, single port, 65 W or more, GaN | Must list 20 V among its outputs. Single-port, so plugging in another device never cuts the voltage | |
 | E8a | 1 | USB-C to USB-C cable, 3 A (60 W) or 5 A (100 W) | Long enough to reach the outlet | |
-| E9 | 1 | Adafruit USB Type C Power Delivery Dummy, I2C or Switchable, HUSB238 (product 5991) | 20.32 x 27.81 mm, four 2.5 mm holes, DIP switch set to 20 V, screw terminal output, up to 5 A | `TRIG_*` parameters, `power_plate` sled |
+| E9 | 1 | USB-C PD trigger board with DIP switches and screw terminal (HUNSOOL PD3.1 trigger, 5 to 28 V, 5 A) | 40.3 x 20.5 mm, USB-C socket on top of the board. DIP switches set to 20 V; never 28 V, which is over the amp's 26 V limit | `TRIG_*` parameters, `power_plate` sled |
 | E9a | 4 | M2.5 x 6 thread-forming screws | PD trigger to the power plate sled | `TRIG_PILOT` |
 | E10 | 1 | Dayton Audio KPX (or ICP1) in-circuit programmer, USB | Bench tool, not mounted in the enclosure. It plugs into the KABD-430's 6-pin J5 port only while SigmaStudio loads a DSP program, which the amp keeps after unplugging. J5 is reachable through the open front of the shell before the tablet goes in | J5 programming port |
 
@@ -52,7 +52,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | --- | --- | --- | --- | --- |
 | H1 | 10 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 4 in the chin bar's back face, 4 in the shell's spine-bolt bosses, 2 in the power plate pocket | `M3_INSERT`, `INSERT_DEPTH` |
 | H2 | 4 | M3 x 20 socket head cap screws | Chin bar to shell, from the back of the tray | `CHIN_SCREW_X`, `CHIN_SCREW_LEN` |
-| H3 | 4 | M3 x 16 socket head cap screws | Bezel to spine, from the spine's rear. The lower pair sits in deep counterbores, so use a long 2.5 mm hex key | `SPINE_PTS`, `SPINE_GRIP` |
+| H3 | 4 | M3 x 16 socket head cap screws | Bezel to spine, from the spine's rear. The lower pair sits about 38 mm down its counterbores, so use the long arm of a 2.5 mm hex key | `SPINE_PTS`, `SPINE_GRIP` |
 | H3a | 2 | M3 x 8 countersunk (flat head) screws | Power plate to spine, flush with the plate | `PWR_SCREW_X` |
 | H4 | 4 | M3 x 6 thread-forming screws | KABD-430 into its 2.6 mm standoff pilots, which are about 4.9 mm deep. Longer screws bottom out | Amp standoffs |
 | H5 | 6 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm, 4 mm deep in the tub and 2.8 mm in the lid | `BOSSES`, `LID_DOWEL_DEPTH` |
@@ -60,7 +60,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | H7 | 12 | Neodymium disc magnets, 6 x 1 mm, N52 | One per grille ring or grille shell pocket, flush. Opposite polarity to H6 | `MAG_T_FRAME` |
 | H8 | 4 | Silicone bumper feet, 10 mm diameter, about 3 mm tall | Lift the fabric edge off the counter | 10.5 mm recesses |
 | H9 | 1 sheet | Adhesive felt, 0.5 mm | Pads on the six tablet back-stop posts, 8 mm diameter. Thin and slippery, so the tablet slides in | Tray posts |
-| H10 | 1 roll | VHB double-sided tape | Holds the PD module, UGREEN adapter, buck and ESP32-C3 in their cradles | `CRADLES` |
+| H10 | 1 roll | VHB double-sided tape | Holds the UGREEN adapter, buck and ESP32-C3 in their cradles | `CRADLES` |
 
 ## 5. Wiring
 
@@ -77,12 +77,12 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
 | P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 940 cm³ |
-| P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 354 cm³ |
+| P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 395 cm³ |
 | P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 111 | 81 cm³ |
 | P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 196 cm³ |
 | P4 | 1 | `bezel_shell.stl` | 272 x 197 x 36 | 226 cm³ |
 | P5 | 1 | `bezel_chin.stl` | 272 x 23 x 9 | 46 cm³ |
-| P6 | 1 | `power_plate.stl` | 44 x 26 x 33 | 4.5 cm³ |
+| P6 | 1 | `power_plate.stl` | 44 x 26 x 45 | 5.2 cm³ |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |

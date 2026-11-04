@@ -115,9 +115,9 @@ USB_NOTCH_H = 22.0                           # height of the USB-C clearance aro
 POCKET_D = TAB_T + 0.8                       # room for 0.5 mm felt pads on the back-stop posts
 # Rear camera. In landscape with the USB-C port on the right, it sits near the top-left corner (seen from
 # the front), so as the tablet slides up from below the bump sweeps a vertical lane. The back-stop posts
-# stay out of that lane, and the entry slot gets a relief groove for it. Estimated; measure your tablet.
-CAM_FROM_LEFT = 10.0                         # bump center from the tablet's left edge (front view)
-CAM_D, CAM_H = 12.0, 1.2                     # bump diameter and how far it stands off the back
+# stay out of that lane, and the entry slot gets a relief groove for it. Measured on the tablet.
+CAM_FROM_LEFT, CAM_FROM_TOP = 16.0, 16.0     # bump center from the tablet's left and top edges (front view)
+CAM_D, CAM_H = 13.3, 1.5                     # bump diameter and how far it stands off the back
 CAM_X = -TAB_W / 2 + CAM_FROM_LEFT
 CAM_LANE = (CAM_X - CAM_D / 2 - 2.0, CAM_X + CAM_D / 2 + 2.0)
 POST_X = (-94.0, 0.0, 115.0)                 # left pair inboard of the camera's path
@@ -142,7 +142,6 @@ TRAY_D = max(26.0, math.ceil(TRAY_WALL + AMP_STANDOFF + AMP_H + AMP_CLEAR))
 CRADLE_WALL, CRADLE_H, CRADLE_CLR = 1.6, 3.0, 0.4
 # Each cradle also gets a raised label, printed above or below it.
 CRADLES = [
-    ("pd_module",      85.0,  75.0, 40.0, 25.0, "PD MODULE",     "below"),   # 20 V -> USB-C PD output
     # UGREEN 2-in-1, measured 34 x 25.3 x 9.8 mm: ports (USB-C in, 3.5 mm out) face -x along the 34 mm face,
     # the cable to the tablet leaves the opposite face. Both long faces stay open (last field: exit gap).
     ("audio_adapter",  85.0, 120.0, 25.3, 34.0, "AUDIO ADAPTER", "above", 28.0),
@@ -176,26 +175,30 @@ BEZ_GAP = 4.0                                # air gap between lid and lowest be
 
 # Hardware
 M3_CLR, M3_INSERT, INSERT_DEPTH = 3.4, 4.0, 6.0
-# Power input: USB-C PD. An Adafruit HUSB238 PD trigger (product 5991, set to 20 V on its DIP switch)
+# Power input: USB-C PD. A PD trigger board (HUNSOOL PD3.1 trigger, set to 20 V on its DIP switches)
 # screws to a sled on the back of a small printed plate. The plate sits flush in a pocket on the spine's
-# rear face, held by two M3 countersunk screws in heat-set inserts. Board geometry is from Adafruit's
-# PCB files: 20.32 x 27.81 mm, 2.5 mm holes, mid-mount USB-C socket overhanging the top edge by 1.14 mm.
-# The opening clears the plug's overmold, so the plug seats fully. It takes a 13 x 7 mm overmold with
-# the socket up to 0.9 mm off center (the socket's exact height on the PCB isn't in the board files).
+# rear face, held by two M3 countersunk screws in heat-set inserts. Board measured: 40.3 x 20.5 mm,
+# USB-C socket on top of the board with its mouth 1.14 mm past the edge, screw terminal at the far end.
+# The spine is made deep enough for the board (REAR_Y below). The opening clears the plug's overmold,
+# so the plug seats fully; it takes a 13 x 7 mm overmold.
 PWR_Z = 16.0                                 # socket center above the lid top
 PWR_PLATE_W, PWR_PLATE_H, PWR_PLATE_T, PWR_PLATE_R = 44.0, 26.0, 3.0, 3.0
 PWR_PLATE_CLR = 0.2                          # pocket clearance per side
 PWR_SCREW_X = 17.0                           # plate screws at +-X
 PWR_OPENING = (14.4, 8.8, 2.4)               # rounded rectangle (w, h, corner r) the plug overmold passes through
 PWR_OPENING_CHAMFER = 0.6
-TRIG_W, TRIG_L, TRIG_T = 20.32, 27.81, 1.6   # PD trigger PCB
+TRIG_W, TRIG_L, TRIG_T = 20.5, 40.3, 1.6     # PD trigger PCB
 TRIG_USB_OVERHANG = 1.14                     # socket mouth beyond the PCB edge
-TRIG_USB_OFFSET = 0.0                        # socket center above the PCB mid-plane
-TRIG_HOLES = [(2.413, 25.273), (17.653, 25.273), (2.54, 2.54), (17.78, 2.54)]   # board coords, USB edge at y = 27.81
+TRIG_USB_OFFSET = TRIG_T / 2 + 1.6           # socket center above the PCB mid-plane (socket on top of the board)
+# board coords: x across the width, y along the length with the USB edge at y = TRIG_L. Measured: front
+# holes 15 mm apart, 4.0 mm behind the socket mouth; rear holes 15.7 mm apart, 38 mm behind it.
+TRIG_HOLES = [(TRIG_W / 2 - 7.5, TRIG_L - (4.0 - TRIG_USB_OVERHANG)), (TRIG_W / 2 + 7.5, TRIG_L - (4.0 - TRIG_USB_OVERHANG)),
+              (TRIG_W / 2 - 7.85, TRIG_L - (38.0 - TRIG_USB_OVERHANG)), (TRIG_W / 2 + 7.85, TRIG_L - (38.0 - TRIG_USB_OVERHANG))]
+TRIG_TERM = (5.0, 15.5, 0.5, 9.0)            # relief under the terminal's pins (x0, x1, y0, y1, board coords)
 TRIG_PAD, TRIG_PAD_H = 5.0, 2.2              # standoff pads under the mounting holes
 TRIG_PILOT = 2.1                             # for M2.5 thread-forming screws
 TRIG_SLED_T = 2.5
-TRIG_TALL = 9.5                              # tallest part above the PCB (the screw terminal)
+TRIG_TALL = 10.5                             # tallest part above the PCB (the screw terminal)
 # Magnet pairs: a 6x2 mm disc in the tub and a 6x1 mm disc in the grille ring at each position.
 MAG_D = 6.4                                  # pocket diameter for 6 mm discs
 MAG_T_TUB, MAG_T_FRAME = 2.0, 1.0            # magnet thicknesses
@@ -418,7 +421,7 @@ lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
 # back through it to the rear edge. Two posts with small 45 deg hooks; pushing the cable in flexes them
 # about 0.3 mm each (1.2 mm PLA posts stay well under yield). Measure your cable and set CABLE_D.
 CABLE_D = 4.5                              # USB-C cable outer diameter
-CLIP_Y, CLIP_L = 132.0, 10.0               # start (Y) and length of the clip, clear of the plug's strain relief
+CLIP_Y, CLIP_L = 139.0, 9.0                # start (Y) and length of the clip, clear of the plug's strain relief
 CLIP_POST, CLIP_HOOK = 1.2, 0.4            # post thickness, hook reach
 def clip_post(side):
     g = (CABLE_D + 0.2) / 2                # inner face of the post
@@ -628,6 +631,16 @@ for (_, cx, cz, w, h, label, side, *exit_gap) in CRADLES:
     if LABELS:
         off = ih / 2 + CRADLE_WALL + LABEL_GAP + LABEL_SIZE * 0.4
         tr = tr + bezel_label(label, cx, cz + (off if side == "above" else -off), BACK_IN, -1)
+# 5 V USB-C converter that charges the tablet (potted, two slotted ears). Measured body 46.3 x 32 mm,
+# ear holes 3.7 mm, 50.1 mm apart at their inner edges. Mounted label out: the 20 V wires leave the
+# bottom-left corner and the USB-C cable the bottom-right, so nothing walls in the bottom side.
+CONV = dict(cx=92.0, cz=75.0, L=46.3, W=32.0, span=50.1 + 3.7, boss=4.0, max_h=20.0)   # pilots 6.4 mm deep: M3 x 8
+for sx in (-1, 1):
+    bx = CONV["cx"] + sx * CONV["span"] / 2
+    tr = tr + lcyl_a(bx, CONV["cz"], BACK_IN - CONV["boss"], T - 0.01, 7.5)
+    tr = tr - lcyl_a(bx, CONV["cz"], BACK_IN - CONV["boss"] - 1, T - 1.0, 2.6)   # M3 thread-forming
+if LABELS:
+    tr = tr + bezel_label("5V USB-C", CONV["cx"], CONV["cz"] + CONV["W"] / 2 + LABEL_GAP + 2.0 + LABEL_SIZE * 0.4, BACK_IN, -1)
 if LABELS:
     tr = tr + bezel_label("KABD-430 AMP", JX, JZ + 34.3 + LABEL_GAP + 3.5 + LABEL_SIZE * 0.4, BACK_IN, -1)
     tr = tr + bezel_label("USB-C FPC", USB_SIDE * (PW / 2 - 4.0), TAB_CZ, BACK_IN, -1, angle=90 * USB_SIDE)
@@ -680,7 +693,12 @@ bp0 = to_world(0, T, 0)              # bottom of tray back face
 HS = 115.0
 bps = to_world(0, T, HS)
 Yb0 = bp0[1]
-REAR_Y = Yb0 + 50
+# Deep enough for the trigger board on its sled, 6 mm of wire room behind it, and a 3 mm wall between the
+# board's cavity and the bezel face at the cavity's top (the face leans back, so the top is the tight spot).
+_cav_top = TOPZ + PWR_Z - TRIG_T / 2 - TRIG_USB_OFFSET + TRIG_T + TRIG_TALL + 1.5
+_face_y = bp0[1] + (_cav_top - bp0[2]) * math.tan(math.radians(TILT)) + SPINE_CLR / ct
+REAR_Y = max(Yb0 + 50, _face_y + 3.0 + (PWR_PLATE_T + TRIG_USB_OVERHANG + TRIG_L + 1.0) + 6.0 + 0.6)
+assert CLIP_Y >= REAR_Y + 28.0, "cable clip sits under the plug's strain relief"
 REAR_FACE_H = max(8.0, PWR_Z + PWR_PLATE_H / 2 + 3.0)    # flat rear face tall enough for the power plate
 bpt = to_world(0, T + SPINE_TOP, HS)       # back of the flat top
 prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + REAR_FACE_H), (bpt[1], bpt[2]), (bps[1], bps[2]),
@@ -727,7 +745,7 @@ for sx in (-PWR_SCREW_X, PWR_SCREW_X):
 # sled under the board, pads under its four mounting holes, reliefs under the socket shell and terminal pins
 sled = box(-TRIG_W / 2 - 0.7, TRIG_W / 2 + 0.7, sled_top - TRIG_SLED_T, sled_top, PWR_PLATE_T - 0.01, sled_end)
 sled = sled - box(-5.3, 5.3, sled_top - 1.2, sled_top + 1, PWR_PLATE_T - 1, edge_z + 8.0)          # socket shell
-tx0, tz0 = board_xz(8.46 - 2.2, 3.81 + 2.5); tx1, tz1 = board_xz(11.86 + 2.2, 3.81 - 2.5)
+tx0, tz0 = board_xz(TRIG_TERM[0], TRIG_TERM[3]); tx1, tz1 = board_xz(TRIG_TERM[1], TRIG_TERM[2])
 sled = sled - box(tx0, tx1, sled_top - 1.2, sled_top + 1, tz0, tz1)                              # terminal pins
 for bx, by in TRIG_HOLES:
     x, z = board_xz(bx, by)
