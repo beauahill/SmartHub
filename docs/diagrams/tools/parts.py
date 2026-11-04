@@ -95,7 +95,7 @@ PW, TAB_CZ, USB_SIDE = g["PW"], g["TAB_CZ"], g["USB_SIDE"]
 ux = USB_SIDE * (PW / 2 + 1.75)
 bez_local["fpc"] = lbox(ux - 1.75, ux + 1.75, LIP + 2.6, LIP + 6.4, TAB_CZ - 6, TAB_CZ + 6) + \
                    lbox(ux - 1.75, ux + 1.75, LIP + 7.0, LIP + 7.3, TAB_CZ - 60, TAB_CZ - 6)
-bez_local["felt"] = g["union"]([lcyl_a(x, z, T_FRONT - 0.5, T_FRONT, 8.0) for x in (-115, 0, 115) for z in (40, g["EH"] - 40)])
+bez_local["felt"] = g["union"]([lcyl_a(x, z, T_FRONT - 0.5, T_FRONT, 8.0) for x in g["POST_X"] for z in (40, g["EH"] - 40)])
 bez_local["tablet_l"] = rr_xz(g["TAB_W"], g["TAB_H"], g["TAB_R"], LIP + 0.05, LIP + g["TAB_T"], cz=TAB_CZ)
 bez_local["shell_l"] = g["tr"]
 bez_local["chin_l"] = g["chin"]

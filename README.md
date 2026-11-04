@@ -107,12 +107,24 @@ check of both parts in those orientations finds only these spots past 2 mm:
 - **Bottom corners of the lip.** Two small triangles, up to 6 mm, over the gaps that let the
   tablet's corners slide in. They are attached on two sides and sit behind the glass corners.
 
-All of them print without supports, with slight sag on surfaces you don't see. The USB-C roof sags
-the most. If yours comes out drooping or curled at the window edge on that side, reprint with
-painted supports there:
-- Set the support type to Tree (manual).
-- Paint only the channel ceiling.
-- Pull the supports out through the pocket. The channel is open to it along its whole length.
+In PLA these print without supports, with slight sag on surfaces you don't see. **In PETG, support
+the lip.** The lip around the window is the last 1.2 mm of the print, and it overhangs the tablet
+pocket by 1.9 mm all the way round. PETG droops there, and the last layers can come loose (seen on
+a test print). Use painted supports:
+- Set the support type to Tree (manual), and set the support interface filament to PLA. The AMS
+  swaps filament for the interface layers, and PLA peels cleanly off PETG.
+- Paint the underside of the lip all the way round the window, the USB-C channel ceiling and the
+  two bottom corners of the lip.
+- The trees stand on the inside of the back wall. Pull them out through the window and the pocket.
+
+**Back-stop posts.** The tablet's rear camera bump sweeps a vertical lane near the left edge as the
+tablet slides up from below, so the six felt-tipped posts stay out of it. The left pair sits at
+x = -94, and the bottom of the entry slot has a shallow relief groove for the bump.
+- **Strength:** each post has a 3 mm, 45° fillet where it meets the back wall, and a 0.8 mm
+  chamfer at the tip so the tablet slides on easily.
+- **Camera parameters:** the camera position (`CAM_FROM_LEFT`) and its size (`CAM_D`, `CAM_H`) are
+  estimates. Measure your tablet and regenerate.
+- **Slide check:** a slide-in check with a tablet and camera-bump model finds no contact.
 
 Settings for the bezel shell and chin bar in PETG on the H2S, 0.4 mm nozzle. Start from Bambu
 Studio's profile for your PETG and change these. Both parts fit on one plate, side by side.
@@ -128,7 +140,7 @@ Studio's profile for your PETG and change these. Both parts fit on one plate, si
 | Wall loops | 3 | 4 | Fills the 2.4 mm tray walls. On the chin, solid walls around the four inserts |
 | Top / bottom shells | 5 / 4 | 5 / 4 | |
 | Infill | 15 % gyroid | 30 % gyroid | The shell is almost all walls |
-| Supports | Off, or painted on the USB-C roof only (see above) | Off | |
+| Supports | Painted: lip, USB-C roof and lip corners, with a PLA interface (see above) | Off | The lip droops in PETG without them |
 | Brim | None | 3 mm | The chin is 271 mm long and narrow. The brim lands on its hidden back face |
 | Seam | Aligned, on the bottom edge | Aligned, on the bottom edge | Hidden by the chin bar and the base |
 | Outer wall speed | About 80 mm/s | About 80 mm/s | A clean front face |

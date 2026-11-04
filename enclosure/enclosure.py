@@ -113,6 +113,15 @@ LIP = 1.2                                    # lip in front of the glass
 RADAR_LIP = 1.6                              # plastic in front of the radar
 USB_NOTCH_H = 22.0                           # height of the USB-C clearance around the port
 POCKET_D = TAB_T + 0.8                       # room for 0.5 mm felt pads on the back-stop posts
+# Rear camera. In landscape with the USB-C port on the right, it sits near the top-left corner (seen from
+# the front), so as the tablet slides up from below the bump sweeps a vertical lane. The back-stop posts
+# stay out of that lane, and the entry slot gets a relief groove for it. Estimated; measure your tablet.
+CAM_FROM_LEFT = 10.0                         # bump center from the tablet's left edge (front view)
+CAM_D, CAM_H = 12.0, 1.2                     # bump diameter and how far it stands off the back
+CAM_X = -TAB_W / 2 + CAM_FROM_LEFT
+CAM_LANE = (CAM_X - CAM_D / 2 - 2.0, CAM_X + CAM_D / 2 + 2.0)
+POST_X = (-94.0, 0.0, 115.0)                 # left pair inboard of the camera's path
+POST_D, POST_FILLET, POST_TIP = 8.0, 3.0, 0.8  # 45 deg fillet at the back wall, 45 deg chamfer at the tip
 TRAY_WALL = 2.4
 # Amplifier: Dayton Audio KABD-430. Board 91.4 x 68.6 mm, M3 holes on 83.8 x 61.0 mm.
 # Height: the user guide says 20 mm, retail listings say 0.9 in (23 mm). Measure yours and set AMP_H.
@@ -575,9 +584,14 @@ if LABELS:   # on the back of the chin, beside the radar pocket (read from the t
     tr = tr + bezel_label("LD2410C", 0.0, RADAR_Z + 2.0, T - TRAY_WALL, -1)     # on the back wall, behind the radar
 BACK_IN = T - TRAY_WALL
 # tablet back-stop posts (0.5 mm felt on the tips, so the tablet slides in)
-for x in (-115, 0, 115):
+assert all(x - POST_D / 2 > CAM_LANE[1] or x + POST_D / 2 < CAM_LANE[0] for x in POST_X), "post in the camera's path"
+def frustum_a(x, z, a0, a1, d0, d1):
+    return M.cylinder(a1 - a0, d0 / 2, d1 / 2, SEG).rotate([-90, 0, 0]).translate([x, a0, z])
+for x in POST_X:
     for z in (40, EH - 40):
-        tr = tr + lcyl_a(x, z, T_FRONT, T - 0.01, 8.0)
+        tr = tr + lcyl_a(x, z, T_FRONT + POST_TIP, T - 0.01, POST_D) \
+                + frustum_a(x, z, T_FRONT, T_FRONT + POST_TIP, POST_D - 2 * POST_TIP, POST_D) \
+                + frustum_a(x, z, BACK_IN - POST_FILLET, BACK_IN + 0.01, POST_D, POST_D + 2 * POST_FILLET)
 # KABD-430 standoffs, 2.6 mm pilots for M3 thread-forming screws (the board's holes are 3.6 mm)
 JX, JZ = -70.0, HC
 for dx in (-AMP_HOLES[0] / 2, AMP_HOLES[0] / 2):
@@ -628,6 +642,8 @@ chin_region = lbox(-EW, EW, -10, T_FRONT, -10, CHIN_TOP) + \
               lbox(-PW / 2, PW / 2, -10, LIP, CHIN_TOP - 1, CHIN_TOP + LIP_OVERLAP + TAB_CLR + 0.5)
 chin = tr ^ chin_region
 tr = tr - chin_region - pocket_ext - usb_channel
+# relief in the entry slot for the camera bump, through the front edge of the tray's bottom wall
+tr = tr - lbox(CAM_LANE[0], CAM_LANE[1], T_FRONT - 0.01, LIP + TAB_T + CAM_H + 0.5, -1, TRAY_WALL + 2.0)
 head_a = T_FRONT + (CHIN_SCREW_LEN - 5.0)    # where the screw head seats
 for x in CHIN_SCREW_X:
     chin = chin - lcyl_a(x, CHIN_SCREW_Z, T_FRONT - INSERT_DEPTH, T_FRONT + 1, M3_INSERT)    # insert in the bar's back
