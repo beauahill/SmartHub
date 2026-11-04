@@ -122,6 +122,11 @@ CAM_X = -TAB_W / 2 + CAM_FROM_LEFT
 CAM_LANE = (CAM_X - CAM_D / 2 - 2.0, CAM_X + CAM_D / 2 + 2.0)
 POST_X = (-94.0, 0.0, 115.0)                 # left pair inboard of the camera's path
 POST_D, POST_FILLET, POST_TIP = 8.0, 3.0, 0.8  # 45 deg fillet at the back wall, 45 deg chamfer at the tip
+# Side keys: power and volume-down sit on the tablet's top edge in landscape. Key centers from the
+# tablet's left edge (front view, USB-C on the right). Estimated; measure your tablet.
+KEY_FROM_LEFT = {"power": 40.0, "volume_down": 55.0}
+KEY_HOLE_D = 2.2
+KEY_X = [-TAB_W / 2 + v for v in KEY_FROM_LEFT.values()]
 TRAY_WALL = 2.4
 # Amplifier: Dayton Audio KABD-430. Board 91.4 x 68.6 mm, M3 holes on 83.8 x 61.0 mm.
 # Height: the user guide says 20 mm, retail listings say 0.9 in (23 mm). Measure yours and set AMP_H.
@@ -138,7 +143,9 @@ CRADLE_WALL, CRADLE_H, CRADLE_CLR = 1.6, 3.0, 0.4
 # Each cradle also gets a raised label, printed above or below it.
 CRADLES = [
     ("pd_module",      85.0,  75.0, 40.0, 25.0, "PD MODULE",     "below"),   # 20 V -> USB-C PD output
-    ("audio_adapter",  85.0, 120.0, 45.0, 30.0, "AUDIO ADAPTER", "above"),   # UGREEN 2-in-1 USB-C to 3.5 mm + PD body
+    # UGREEN 2-in-1, measured 34 x 25.3 x 9.8 mm: ports (USB-C in, 3.5 mm out) face -x along the 34 mm face,
+    # the cable to the tablet leaves the opposite face. Both long faces stay open (last field: exit gap).
+    ("audio_adapter",  85.0, 120.0, 25.3, 34.0, "AUDIO ADAPTER", "above", 28.0),
     ("buck_5v",        40.0, 120.0, 22.0, 17.0, "5V BUCK",       "above"),   # MP1584EN
     ("esp32_c3",       45.0,  80.0, 22.5, 18.0, "ESP32-C3",      "below"),   # ESP32-C3 SuperMini
 ]
@@ -571,8 +578,18 @@ pocket = rr_xz(PW, PH, TAB_R + TAB_CLR, LIP, T_FRONT + 0.01, cz=TAB_CZ)
 pocket_ext = lbox(-PW / 2 - 0.01, PW / 2 + 0.01, LIP, T_FRONT + 0.01, CHIN_TOP - 1, TAB_CZ)
 tr = body_outer - window - pocket - tray_inner
 # mic slots through the top rim into the pocket
-for x in (-60, -20, 20, 60):
+MIC_X = (-60, -20, 20, 60)
+for x in MIC_X:
     tr = tr - lbox(x - 6, x + 6, LIP + 2.6, LIP + 5.6, TAB_CZ + PH / 2 - 1, EH + 1)   # behind the front round-over
+# pin holes through the top rim onto the power and volume-down keys, for a paperclip or SIM tool
+# (forced restart: hold both about 7 s). Countersunk on the outside so the pin finds them.
+for x in KEY_X:
+    if any(abs(x - m) < 6 - KEY_HOLE_D for m in MIC_X):
+        continue                             # the key is under a mic slot: press it through the slot
+    assert all(abs(x - m) > 6 + KEY_HOLE_D / 2 + 1.5 for m in MIC_X), "key hole runs into a mic slot"
+    ka = LIP + TAB_T / 2                     # middle of the tablet's edge
+    tr = tr - cyl_z(x, ka, TAB_CZ + PH / 2 - 1, EH + 1, KEY_HOLE_D) \
+            - M.cylinder(1.0, KEY_HOLE_D / 2, KEY_HOLE_D / 2 + 1.0, SEG).translate([x, ka, EH - 1.0 + 0.01])
 # USB-C: room for a flat FPC 90 deg plug beside the port. It runs down to the bottom of the pocket,
 # because the tablet slides in from below with the plug already in.
 ux0, ux1 = sorted((USB_SIDE * PW/2 - USB_SIDE * 1, USB_SIDE * (PW/2 + USB_CLEAR)))
@@ -599,12 +616,12 @@ for dx in (-AMP_HOLES[0] / 2, AMP_HOLES[0] / 2):
         tr = tr + lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF, T - 0.01, 7.0)
         tr = tr - lcyl_a(JX + dx, JZ + dz, T - TRAY_WALL - AMP_STANDOFF - 1, T - 1.0, 2.6)
 # cradles for the small boards, standing off the inside of the back wall
-for (_, cx, cz, w, h, label, side) in CRADLES:
+for (_, cx, cz, w, h, label, side, *exit_gap) in CRADLES:
     iw, ih = w + 2 * CRADLE_CLR, h + 2 * CRADLE_CLR
     ring = lbox(cx - iw/2 - CRADLE_WALL, cx + iw/2 + CRADLE_WALL, BACK_IN - CRADLE_H, BACK_IN + 0.01,
                 cz - ih/2 - CRADLE_WALL, cz + ih/2 + CRADLE_WALL) \
          - lbox(cx - iw/2, cx + iw/2, BACK_IN - CRADLE_H - 1, BACK_IN + 1, cz - ih/2, cz + ih/2)
-    gap = min(8.0, ih / 2)                   # wire exits on both short sides
+    gap = exit_gap[0] if exit_gap else min(8.0, ih / 2)   # wire exits on both short sides
     ring = ring - lbox(cx - iw/2 - CRADLE_WALL - 1, cx + iw/2 + CRADLE_WALL + 1, BACK_IN - CRADLE_H - 1, BACK_IN - 0.6,
                        cz - gap/2, cz + gap/2)
     tr = tr + ring

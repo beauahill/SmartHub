@@ -13,7 +13,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | E3 | 1 | ESP32-C3 SuperMini | 22.5 x 18 mm. Runs `esphome/counter-presence.yaml` | `esp32_c3` cradle |
 | E4 | 1 | HLK-LD2410C 24 GHz mmWave radar | 22 x 16 mm. Solder wires directly to the pads, no headers | 23 x 17 mm chin pocket |
 | E5 | 1 | 5 V buck module, MP1584EN | 22 x 17 mm. 20 V in, 5 V out, feeds the ESP32-C3 5V pin and the radar | `buck_5v` cradle |
-| E6 | 1 | USB-C PD step-down module, 12 to 24 V in, USB-C output | Runs from the 20 V bus. 15 W or more. Charges the tablet through the UGREEN adapter's charging port. The cradle is set to 40 x 25 mm; change it to fit your module | `pd_module` cradle |
+| E6 | 1 | 12/24 V to 5 V USB-C step-down converter, 5 A, captive USB-C plug (for example Klnuoxj 25 W, potted) | Runs from the 20 V bus. Charges the tablet through the UGREEN adapter's charging port at 5 V (no PD), about 10–15 W, enough to keep it topped up. If the battery drains with the screen at full brightness, use a PD-output module instead. The cradle is set to 40 x 25 mm until the module is measured | `pd_module` cradle |
 | E8 | 1 | USB-C PD charger, single port, 65 W or more, GaN | Must list 20 V among its outputs. Single-port, so plugging in another device never cuts the voltage | |
 | E8a | 1 | USB-C to USB-C cable, 3 A (60 W) or 5 A (100 W) | Long enough to reach the outlet | |
 | E9 | 1 | Adafruit USB Type C Power Delivery Dummy, I2C or Switchable, HUSB238 (product 5991) | 20.32 x 27.81 mm, four 2.5 mm holes, DIP switch set to 20 V, screw terminal output, up to 5 A | `TRIG_*` parameters, `power_plate` sled |
@@ -25,7 +25,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | # | Qty | Part | Spec / notes | Used by |
 | --- | --- | --- | --- | --- |
 | A1 | 1 | Flat FPC USB-C extension, male to female, 90°, 5 to 10 cm | Ultra-thin ribbon type. The plug must stick out no more than 4 mm past the tablet's edge. Needs USB 2.0 data (for audio) and 3 A | `USB_CLEAR` channel |
-| A2 | 1 | UGREEN 2-in-1 USB-C to 3.5 mm audio adapter with PD charging | Splits the tablet port into a 3.5 mm output and a USB-C charging input. The cradle is set to a 45 x 30 mm body; change it to fit yours | `audio_adapter` cradle |
+| A2 | 1 | UGREEN 2-in-1 USB-C to 3.5 mm audio adapter with PD charging | Splits the tablet port into a 3.5 mm output and a USB-C charging input. Body measured 34 x 25.3 x 9.8 mm; the cradle leaves both 34 mm faces open for the ports and the cable | `audio_adapter` cradle |
 | A3 | 1 | Dayton KABD functional cable kit, plus a short 3.5 mm stereo cable | The kit's 3.5 mm aux-in jack plugs into J13. The cable runs from the UGREEN audio jack to that jack | |
 | A4 | 1 | 3.5 mm ground loop isolator, optional | Only if the speakers hum or pick up charging noise | |
 

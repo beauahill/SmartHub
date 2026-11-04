@@ -86,8 +86,8 @@ amp += lbox(JX - 40, JX - 8, pcb_a - AH, pcb_a - 1.6, JZ - 30, JZ - 6)        # 
 amp += lbox(JX - 4, JX + 26, pcb_a - 9, pcb_a - 1.6, JZ - 18, JZ + 12)        # DSP and BT module
 amp += lbox(JX - 42, JX + 42, pcb_a - 10, pcb_a - 1.6, JZ + 22, JZ + 32)      # terminal strip
 bez_local = {"amp": amp}
-thick = {"pd_module": 10.0, "audio_adapter": 12.0, "buck_5v": 5.0, "esp32_c3": 4.0}
-for (name, cx, cz, w, h, label, side) in g["CRADLES"]:
+thick = {"pd_module": 10.0, "audio_adapter": 9.8, "buck_5v": 5.0, "esp32_c3": 4.0}
+for (name, cx, cz, w, h, label, side, *_) in g["CRADLES"]:
     bez_local[name] = lbox(cx - w / 2, cx + w / 2, BACK_IN - thick[name], BACK_IN, cz - h / 2, cz + h / 2)
 RZ, RL = g["RADAR_Z"], g["RADAR_LIP"]
 bez_local["radar"] = lbox(-11, 11, RL + 0.2, RL + 1.8, RZ - 8, RZ + 8) + lbox(-4, 4, RL + 1.8, RL + 3.0, RZ - 4, RZ + 4)
