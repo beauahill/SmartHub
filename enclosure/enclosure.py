@@ -423,6 +423,8 @@ lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
 # about 0.3 mm each (1.2 mm PLA posts stay well under yield). Measure your cable and set CABLE_D.
 CABLE_D = 4.5                              # USB-C cable outer diameter
 CLIP_Y, CLIP_L = 139.0, 9.0                # start (Y) and length of the clip, clear of the plug's strain relief
+CLIP_X = 32.0                              # off to the side: the power plate's long sled slides in straight over the
+                                           # lid here, and its bottom edge would hit posts on the centre line
 CLIP_POST, CLIP_HOOK = 1.2, 0.4            # post thickness, hook reach
 def clip_post(side):
     g = (CABLE_D + 0.2) / 2                # inner face of the post
@@ -432,7 +434,7 @@ def clip_post(side):
     pts = [(side * x, -z) for x, z in pts] # prism_y maps profile +y to -Z
     if side > 0:                           # one flip (z) leaves the winding clockwise; mirroring x too undoes it
         pts.reverse()
-    return prism_y(CS([pts]), 0, 0, CLIP_Y, CLIP_Y + CLIP_L)
+    return prism_y(CS([pts]), CLIP_X, 0, CLIP_Y, CLIP_Y + CLIP_L)
 cable_clip = clip_post(1) + clip_post(-1)
 lid = lid + cable_clip
 
@@ -704,6 +706,7 @@ _cav_top = TOPZ + PWR_Z - TRIG_T / 2 - TRIG_USB_OFFSET + TRIG_T + TRIG_TALL + 1.
 _face_y = bp0[1] + (_cav_top - bp0[2]) * math.tan(math.radians(TILT)) + SPINE_CLR / ct
 REAR_Y = max(Yb0 + 50, _face_y + 3.0 + (PWR_PLATE_T + TRIG_USB_OVERHANG + TRIG_L + 1.0) + 6.0 + 0.6)
 assert CLIP_Y >= REAR_Y + 28.0, "cable clip sits under the plug's strain relief"
+assert abs(CLIP_X) - (CABLE_D + 0.2) / 2 - CLIP_POST > PWR_PLATE_W / 2 + 2.0, "cable clip in the power plate's path"
 REAR_FACE_H = max(8.0, PWR_Z + PWR_PLATE_H / 2 + 3.0)    # flat rear face tall enough for the power plate
 bpt = to_world(0, T + SPINE_TOP, HS)       # back of the flat top
 prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + REAR_FACE_H), (bpt[1], bpt[2]), (bps[1], bps[2]),
@@ -775,6 +778,11 @@ lid_spine = lid + spine
 # the throat is a straight 12 mm bore, so the trigger cavity floor doesn't leave a thin lip over the sphere.
 lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, p_low[2], WIRE_HOLE_D) \
             - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], TOPZ, p_low[2] + 7, 12)
+# The power plate goes in straight from behind, sled first, over the lid. Check its whole path, not only
+# where it ends up: anything on the lid behind the spine (the cable clip) has to clear it.
+_path = union([pwr_plate_w.translate([0, k, 0]) for k in np.arange(0.0, sled_end + 6.0, 1.0)])
+_hit = (_path ^ lid_spine).volume()
+assert _hit < 0.05, f"power plate hits the lid/spine on its way in ({_hit:.1f} mm3)"
 
 # ======================= EXPORT =======================
 def export(man, name):

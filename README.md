@@ -258,7 +258,8 @@ opens into the cable channel. The spine's depth follows the board: it is deep en
 6 mm of wire room behind it and a 3 mm wall to the bezel face. For this board that makes the spine
 11 mm deeper than for the shorter Adafruit HUSB238. If you use a different trigger board, change
 the `TRIG_*` parameters.
-A clip on the lid behind the spine keeps the charger cable tidy. The cable drops from the plug onto
+A clip on the lid behind the spine, 32 mm to one side, keeps the charger cable tidy. It sits off the centre line
+because the power plate's long sled slides in straight over the lid there. The cable drops from the plug onto
 the lid, then runs back through the clip and over the rear edge. A right-angle cable that points down
 works best. The clip is sized for a 4.5 mm cable, with two flexible posts and small hooks. Measure
 yours and set `CABLE_D`.
