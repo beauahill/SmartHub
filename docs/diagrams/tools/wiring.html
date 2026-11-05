@@ -101,8 +101,8 @@ comp('E6', 1330, 460, 240, 140, '5 V USB-C CONVERTER', ['20 V in, 5 V USB-C plug
 comp('E10', 1170, 680, 230, 80, 'KPX PROGRAMMER', ['bench only, not fitted'], [['j', 'T', 1300, '']], {dashed: true});
 comp('E5', 650, 290, 200, 110, '5 V BUCK', ['MP1584EN', 'set 5.0 V first'],
      [['ip', 'R', 330, 'IN +'], ['in', 'R', 370, 'IN −'], ['on', 'B', 700, 'OUT −'], ['op', 'B', 780, 'OUT +']]);
-comp('E3', 650, 480, 200, 140, 'ESP32-C3', ['SuperMini', 'USB-C: flash only'],
-     [['g', 'T', 700, 'GND'], ['v', 'T', 780, '5V'], ['rx', 'B', 740, 'IO20'], ['tx', 'B', 800, 'IO21']]);
+comp('E3', 650, 480, 200, 140, 'XIAO ESP32-C3', ['Seeed, U.FL antenna', 'USB-C: flash only'],
+     [['g', 'T', 700, 'GND'], ['v', 'T', 780, '5V'], ['rx', 'B', 740, 'D7 RX'], ['tx', 'B', 800, 'D6 TX']]);
 comp('E4', 650, 700, 200, 100, 'LD2410C RADAR', ['in the chin bar'],
      [['tx', 'T', 740, 'TX'], ['rx', 'T', 800, 'RX'], ['g', 'L', 785, 'GND'], ['v', 'R', 780, 'VCC']]);
 comp('S1', 690, 1250, 170, 100, 'ND65-4  LEFT', ['4 Ω full range'], [['p', 'T', 745, '+'], ['n', 'T', 795, '−']]);
@@ -138,8 +138,11 @@ text(1170, 276, 'A4 opt.', {size: 11.5, anchor: 'end', bold: true});
 wire(['E2.j5', [1190, 640], [1300, 640], 'E10.j'], 'AUD', '', 0.5, {dashed: true});
 
 // ---- 5 V and radar
-const S5 = splice(780, 445, 'SP5', 8, 22), S6 = splice(700, 445, 'SP6', -48, 22);
+const S5 = splice(780, 445, 'SP5', 8, -7), S6 = splice(700, 445, 'SP6', -48, 22);
 wire(['E5.op', S5, 'E3.v'], 'RD', '');
+el('polygon', {points: '771,456 789,456 780,469', fill: '#111'});            // D1 Schottky, anode up
+el('line', {x1: 771, y1: 470, x2: 789, y2: 470, stroke: '#111', 'stroke-width': 2.5});
+text(794, 467, 'D1', {size: 12, bold: true});
 wire(['E5.on', S6, 'E3.g'], 'BK', '');
 wire([S5, [880, 445], [880, 780], 'E4.v'], 'RD', '26 RD', 0.5, {seg: 1});
 wire([S6, [630, 445], [630, 785], 'E4.g'], 'BK', '26 BK', 0.5, {seg: 1});
@@ -169,7 +172,7 @@ ui.key.innerHTML = `
 <tr><td>E2</td><td>KABD-430 amplifier</td><td>tray</td></tr>
 <tr><td>E6</td><td>5 V USB-C converter</td><td>tray</td></tr>
 <tr><td>E5</td><td>5 V buck, MP1584EN</td><td>tray</td></tr>
-<tr><td>E3</td><td>ESP32-C3 SuperMini</td><td>tray</td></tr>
+<tr><td>E3</td><td>Seeed XIAO ESP32-C3</td><td>tray</td></tr>
 <tr><td>E4</td><td>LD2410C radar</td><td>chin</td></tr>
 <tr><td>A1 / A2</td><td>FPC 90° adapter / UGREEN 2-in-1</td><td>tray</td></tr>
 <tr><td>A3 / A4</td><td>3.5 mm cable / ground loop isolator (opt.)</td><td>tray</td></tr>
@@ -181,7 +184,7 @@ ui.key.innerHTML = `
 <tr><td><span class="sw" style="border-color:${COLOR.BK}"></span></td><td>18 BK</td><td>Ground (W2)</td></tr>
 <tr><td><span class="sw" style="border-color:${COLOR.RD}"></span><span class="sw" style="border-color:${COLOR.BK};margin-left:4px;width:14px"></span></td><td>20 pair</td><td>Speaker, + / − (W1)</td></tr>
 <tr><td><span class="sw" style="border-color:${COLOR.RD};border-top-width:2px"></span></td><td>26 RD / BK</td><td>5 V / ground (W3)</td></tr>
-<tr><td><span class="sw" style="border-color:${COLOR.YE};border-top-width:2px"></span><span class="sw" style="border-color:${COLOR.GN};border-top-width:2px;margin-left:4px;width:14px"></span></td><td>26 YE / GN</td><td>Radar TX → IO20, RX ← IO21</td></tr>
+<tr><td><span class="sw" style="border-color:${COLOR.YE};border-top-width:2px"></span><span class="sw" style="border-color:${COLOR.GN};border-top-width:2px;margin-left:4px;width:14px"></span></td><td>26 YE / GN</td><td>Radar TX → D7 (IO20), RX ← D6 (IO21)</td></tr>
 <tr><td><span class="usb"></span></td><td>USB-C</td><td>Cables and adapters</td></tr>
 <tr><td><span class="sw" style="border-color:${COLOR.AUD};border-top-width:6px"></span></td><td>3.5 mm</td><td>Line-level audio</td></tr>
 </table>`;
@@ -195,6 +198,7 @@ ui.notes.innerHTML = `<div class="nh">PASS-THROUGHS</div>
 <div class="note"><span class="nkey">2</span><span>If the buck is adjustable, set it to 5.0 V before connecting E3 and E4.</span></div>
 <div class="note"><span class="nkey">3</span><span>Output channels follow the DSP program loaded through J5. Check the board's silkscreen. J13 is the AUX input.</span></div>
 <div class="note"><span class="nkey">4</span><span>Speaker + goes to each driver's red-marked terminal.</span></div>
-<div class="note"><span class="nkey">5</span><span>Fit A4 only if you hear hum while the tablet charges.</span></div>`;
+<div class="note"><span class="nkey">5</span><span>Fit A4 only if you hear hum while the tablet charges.</span></div>
+<div class="note"><span class="nkey">6</span><span>D1 is a Schottky diode (1N5819 or SS14) into the XIAO's 5V pin, so USB can't back-feed the buck. Plug in the XIAO's antenna.</span></div>`;
 window.__done = true;
 </script></body></html>

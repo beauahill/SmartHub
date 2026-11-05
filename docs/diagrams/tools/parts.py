@@ -175,7 +175,7 @@ sheets = [
          dict(n=4, name="5 V USB-C converter (charges the tablet)", qty=1, ref="E6", parts=[("conv", [0, -75, 0], "pcb")]),
          dict(n=5, name="UGREEN 2-in-1 USB-C audio + PD adapter", qty=1, ref="A2", parts=[("audio_adapter", [0, -75, 0], "pcb2")]),
          dict(n=6, name="5 V buck, MP1584EN", qty=1, ref="E5", parts=[("buck_5v", [0, -75, 0], "pcb")]),
-         dict(n=7, name="ESP32-C3 SuperMini", qty=1, ref="E3", parts=[("esp32_c3", [0, -75, 0], "pcb")]),
+         dict(n=7, name="Seeed XIAO ESP32-C3", qty=1, ref="E3", parts=[("esp32_c3", [0, -75, 0], "pcb")]),
          dict(n=8, name="Felt pad, 8 mm, 0.5 mm thick", qty=6, ref="H9", parts=[("felt", [0, -45, 0], "felt")]),
          dict(n=9, name="Flat FPC USB-C 90° adapter", qty=1, ref="A1", parts=[("fpc", [30, -120, -265], "pcb2")]),
          dict(n=10, name="Tablet, Galaxy Tab A9+", qty=1, ref="E1", parts=[("tablet_l", [0, -120, -265], "glass")]),

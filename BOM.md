@@ -10,7 +10,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | --- | --- | --- | --- | --- |
 | E1 | 1 | Samsung Galaxy Tab A9+ (11", SM-X210 / X216) | 257.1 x 168.7 x 6.9 mm. Bezel pocket is sized to this | `TAB_*` parameters |
 | E2 | 1 | Dayton Audio KABD-430 amplifier board (325-430) | 4 x 30 W from two TPA3118, ADAU1701 DSP, Bluetooth 5.0 aptX HD, 10 to 26 V (24 V typical). Board 91.4 x 68.6 mm, 3.5 mm holes on 83.8 x 61.0 mm. Height 20 mm from the bottom of the PCB, per Dayton's spec sheet. Fed from its AUX input (J13). Run it in 2.1 mode | `AMP_*` parameters, tray standoffs |
-| E3 | 1 | ESP32-C3 SuperMini | 22.5 x 18 mm. Runs `esphome/counter-presence.yaml` | `esp32_c3` cradle |
+| E3 | 1 | Seeed XIAO ESP32-C3, with its U.FL antenna | 21 x 17.8 mm. Runs `esphome/counter-presence.yaml` (`board: seeed_xiao_esp32c3`). Radar on D7/RX (GPIO20) and D6/TX (GPIO21). Fed 5 V through a Schottky diode (1N5819 or SS14) | `esp32_c3` cradle |
 | E4 | 1 | HLK-LD2410C 24 GHz mmWave radar | 22 x 16 mm. Solder wires directly to the pads, no headers | 23 x 17 mm chin pocket |
 | E5 | 1 | 5 V buck module, MP1584EN | 22 x 17 mm. 20 V in, 5 V out, feeds the ESP32-C3 5V pin and the radar | `buck_5v` cradle |
 | E6 | 1 | 12/24 V to 5 V USB-C step-down converter, 5 A, captive USB-C plug (for example Klnuoxj 25 W, potted) | Runs from the 20 V bus. Charges the tablet through the UGREEN adapter's charging port at 5 V (no PD), about 10–15 W, enough to keep it topped up. If the battery drains with the screen at full brightness, use a PD-output module instead. Body 46.3 x 32 mm, ear holes 3.7 mm at 53.8 mm centers; up to 20 mm tall fits the tray. Two M3 x 8 thread-forming screws, for ears up to 2.5 mm thick (the pilots are 6.4 mm deep) | `CONV` mount |

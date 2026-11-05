@@ -31,7 +31,7 @@ The full parts list is in [BOM.md](BOM.md).
   set brightness without root. No root means YouTube TV and Spotify keep full DRM.
 - **Control.** Counter Home runs a token-protected HTTP API on port 2323. Home Assistant uses it to
   wake, dim, blank and navigate the display.
-- **Presence.** An ESP32-C3 SuperMini reads an HLK-LD2410C radar and reports presence to Home
+- **Presence.** A Seeed XIAO ESP32-C3 reads an HLK-LD2410C radar and reports presence to Home
   Assistant over ESPHome. Automations wake the screen, fall back to a dim clock, then turn it off.
 - **Sound.** The tablet's USB-C port goes through a flat FPC 90° adapter into a UGREEN 2-in-1 adapter.
   That adapter splits it into a 3.5 mm audio output and a USB-C charging input. A 3.5 mm cable runs
@@ -435,6 +435,12 @@ esphome run counter-presence.yaml
 ```
 
 The first flash needs USB; after that updates go over the air. Wiring is at the top of the YAML.
+The board is a Seeed XIAO ESP32-C3 (`board: seeed_xiao_esp32c3`):
+- **Flashing:** if the port doesn't appear, hold its BOOT button while plugging it in.
+- **Antenna:** it has no on-board antenna. Plug in the U.FL antenna that comes with it, and stick
+  the flat antenna inside the tray, away from the amp and the tablet's metal back.
+- **Power from the buck:** the 5 V feed goes to its 5V pin through a Schottky diode, so plugging in
+  USB while the 20 V supply is on can't back-feed the buck.
 It needs `counter_presence_api_key`, `ota_password`, `wifi_ssid` and `wifi_password` in your
 ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 

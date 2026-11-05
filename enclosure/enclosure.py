@@ -146,7 +146,7 @@ CRADLES = [
     # the cable to the tablet leaves the opposite face. Both long faces stay open (last field: exit gap).
     ("audio_adapter",  85.0, 120.0, 25.3, 34.0, "AUDIO ADAPTER", "above", 28.0),
     ("buck_5v",        40.0, 120.0, 22.0, 17.0, "5V BUCK",       "above"),   # MP1584EN
-    ("esp32_c3",       45.0,  80.0, 22.5, 18.0, "ESP32-C3",      "below"),   # ESP32-C3 SuperMini
+    ("esp32_c3",       45.0,  80.0, 21.0, 17.8, "ESP32-C3",      "below"),   # Seeed XIAO ESP32-C3, USB-C at an end
 ]
 # Raised labels inside the bezel, one per component. They face up in both print orientations.
 LABELS = True
