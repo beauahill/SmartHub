@@ -658,7 +658,10 @@ for (x, z) in SPINE_PTS:
 # chin bar screw bosses: through the tray depth, head counterbores from the back face
 CHIN_SCREW_Z = CHIN_TOP / 2 + 0.5       # off the line where the inner floor round-over meets the back wall
 for x in CHIN_SCREW_X:
-    tr = tr + (lcyl_a(x, CHIN_SCREW_Z, T_FRONT + 0.5, T - 0.01, 9.0) ^ body_outer)
+    # each boss stands on a solid pedestal down to the tray floor, so it is tied into the floor as well as
+    # the back wall instead of hanging off the back wall alone
+    tr = tr + ((lcyl_a(x, CHIN_SCREW_Z, T_FRONT + 0.5, T - 0.01, 9.0) +
+                lbox(x - 4.5, x + 4.5, T_FRONT + 0.5, T - 0.01, TRAY_WALL - 0.5, CHIN_SCREW_Z)) ^ body_outer)
 # vents in the back wall, kept clear of the chin bosses
 for i in range(9):
     x = -112 + i * 28

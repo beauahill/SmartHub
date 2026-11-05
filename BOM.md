@@ -81,7 +81,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 395 cm³ |
 | P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 111 | 81 cm³ |
 | P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 196 cm³ |
-| P4 | 1 | `bezel_shell.stl` | 272 x 197 x 36 | 226 cm³ |
+| P4 | 1 | `bezel_shell.stl` | 272 x 197 x 36 | 230 cm³ |
 | P5 | 1 | `bezel_chin.stl` | 272 x 26 x 9 | 47 cm³ |
 | P6 | 1 | `power_plate.stl` | 44 x 26 x 45 | 5.2 cm³ |
 
