@@ -414,7 +414,10 @@ for (x, y) in BOSSES:
     lid = lid - cyl_z(x, y, LID_Z0 - 1, LID_Z0 + LID_DOWEL_DEPTH, 4.3)
 # Speaker wire hole into the woofer chamber, at the bottom of the spine's cable channel. Sized for three
 # 20 AWG zip-cord pairs (about 2 x 4 mm each) and hot-glued shut around them: any gap here acts as a port.
-WIRE_HOLE = (0, 74)
+# In front of the PD trigger's cavity, so the speaker wires come straight up the channel and never have
+# to get past the trigger board and its sled (which fill the cavity). The trigger's terminal, at the
+# board's front end, feeds the same channel.
+WIRE_HOLE = (0, 57)
 WIRE_HOLE_D = 8.0
 lid = lid - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, TOPZ + 1, WIRE_HOLE_D)
 
@@ -777,12 +780,21 @@ lid_spine = lid + spine
 # the hole runs straight up into the channel's low sphere, so the full 8 mm reaches the channel. Above the lid
 # the throat is a straight 12 mm bore, so the trigger cavity floor doesn't leave a thin lip over the sphere.
 lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, p_low[2], WIRE_HOLE_D) \
-            - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], TOPZ, p_low[2] + 7, 12)
+            - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], TOPZ, p_low[2] + 7, 10)
 # The power plate goes in straight from behind, sled first, over the lid. Check its whole path, not only
 # where it ends up: anything on the lid behind the spine (the cable clip) has to clear it.
 _path = union([pwr_plate_w.translate([0, k, 0]) for k in np.arange(0.0, sled_end + 6.0, 1.0)])
 _hit = (_path ^ lid_spine).volume()
 assert _hit < 0.05, f"power plate hits the lid/spine on its way in ({_hit:.1f} mm3)"
+# The wires' own path: a 7 mm bundle from under the lid, up through the hole and along the channel to the
+# tray, must not touch the spine, the power plate or the trigger board (with its tallest part).
+_board = box(-TRIG_W / 2, TRIG_W / 2, pcb_bot, pcb_bot + TRIG_T + TRIG_TALL, edge_z, edge_z + TRIG_L) \
+             .rotate([90, 0, 0]).translate([0, REAR_FACE, PWR_ZW])
+_wires = M.batch_hull([M.sphere(3.5, 24).translate([WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 3]),
+                       M.sphere(3.5, 24).translate(p_low.tolist())]) + \
+         M.batch_hull([M.sphere(3.5, 24).translate(p_low.tolist()), M.sphere(3.5, 24).translate(p_high.tolist())])
+_wire_hit = [round((_wires ^ m).volume(), 2) for m in (lid_spine, pwr_plate_w, _board)]
+assert max(_wire_hit) < 0.05, f"speaker wire path blocked (spine, plate, board): {_wire_hit}"
 
 # ======================= EXPORT =======================
 def export(man, name):

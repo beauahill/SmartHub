@@ -162,7 +162,7 @@ sheets = [
        ],
        notes=[
          dict(k="A", text="Ø8 speaker wire hole in the lid, under the spine. Fill it with hot glue from inside before the lid goes on.",
-              anchor=[0, 74, 120 + 95]),
+              anchor=[0, g["WIRE_HOLE"][1], 120 + 95]),
          dict(k="B", text="Cable clip: press the charger cable in here.", anchor=[0, 137, 124 + 95]),
          dict(k="C", text="Speaker and 20 V leads run up the spine channel into the tray.", anchor=add(lift, wpt(0, T, 60))),
          dict(k="D", text="Set the DIP switch to 20 V only before fitting the plate.", anchor=add(lift, [0, 75, 45], [-8, g["REAR_FACE"] - 15, g["PWR_ZW"]])),

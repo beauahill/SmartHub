@@ -254,7 +254,10 @@ own four mounting holes. The geometry is the HUNSOOL PD3.1 trigger as measured:
 
 The socket sits just behind a 14.4 x 8.8 mm chamfered opening that the plug's molded body passes
 through, so the plug seats fully. A cavity in the spine clears the board and its screw terminal and
-opens into the cable channel. The spine's depth follows the board: it is deep enough for the board,
+opens into the cable channel. The lid's speaker-wire hole sits in front of that cavity, so the speaker
+wires run straight up the channel past the end of the board instead of having to get past it. The
+trigger's terminal, at that end, feeds the same channel. The build script checks both the wires' path
+and the plate's slide-in path. The spine's depth follows the board: it is deep enough for the board,
 6 mm of wire room behind it and a 3 mm wall to the bezel face. For this board that makes the spine
 11 mm deeper than for the shorter Adafruit HUSB238. If you use a different trigger board, change
 the `TRIG_*` parameters.
