@@ -417,6 +417,26 @@ over an edge:
    UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
 
+   **AUX lead.** The 3.5 mm jack isn't on the board. J13 is a 5-pin JST PH (2.0 mm) header, from
+   Dayton's manual: pin 1 Left in, 2 AGND, 3 Right in, 4 and 5 not connected. Pin 1 is at the end
+   with the triangle on the silkscreen. Either use the jack lead from Dayton's functional cable kit,
+   or make one:
+   - Cut a 3.5 mm stereo cable: tip (left) to pin 1, sleeve (ground) to pin 2, ring (right) to pin 3.
+   - Use a pre-crimped 5-pin JST PH pigtail.
+
+   By default the DSP mixes AUX and Bluetooth, so a phone can play over Bluetooth while the tablet
+   stays on AUX. Bluetooth holds one device at a time and shows as "DAKAB". If you load a custom DSP
+   program, keep both inputs in its mix.
+
+   **Optional extras:**
+   - **J2, pairing button:** the green momentary button. Hold it about a second to pair a new device;
+     this drops the old one. Don't hold it past 5 seconds.
+   - **J1, status LED:** 2-pin PH, pin 1 LED−, pin 2 LED+. It blinks while searching and stays on
+     when connected.
+   - **Mounting:** both are only needed when you pair a new phone. Leave them in the tray, or fit
+     them through a hole drilled in the tray's back wall, where you can reach them from behind.
+   - **J10:** the standby switch port. Leave it empty.
+
    **Amp outputs, wired for 2.1.** The KABD-430's two speaker connectors, J11 and J12, are 6-pin. Its
    harness plugs have four bare leads (pins 3–6) and a two-pin jumper (pins 1 and 2, GND and MODE).
    The jumper sets each connector's mode:

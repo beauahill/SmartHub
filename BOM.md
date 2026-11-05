@@ -26,7 +26,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | --- | --- | --- | --- | --- |
 | A1 | 1 | Flat FPC USB-C extension, male to female, 90°, 5 to 10 cm | Ultra-thin ribbon type. The plug must stick out no more than 4 mm past the tablet's edge. Needs USB 2.0 data (for audio) and 3 A | `USB_CLEAR` channel |
 | A2 | 1 | UGREEN 2-in-1 USB-C to 3.5 mm audio adapter with PD charging | Splits the tablet port into a 3.5 mm output and a USB-C charging input. Body measured 34 x 25.3 x 9.8 mm; the cradle leaves both 34 mm faces open for the ports and the cable | `audio_adapter` cradle |
-| A3 | 1 | Dayton KABD functional cable kit, plus a short 3.5 mm stereo cable | The kit's 3.5 mm aux-in jack plugs into J13. The cable runs from the UGREEN audio jack to that jack | |
+| A3 | 1 | AUX lead for J13: a 3.5 mm stereo cable wired to a 5-pin JST PH (2.0 mm) plug, or the jack lead from Dayton's KABD functional cable kit | J13 pins: 1 Left in, 2 AGND, 3 Right in, 4–5 not connected. Tip to 1, sleeve to 2, ring to 3. Runs from the UGREEN audio jack to J13 | |
 | A4 | 1 | 3.5 mm ground loop isolator, optional | Only if the speakers hum or pick up charging noise | |
 | A5 | 1 | USB-C coupler | Joins the 5 V converter's USB-C lead to the UGREEN adapter's charging port (needed on the first build) | |
 
