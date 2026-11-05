@@ -79,6 +79,7 @@ already oriented for printing.
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
 | `bezel_chin` | 272 x 26 x 9 | Prints back face down, no supports. The chin bar: holds the radar, the lip along the bottom of the glass and the pocket's bottom corners |
 | `power_plate` | 44 x 26 x 45 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
+| `power_plate_adafruit_first_build` | 44 x 26 x 33 | Only for a lid and spine printed before the HUNSOOL change (spine 55 mm deep at the lid): the plate for the Adafruit HUSB238 trigger. See "First-build spine" below |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
@@ -244,6 +245,17 @@ Keep the bed clean so the lid prints flat. The lid's bottom face is the glue joi
 
 The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm from the bottom of
 the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
+
+**First-build spine.** A lid and spine printed before the HUNSOOL change is 55 mm deep at the lid
+(the current one is about 67 mm). Use it with the Adafruit HUSB238 and
+`power_plate_adafruit_first_build.stl`. On that spine the lid's wire hole, 74 mm from the lid's front
+edge, sits under the trigger's sled, so the speaker wires can't get past. To rework it:
+1. Drill a new 8 mm hole on the centre line, 62 mm from the lid's front edge, from underneath. It is
+   about 14 mm to the trigger cavity, just in front of the board's end.
+2. Fill the old hole solid with epoxy or hot glue.
+3. Run the speaker leads up through the new hole, laid flat in front of the board's end and into the
+   channel.
+4. Hot-glue the new hole shut around the wires.
 
 **USB-C power plate.** The PD trigger mounts on a sled molded onto the back of the plate, using its
 own four mounting holes. The geometry is the HUNSOOL PD3.1 trigger as measured:
