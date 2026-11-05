@@ -77,7 +77,7 @@ already oriented for printing.
 | `grille_ring` | 299 x 149 x 111 | Linen version. Linen wraps around it. Slides on from below, held by magnets. Prints bottom edge down |
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints bottom edge down |
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
-| `bezel_chin` | 272 x 23 x 9 | Prints back face down, no supports. The chin bar: holds the radar and the lip along the bottom of the glass |
+| `bezel_chin` | 272 x 26 x 9 | Prints back face down, no supports. The chin bar: holds the radar, the lip along the bottom of the glass and the pocket's bottom corners |
 | `power_plate` | 44 x 26 x 45 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
@@ -104,15 +104,17 @@ check of both parts in those orientations finds only these spots past 2 mm:
   on the outer wall. It sticks out 5.5 mm, along the 100 mm of the channel. A 45° slope would cut
   into the plug's path as the tablet slides in, so the roof stays flat. The plug clears it by about
   1.1 mm.
-- **Bottom corners of the lip.** Two small triangles, up to 6 mm, over the gaps that let the
-  tablet's corners slide in. They are attached on two sides and sit behind the glass corners.
+- **Bottom corners of the lip.** These belong to the chin bar: solid blocks fill the pocket corners
+  outside the tablet's rounded corners and carry the lip's corners. The shell's lip starts 26 mm up
+  the sides, where the widest overhang left is 3.1 mm. (On the first build these were thin shell
+  tabs that broke easily.)
 
 In PLA these print without supports, with slight sag on surfaces you don't see. **In PETG, support
 the lip.** The lip around the window is the last 1.2 mm of the print, and it overhangs the tablet
 pocket by 1.9 mm all the way round. PETG droops there, and the last layers can come loose (seen on
 a test print). Use painted PETG supports:
 - Set the support type to Tree (manual), and paint only these: the underside of the lip all the way
-  round the window, the USB-C channel ceiling and the two bottom corners of the lip.
+  round the window, the USB-C channel ceiling and the lip just above the chin split at each side.
 - Supports are PETG too, so open the gap to make them release: top Z distance 0.25–0.3 mm, two
   top interface layers with no spacing, and no bottom interface. The trees stand on the inside of
   the back wall. Pull them out through the window and the pocket.
@@ -416,7 +418,8 @@ over an edge:
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
 10. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
     glass toward the lip, with the FPC plug riding in the channel on the right.
-11. Fit the radar into the chin bar's pocket, push the bar into its slot below the tablet, run the
+11. Fit the radar into the chin bar's pocket, push the bar straight back into its slot below the tablet (its
+    corner blocks fill the gaps beside the tablet's bottom corners), run the
     radar wires up to the ESP32-C3, and screw the bar on from the back of the tray with four M3 x 20 screws.
 12. Tuck the slack in the leads back down the spine's cable channel, then bolt the bezel to the spine
     from the spine's rear with four M3 x 16 bolts.
@@ -629,4 +632,5 @@ These items came out of reviewing the Cowork export.
 | Wide printed frame covered the tablet's glass, light sensor and camera | Changed to a frameless bezel: a thin rim, the tablet glass showing, and a one-piece shell plus chin |
 | 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |
 | The 12 mm lid hole left the woofer chamber open to the bezel tray through the cable channel, which spoiled the passive radiator alignment | Fixed. The hole is 8 mm, sized for three 20 AWG pairs, the channel no longer cuts through the lid, and assembly step 3 seals the hole with hot glue |
-| Bezel shell: the two small lip tabs at the bottom corners of the window break easily (first PETG build). They are 1.2 mm thick, held on two sides, and sit over the gaps that let the tablet's corners slide in | Open, for the next bezel revision. Plan: move the lip corners to the chin, as solid blocks that fill the pocket corners outside the tablet's rounded corners. The chin goes in after the tablet, so the blocks don't get in its way |
+| Bezel shell: the two small lip tabs at the bottom corners of the window break easily (first PETG build). They are 1.2 mm thick, held on two sides, and sit over the gaps that let the tablet's corners slide in | Fixed for the next build (first build works as printed). The chin bar now runs up to `CHIN_SPLIT` (26 mm), where the corner blocks are still 1.5 mm thick at the pocket wall. It carries solid blocks that fill the pocket corners outside the tablet's rounded corners, with the lip's corners on their front. Checked: the bar slides straight back into place past the seated tablet without contact |
+| Power: the tablet's 5 V comes from its own converter (E6), separate from the MP1584 buck (E5) | Works as built. For a future build, use one 5 A, 20 V to 5 V buck for all three loads: the XIAO through its diode, the radar, and a USB-C plug lead with a 10 kΩ CC pull-up for the tablet. The MP1584 alone is too small for tablet charging (2–3 A) in the warm tray, and a USB-C plug with no CC pull-up delivers no power |

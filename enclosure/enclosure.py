@@ -666,11 +666,15 @@ for i in range(16):
 CH_H = 60.0                                     # cable channel enters tray here
 tr = tr - lcyl_a(0, CH_H, T - TRAY_WALL - 1, T + 1, 13)
 # split: shell above the top of the chin, chin cap below it
-# Split: the chin is the solid bar in front of the tray below the tablet, plus the strip of lip along
-# the bottom of the glass (so that strip sits on solid plastic instead of spanning 255 mm on its own).
-# The tablet slides up through the bar's slot before the bar goes in.
-chin_region = lbox(-EW, EW, -10, T_FRONT, -10, CHIN_TOP) + \
-              lbox(-PW / 2, PW / 2, -10, LIP, CHIN_TOP - 1, CHIN_TOP + LIP_OVERLAP + TAB_CLR + 0.5)
+# Split: the chin is everything in front of the tray up to CHIN_SPLIT: the solid bar below the tablet,
+# the lip along the bottom of the glass, and the bottom corners of the pocket. Those corners are solid
+# blocks outside the tablet's rounded corners, carrying the lip's corners, so the lip has no thin tabs
+# there. (The shell can't keep them: below the tablet's center its pocket is square, so the tablet's
+# sides slide past on the way in.) The tablet goes in first, then the bar moves straight back into
+# place. The split sits where the corner blocks are still 1.5 mm thick at the pocket wall.
+_rc = TAB_R + TAB_CLR
+CHIN_SPLIT = CHIN_TOP + _rc - math.sqrt(_rc ** 2 - (_rc - 1.5) ** 2)
+chin_region = lbox(-EW, EW, -10, T_FRONT, -10, CHIN_SPLIT)
 chin = tr ^ chin_region
 tr = tr - chin_region - pocket_ext - usb_channel
 # relief in the entry slot for the camera bump, through the front edge of the tray's bottom wall
