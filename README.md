@@ -416,6 +416,26 @@ over an edge:
 9. Plug the flat FPC 90° adapter into the tablet. Connect the UGREEN adapter to it, the 5 V converter's plug to the
    UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
+
+   **Amp outputs, wired for 2.1.** The KABD-430's two speaker connectors, J11 and J12, are 6-pin. Its
+   harness plugs have four bare leads (pins 3–6) and a two-pin jumper (pins 1 and 2, GND and MODE).
+   The jumper sets each connector's mode:
+   - **J11, stereo, jumper plugged in:** the two full-range drivers.
+     - Pin 5 to the left ND65's + and pin 6 to its −.
+     - Pin 4 to the right ND65's + and pin 3 to its −.
+     - Left is the driver on your left as you face the display.
+   - **J12, mono (bridged), jumper left open:** the woofer. Pins 3 and 4 are both MONO+, and pins 5
+     and 6 are both MONO−. Join 3 with 4 and 5 with 6 at the plug, then run one pair to the woofer.
+     That way only six conductors go down the spine and through the lid hole. The ND105-4 is 4 Ω,
+     the minimum the amp allows in either mode.
+   - **Power:** the centre connector, red + and black −, from the 20 V splices.
+   - **Rules:** change the jumpers only with the power off, and never let speaker leads touch while
+     it's running.
+
+   The bridged channel plays whatever the DSP sends it. Load a 2.1 program through J5 with the KPX:
+   a low-pass on J12 for the woofer, a matching high-pass on J11, and the woofer level trimmed to
+   suit. Then check each driver plays the right range before closing up. The pin numbers come from
+   Dayton's quick-start wiring guide; match them to the pin-1 mark on the board's silkscreen.
 10. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
     glass toward the lip, with the FPC plug riding in the channel on the right.
 11. Fit the radar into the chin bar's pocket, push the bar straight back into its slot below the tablet (its

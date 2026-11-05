@@ -88,7 +88,7 @@ function grommet(x, y, w, h, tag, note, side = 'R') {
 comp('E8', 30, 90, 170, 150, 'USB-C CHARGER', ['65 W+', 'must offer 20 V'], [['out', 'R', 215, '']]);
 comp('E9', 300, 70, 265, 175, 'PD TRIGGER', ['HUNSOOL PD3.1', 'DIP switches: 20 V', 'behind the power plate'],
      [['in', 'L', 215, 'USB-C'], ['p', 'R', 115, '+'], ['n', 'R', 185, '−']]);
-comp('E2', 960, 300, 260, 300, 'KABD-430 AMP', ['Dayton, 2.1 mode', '10–26 V in'],
+comp('E2', 960, 300, 260, 300, 'KABD-430 AMP', ['Dayton, 2.1 mode', '10–26 V in', 'J11 stereo, jumper ON:', 'L+ 5, L− 6, R+ 4, R− 3', 'J12 mono, jumper OFF:', '+ = 3+4, − = 5+6'],
      [['pp', 'L', 330, 'PWR +'], ['pn', 'L', 370, 'PWR −'], ['aux', 'T', 1190, 'J13'],
       ['lp', 'B', 985, 'L+'], ['ln', 'B', 1005, 'L−'], ['sp', 'B', 1045, 'S+'], ['sn', 'B', 1065, 'S−'],
       ['rp', 'B', 1105, 'R+'], ['rn', 'B', 1125, 'R−'], ['j5', 'B', 1190, 'J5']]);
@@ -196,7 +196,7 @@ ui.notes.innerHTML = `<div class="nh">PASS-THROUGHS</div>
 <div class="nh" style="margin-top:16px">NOTES</div>
 <div class="note"><span class="nkey">1</span><span>Check for 20 V at E9's terminal before connecting anything.</span></div>
 <div class="note"><span class="nkey">2</span><span>If the buck is adjustable, set it to 5.0 V before connecting E3 and E4.</span></div>
-<div class="note"><span class="nkey">3</span><span>Output channels follow the DSP program loaded through J5. Check the board's silkscreen. J13 is the AUX input.</span></div>
+<div class="note"><span class="nkey">3</span><span>J11 runs stereo for the full-range pair. J12 runs mono (bridged) for the woofer. The crossover comes from a 2.1 DSP program loaded through J5. J13 is the AUX input. Change the mode jumpers only with the power off.</span></div>
 <div class="note"><span class="nkey">4</span><span>Speaker + goes to each driver's red-marked terminal.</span></div>
 <div class="note"><span class="nkey">5</span><span>Fit A4 only if you hear hum while the tablet charges.</span></div>
 <div class="note"><span class="nkey">6</span><span>D1 is a Schottky diode (1N5819 or SS14) into the XIAO's 5V pin, so USB can't back-feed the buck. Plug in the XIAO's antenna.</span></div>`;
