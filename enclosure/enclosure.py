@@ -74,8 +74,6 @@ FR_CH_Y1 = 80.0                # full range chamber back wall outer face
 #                  Measured to the inner face of the grille ring / grille shell (RECESS - RING_GAP from
 #                  the outside), which is closer than the linen, so it holds for both base versions.
 #   well_clr   clearance around the frame in its recess, which follows the frame outline
-#   well_sq    instead of a frame-shaped recess, a plain rounded square: (across the flats, across the
-#              corners). Used where a recess that follows the model is too tight for real frames.
 #   ring_wall  mounting ring material around the recess. Outside the ring the mounting face is only
 #              about 0.25 mm in front of the inside of the baffle, so trimming a recess wider than this
 #              breaks into the chamber.
@@ -86,18 +84,19 @@ DRIVERS = {
     # under the flange). They pass through the mounting face as the driver goes in, so the notch opens
     # through it. Mount the ND65s with the tabs up.
     # The model's frame is 64.0 x 64.9 mm across the flats and 75.7 mm across the ear tips. On the first
-    # build, a frame-shaped recess 0.5 mm around it was too tight for real drivers at the ears, so the
-    # recess is now a rounded square 67 mm across the flats and 82 mm across the corners: at least 1 mm
-    # from the model's frame all round, 3.5 to 5 mm around the ears, with the driver turned up to 5 deg.
+    # build the recess was 0.5 mm around this outline, which left only 0.2 mm to the model's frame at
+    # the ears and touched with the driver turned 2 deg; real drivers would not go in. At 1.5 mm the
+    # recess is 67.9 mm across and 78.8 mm across the ear tips, at least 1.2 mm from the model's frame,
+    # and clear with the driver turned up to 3 deg (the screws allow about 1).
     "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.4, 27.8, 18.0, 42.0, 2.0),
-                   bc=66.0, cover_clear=4.0, well_clr=None, well_sq=(67.0, 82.0), ring_wall=4.0),
+                   bc=66.0, cover_clear=4.0, well_clr=1.5, ring_wall=4.0),
     # ND105-4: 105 mm frame, ears to 120 mm, 93 mm cutout, 67 mm deep (57 behind the mounting face),
     # Xmax 4 mm. Ear shape inferred from the drawing, so the recess has extra clearance.
     "nd105":  dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=5.0, well_clr=1.0, well_sq=None, ring_wall=3.0),
+                   bc=108.5, cover_clear=5.0, well_clr=1.0, ring_wall=3.0),
     # ND105-PR: same frame as the ND105-4, 40.5 mm deep (30.5 behind the mounting face), Xmax 11 mm.
     "nd105pr": dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=9.0, well_clr=1.0, well_sq=None, ring_wall=3.0),
+                   bc=108.5, cover_clear=9.0, well_clr=1.0, ring_wall=3.0),
 }
 FR_X = 96.0                            # full range centers at +/-X
 DRV_Z = (FLOOR + TUB_H) / 2.0          # full range center height
@@ -315,18 +314,8 @@ def frame_outline(d, grow=0.0):
             for a in (45, 135, 225, 315)]
     return CS.batch_hull([CS.circle(d["body_r"] + grow, SEG)] + ears)
 
-def rounded_square(flats, corners):
-    """Rounded square on the origin, `flats` across the sides and `corners` across the diagonal."""
-    a, h = flats / 2, corners / 2
-    r = (a * math.sqrt(2) - h) / (math.sqrt(2) - 1)
-    assert 0 < r < a, "rounded square: corners must lie between flats and flats * sqrt(2)"
-    return CS.square([2 * (a - r)] * 2, center=True).offset(r, m3.JoinType.Round, circular_segments=SEG)
-
 def well_outline(d, grow=0.0):
-    """Recess outline grown by `grow`, and its extent along the 45 deg diagonals."""
-    if d["well_sq"]:
-        flats, corners = d["well_sq"]
-        return rounded_square(flats + 2 * grow, corners + 2 * grow), corners / 2 + grow
+    """Recess outline (frame plus well_clr) grown by `grow`, and its extent along the 45 deg diagonals."""
     g = d["well_clr"] + grow
     return frame_outline(d, g), max(d["body_r"], d["ear_c"] + d["ear_r"]) + g
 
@@ -361,9 +350,8 @@ def mount_driver(tub, name, x, z, rear=False):
     lo, hi = sorted((baffle, back))
     ring_cs, ring_h = well_outline(d, d["ring_wall"])
     ring = prism_y(teardrop_down(ring_cs, ring_h), x, z, lo, hi) ^ INTERIOR
-    if x != 0:                                               # full range: the ring stays in its own chamber
-        rx0, _, _, rx1, _, _ = ring.bounding_box()
-        assert min(abs(rx0), abs(rx1)) >= FR_CH_X0, f"{name} mounting ring reaches into the woofer chamber"
+    if x != 0:                                               # full range: keep the ring out of the woofer chamber
+        ring = ring ^ box(*sorted((math.copysign(FR_CH_X0, x), math.copysign(IX + 1, x))), -10, BD + 10, -10, TUB_H + 10)
     tub = tub + ring
     RINGS[name + ("" if x >= 0 else "_l")] = (ring_cs, x, z, lo, hi)
     # well: from the recessed surface down to the mounting face. Keep the skin above the fabric line.
