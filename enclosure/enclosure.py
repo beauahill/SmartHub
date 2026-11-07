@@ -4,6 +4,7 @@ Units: mm.  World axes: X = width, Y = depth (front face at Y=0, back is +Y), Z 
 
 Parts exported (world position as <name>.stl, print orientation as print_<name>.stl):
   base_tub       speaker box with full range sub chambers, open top
+                 (print_base_tub_uncovered: the same tub without the magnet pockets, for no grille or linen)
   lid_spine      top plate (seals all three chambers) printed in one piece with the tilted
                  spine that joins it to the bezel tray and carries the cable channel
   grille_ring    ring frame that the linen wraps around, slides on from below, magnets to the tub
@@ -412,12 +413,16 @@ def mag_cuts(depth_tub, depth_frame, for_frame):
         else:
             cuts += [cyl_x(y, z, XS - 0.01, XS + depth_frame, MAG_D), cyl_x(y, z, -XS - depth_frame, -XS + 0.01, MAG_D)]
     return cuts
+# Uncovered build: no grille ring, shell or linen, so the tub needs no magnet pockets. Both tubs are
+# exported: base_tub with the pockets, base_tub_uncovered without them.
+tub_uncovered = tub
 for c in mag_cuts(MAG_TUB, MAG_FRAME, False):
     tub = tub - c
 
 # feet recesses (10 mm silicone bumpers, ~3 mm tall, lift the fabric edge off the counter)
 for (x, y) in [(-120, 24), (120, 24), (-120, 126), (120, 126)]:
     tub = tub - cyl_z(x, y, -1, 1.0, 10.5)
+    tub_uncovered = tub_uncovered - cyl_z(x, y, -1, 1.0, 10.5)
 
 # ======================= LID (glued on; spine is printed with it) =======================
 LID_Z0 = TUB_H
@@ -849,6 +854,7 @@ export(gf.translate([0, 0, -GZ0]), "print_grille_ring")         # bottom edge do
 export(shell.translate([0, 0, -SZ0]), "print_grille_shell")     # bottom edge down, beveled top up
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
+export(tub_uncovered, "print_base_tub_uncovered")             # no magnet pockets, for a tub left bare
 export(pwr_plate, "print_power_plate")                         # outside face down, sled standing up
 # ND65 fit test: the right-hand recess with its mounting face, solder-tab opening, pilots and mounting ring,
 # cut out of the tub. Back face down, recess up. Screw a driver into it before printing the whole tub.

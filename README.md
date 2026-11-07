@@ -73,6 +73,7 @@ already oriented for printing.
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
 | `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers. Prints floor down, supports only in the outside driver recesses |
+| `base_tub_uncovered` | 300 x 150 x 116 | Instead of `base_tub`, if you leave the tub bare with no grille ring, shell or linen. The same tub without the 12 magnet pockets |
 | `nd65_fit_test` | 76 x 76 x 16 | Optional, 25 cm³. One ND65 recess cut from the tub, with its mounting face, solder-tab opening and pilot holes. Print it and screw a driver in before you commit to the tub. Prints back face down, no supports; the top of the tab opening bridges 36 mm |
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub. Prints lid down, no supports |
 | `grille_ring` | 299 x 149 x 111 | Linen version. Linen wraps around it. Slides on from below, held by magnets. Prints bottom edge down |
@@ -383,7 +384,7 @@ printable file, [`assembly_diagrams.pdf`](docs/diagrams/assembly_diagrams.pdf).
    the shell's spine-bolt bosses, and two into the power plate pocket on the spine's rear face.
 2. Glue a 6 x 2 mm magnet into each of the 12 tub pockets and a 6 x 1 mm magnet into each ring
    or shell pocket. Check polarity before the glue sets. The tub magnets sit 0.2 mm below the surface and the
-   ring magnets sit flush.
+   ring magnets sit flush. Skip this step with `base_tub_uncovered`.
 3. Cut three pairs of speaker wire, one each for the woofer and the two full-range drivers. Each pair
    runs from its driver out through the lid and up the spine's cable channel, so make it long enough
    to reach the amp in the tray with 10 cm to spare. With the lid off the tub, push the pairs up
@@ -403,7 +404,8 @@ printable file, [`assembly_diagrams.pdf`](docs/diagrams/assembly_diagrams.pdf).
 5. Add light stuffing, then glue the lid to the tub using the six dowels for alignment. The joint must be airtight.
    Run epoxy along the tops of the two full-range chamber walls as well as the outer rim, so each chamber seals on its own.
 6. Linen version: cover the outside of the grille ring with linen (below), then slide the ring onto
-   the tub. Fabric-free version: slide the grille shell onto the tub from below.
+   the tub. Fabric-free version: slide the grille shell onto the tub from below. Uncovered version:
+   nothing to fit.
 
 **Covering the grille ring.** The linen goes on the outer face only. The ring's outer face sits 0.6 mm
 inside the tub's top band, so the fabric finishes flush with the band. There's no room to fold it
