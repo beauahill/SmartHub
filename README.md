@@ -194,9 +194,9 @@ chambers needs support, so the supports stay outside where you can reach them:
   instead of a flat ledge. The ring and shell tops are beveled to match, with a 0.35 mm gap
   (0.21 mm for the shell). Under the band there is a reveal line of about 1 mm.
 - **Mounting rings.** The undersides of the rings inside the chambers taper at 45° down to the floor.
-- **Driver cutouts.** These have 45° sides and a flat top that prints as a bridge: 22 mm for the
-  ND65s, 39 mm for the woofer and radiator. On the ND65s, the solder-tab opening through the
-  mounting face above them is a 32 mm bridge.
+- **Driver cutouts.** These have 45° sides and a flat top that prints as a 39 mm bridge on the
+  woofer and radiator. On the ND65s, the solder-tab relief replaces the top of the cutout. Where the
+  relief passes through the mounting face, its top edge is a 32 mm bridge, 2 mm deep.
 - **Woofer and radiator.** Their centers are at Z 56.25, 4.25 mm below the full-range drivers. This
   keeps their recesses under the band chamfer.
 - **Bottom edge.** The outer bottom edge has a 0.6 mm chamfer, so elephant's foot doesn't stop the
@@ -205,18 +205,40 @@ chambers needs support, so the supports stay outside where you can reach them:
 Only the arched tops of the four driver recesses, three on the front and one on the rear, need
 support. The feet recesses under the floor are 10.5 mm bridges.
 
-Suggested settings for PLA+ on a Bambu H2S, 0.4 mm nozzle:
+PLA+ is the better material for the tub: it is stiffer than PETG, and it bridges, releases its
+supports and takes glue more easily. Use PETG only if the display sits in direct sun or right next
+to the oven, where PLA softens near 55 °C. Suggested settings on a Bambu H2S with a 0.4 mm nozzle:
 
-| Setting | Value | Why |
-| --- | --- | --- |
-| Supports | Tree (auto), **On build plate only**, threshold 30°, Don't support bridges on | Supports reach the recesses from the plate. Nothing grows inside the chambers |
-| Wall generator | Arachne | Prints the 1 mm skins behind the pilot holes and the top land of the ring and shell cleanly |
-| Wall loops | 4 (5 if you want margin) | The box must be airtight. The thinnest wall is 1.8 mm, behind the side magnet pockets |
-| Top / bottom shells | 5 / 5 | The floor is 5 mm, so it prints solid |
-| Infill | 15 % gyroid is fine. 25 % gives a stiffer front baffle | The walls are 7 to 10 mm thick, so infill sets how stiff they are |
-| Elephant foot compensation | 0.15 mm | Works with the bottom chamfer |
-| Brim | None on textured PEI. Add a 5 mm brim if the corners lift | |
-| Seam | Aligned, on the rear | |
+| Setting | PLA+ (recommended) | PETG (optional) | Why |
+| --- | --- | --- | --- |
+| Filament and temperatures | Studio's generic PLA profile (or a PLA+ one if listed), with the nozzle and bed temperatures from the spool. About 215–220 °C / 55–60 °C is typical | Your PETG's profile, about 240–250 °C / 70–80 °C | |
+| Plate | Textured PEI | Textured PEI | A 300 x 150 mm PETG floor can bond to smooth PEI hard enough to damage the plate. On smooth PEI, use glue stick as a release layer |
+| Chamber | Follow Studio's prompt to open the door or top vent | Unheated; follow Studio's prompt | Keeps an enclosed printer cool enough to avoid heat creep |
+| Layer height | 0.2 mm | 0.2 mm | |
+| Supports | Tree (auto), **On build plate only**, threshold 30°, Don't support bridges on, top Z distance 0.2 mm | Same, with the support interface set to PLA (the AMS swaps filament for it). Without an AMS, top Z distance 0.25–0.3 mm | Supports reach the four recess tops from the plate, and nothing grows inside the chambers. PETG supports weld to a PETG part; PLA peels cleanly off it |
+| Wall generator | Arachne | Arachne | Prints the 1 mm skins behind the pilot holes cleanly |
+| Wall loops | 4 (5 for margin) | 5 | The box must be airtight. The thinnest wall is 1.8 mm, behind the side magnet pockets (there are none in `base_tub_uncovered`) |
+| Top / bottom shells | 5 / 5 | 5 / 5 | 1 mm of solid skin over and under the infill, so the 5 mm floor is airtight |
+| Infill | 25 % gyroid (15 % works) | 30 % gyroid | The walls are 4 mm at the sides, 7 mm at the rear and 9 mm at the front baffle, so infill sets how stiff they are. A stiffer box resonates less. PETG is noticeably less stiff than PLA |
+| Outer wall speed | Profile default; about 100 mm/s if the tub stays uncovered | About 80 mm/s | Slower outer walls give a cleaner face where it shows |
+| Bridges | Profile defaults | 100 % fan, about 25–30 mm/s | The tightest bridge is the top edge of each ND65 solder-tab opening: the tabs pass 0.8 mm under it, and PETG sags more |
+| Elephant foot compensation | 0.15 mm | 0.15–0.2 mm | Works with the bottom chamfer |
+| Brim | None. Add a 5 mm brim if the corners lift | Same | |
+| Seam | Back | Back | As exported, the tub's rear faces the back of the plate, so the seam runs up the rear face |
+| Drying | Optional, about 50 °C for 6–8 h if the spool has been open a while | 65 °C for 6–8 h | Wet filament strings across the driver recesses |
+
+The tub takes roughly 720 g of PLA+ at 25 % infill, or about 800 g with supports, so one 1 kg spool
+covers it. In PETG at 30 %, expect about 850 g plus supports. These are estimates from the model;
+check Studio's figure before you start. Print `nd65_fit_test` first, with the same settings and
+supports off, and try a driver in it.
+
+After printing, before fitting the drivers:
+- Pick the support remains off the four recess tops, especially along the ND65 ears, where the
+  first build's drivers caught.
+- Look at the top edge of each ND65 solder-tab opening and the cutout tops of the woofer and
+  radiator. File back any sag that would catch a driver's tabs or basket.
+- PETG only: sand both glue faces of the lid joint (80–120 grit) and wipe them with isopropyl
+  alcohol before the epoxy goes on. Superglue doesn't hold well on PETG.
 
 When the drivers are in and the lid is glued on, check the seal: push the woofer cone in gently and
 let go. It should come back slowly. If it springs straight back, there is a leak. Brush a thin coat
