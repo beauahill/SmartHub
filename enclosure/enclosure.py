@@ -12,6 +12,7 @@ Parts exported (world position as <name>.stl, print orientation as print_<name>.
                  Holds the KABD-430 amp, PD module, 5 V buck, ESP32-C3 and audio adapter
   bezel_chin     chin below the tablet with the mmWave radar; closes the bottom of the shell
   power_plate    flush USB-C power plate with a sled for the PD trigger board, screws into the spine
+  nd65_fit_test  one ND65 recess cut from the tub, to test-fit a driver first (print_ orientation only)
   _render_fabric linen skin, for renders only
   _render_tablet tablet placeholder, for renders only
 Measure your tablet and drivers and edit the PARAMETERS block before printing.
@@ -72,22 +73,31 @@ FR_CH_Y1 = 80.0                # full range chamber back wall outer face
 #   cover_clear    gap from the surround (at rest) to the inside of the covering, for cone excursion.
 #                  Measured to the inner face of the grille ring / grille shell (RECESS - RING_GAP from
 #                  the outside), which is closer than the linen, so it holds for both base versions.
-#   well_clr   clearance around the frame in its recess
+#   well_clr   clearance around the frame in its recess, which follows the frame outline
+#   well_sq    instead of a frame-shaped recess, a plain rounded square: (across the flats, across the
+#              corners). Used where a recess that follows the model is too tight for real frames.
+#   ring_wall  mounting ring material around the recess. Outside the ring the mounting face is only
+#              about 0.25 mm in front of the inside of the baffle, so trimming a recess wider than this
+#              breaks into the chamber.
 DRIVERS = {
     # ND65-4: 64 mm frame, 52 mm cutout, 48 mm deep (43 behind the mounting face), Xmax 3.5 mm.
     # Outline, proud height and solder tabs measured from Dayton's STEP/STL. The tabs reach 27 mm from
     # the axis within +-15.7 mm, from 2.4 mm behind the flange (1.4 mm behind the seat, with the gasket
     # under the flange). They pass through the mounting face as the driver goes in, so the notch opens
     # through it. Mount the ND65s with the tabs up.
+    # The model's frame is 64.0 x 64.9 mm across the flats and 75.7 mm across the ear tips. On the first
+    # build, a frame-shaped recess 0.5 mm around it was too tight for real drivers at the ears, so the
+    # recess is now a rounded square 67 mm across the flats and 82 mm across the corners: at least 1 mm
+    # from the model's frame all round, 3.5 to 5 mm around the ears, with the driver turned up to 5 deg.
     "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.4, 27.8, 18.0, 42.0, 2.0),
-                   bc=66.0, cover_clear=4.0, well_clr=0.5),
+                   bc=66.0, cover_clear=4.0, well_clr=None, well_sq=(67.0, 82.0), ring_wall=4.0),
     # ND105-4: 105 mm frame, ears to 120 mm, 93 mm cutout, 67 mm deep (57 behind the mounting face),
     # Xmax 4 mm. Ear shape inferred from the drawing, so the recess has extra clearance.
     "nd105":  dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=5.0, well_clr=1.0),
+                   bc=108.5, cover_clear=5.0, well_clr=1.0, well_sq=None, ring_wall=3.0),
     # ND105-PR: same frame as the ND105-4, 40.5 mm deep (30.5 behind the mounting face), Xmax 11 mm.
     "nd105pr": dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=9.0, well_clr=1.0),
+                   bc=108.5, cover_clear=9.0, well_clr=1.0, well_sq=None, ring_wall=3.0),
 }
 FR_X = 96.0                            # full range centers at +/-X
 DRV_Z = (FLOOR + TUB_H) / 2.0          # full range center height
@@ -305,15 +315,30 @@ def frame_outline(d, grow=0.0):
             for a in (45, 135, 225, 315)]
     return CS.batch_hull([CS.circle(d["body_r"] + grow, SEG)] + ears)
 
+def rounded_square(flats, corners):
+    """Rounded square on the origin, `flats` across the sides and `corners` across the diagonal."""
+    a, h = flats / 2, corners / 2
+    r = (a * math.sqrt(2) - h) / (math.sqrt(2) - 1)
+    assert 0 < r < a, "rounded square: corners must lie between flats and flats * sqrt(2)"
+    return CS.square([2 * (a - r)] * 2, center=True).offset(r, m3.JoinType.Round, circular_segments=SEG)
+
+def well_outline(d, grow=0.0):
+    """Recess outline grown by `grow`, and its extent along the 45 deg diagonals."""
+    if d["well_sq"]:
+        flats, corners = d["well_sq"]
+        return rounded_square(flats + 2 * grow, corners + 2 * grow), corners / 2 + grow
+    g = d["well_clr"] + grow
+    return frame_outline(d, g), max(d["body_r"], d["ear_c"] + d["ear_r"]) + g
+
 def prism_y(cs, x, z, y0, y1):
     """extrude an X-Z profile (drawn in X-Y) along +Y from y0 to y1, centered at (x, z).
     Profile +y ends up as -Z."""
     return cs.extrude(y1 - y0).rotate([-90, 0, 0]).translate([x, y0, z])
 
-def teardrop_down(d, grow):
-    """Frame outline with a 45 deg V below it, so the underside of a mounting ring prints unsupported."""
-    h = max(d["body_r"], d["ear_c"] + d["ear_r"]) + grow     # extent along the 45 deg diagonals
-    return CS.batch_hull([frame_outline(d, grow), CS.circle(0.01, 4).translate([0, h * math.sqrt(2)])])
+def teardrop_down(cs, h):
+    """Outline with a 45 deg V below it, so the underside of a mounting ring prints unsupported.
+    h is the outline's extent along the 45 deg diagonals."""
+    return CS.batch_hull([cs, CS.circle(0.01, 4).translate([0, h * math.sqrt(2)])])
 
 def teardrop_up(r):
     """Circle of radius r with 45 deg sides above it, capped flat at its own top (a bridge)."""
@@ -321,7 +346,7 @@ def teardrop_up(r):
     return tip ^ CS.square([4 * r, 2 * r]).translate([-2 * r, -r])
 
 INTERIOR = box(-IX, IX, IY0 - 1, IY1 + 1, FLOOR - 1, TUB_H)
-SEATS = {}
+SEATS, RINGS = {}, {}
 
 def mount_driver(tub, name, x, z, rear=False):
     d = DRIVERS[name]
@@ -334,13 +359,19 @@ def mount_driver(tub, name, x, z, rear=False):
     # the ring runs from the baffle to the back of the mounting face, so the well gets solid walls
     baffle = BD - WALL_REAR + 1 if rear else IY0 - 1
     lo, hi = sorted((baffle, back))
-    ring = prism_y(teardrop_down(d, 4.0), x, z, lo, hi) ^ INTERIOR
+    ring_cs, ring_h = well_outline(d, d["ring_wall"])
+    ring = prism_y(teardrop_down(ring_cs, ring_h), x, z, lo, hi) ^ INTERIOR
+    if x != 0:                                               # full range: the ring stays in its own chamber
+        rx0, _, _, rx1, _, _ = ring.bounding_box()
+        assert min(abs(rx0), abs(rx1)) >= FR_CH_X0, f"{name} mounting ring reaches into the woofer chamber"
     tub = tub + ring
+    RINGS[name + ("" if x >= 0 else "_l")] = (ring_cs, x, z, lo, hi)
     # well: from the recessed surface down to the mounting face. Keep the skin above the fabric line.
+    well_cs, _ = well_outline(d)
     w0, w1 = sorted((surface - sgn * 0.3, seat))
-    tub = tub - prism_y(frame_outline(d, d["well_clr"]), x, z, w0, w1)
+    tub = tub - prism_y(well_cs, x, z, w0, w1)
     e0, e1 = sorted((surface + sgn * 1.0, surface - sgn * 0.3))
-    tub = tub - (prism_y(frame_outline(d, d["well_clr"]), x, z, e0, e1) ^ box(-BW, BW, -10, BD + 10, -10, CH_Z - 0.01))
+    tub = tub - (prism_y(well_cs, x, z, e0, e1) ^ box(-BW, BW, -10, BD + 10, -10, CH_Z - 0.01))
     # cutout through the ring (45 deg sides and a flat top, so it bridges), plus the solder-tab relief
     # on the top side. The notch floor sits below where its sides meet the cutout, so no sliver is left.
     c0, c1 = sorted((seat + sgn * 1.0, back - sgn * 5.0))
@@ -831,6 +862,11 @@ export(shell.translate([0, 0, -SZ0]), "print_grille_shell")     # bottom edge do
 export(lid_spine.translate([0, 0, -LID_Z0]), "print_lid_spine")
 export(tub, "print_base_tub")
 export(pwr_plate, "print_power_plate")                         # outside face down, sled standing up
+# ND65 fit test: the right-hand recess with its mounting face, solder-tab opening, pilots and mounting ring,
+# cut out of the tub. Back face down, recess up. Screw a driver into it before printing the whole tub.
+_rcs, _fx, _fz, _, _fback = RINGS["nd65"]
+fit_test = tub ^ prism_y(_rcs, _fx, _fz, -1, _fback)
+export(fit_test.rotate([-90, 0, 0]).translate([-_fx, -_fz, _fback]), "print_nd65_fit_test")
 
 # acoustic volumes: air inside the closed tub (lid on), by chamber. Driver bodies are not subtracted.
 air = extrude(inner, FLOOR, TUB_H) - tub - union(PASS_THROUGHS)   # pass-throughs hot-glued shut

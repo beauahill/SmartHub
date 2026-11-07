@@ -44,8 +44,11 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 The woofer and passive radiator face each other front to back. With Dayton's depths, the woofer
 motor and the back of the radiator clear by about 25 mm.
 
-Dimensions come from Dayton's spec sheets, and the ND65 outline from its STEP/STL model. The ND105
-ear shape is inferred from the drawing, so test-fit one driver in the printed tub before gluing the lid.
+Dimensions come from Dayton's spec sheets, and the ND65 outline from its STEP/STL model. Real ND65s
+caught at the ears in a recess cut 0.5 mm around that model, so their recesses are now plain
+67 x 82 mm rounded squares with room to spare. Print `nd65_fit_test` and try a driver in it before
+printing the tub. The ND105 ear
+shape is inferred from the drawing, so test-fit one driver in the printed tub before gluing the lid.
 
 ## 4. Hardware
 
@@ -77,13 +80,14 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
-| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 940 cm³ |
+| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 937 cm³ |
 | P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 395 cm³ |
 | P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 111 | 81 cm³ |
 | P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 196 cm³ |
 | P4 | 1 | `bezel_shell.stl` | 272 x 197 x 36 | 230 cm³ |
 | P5 | 1 | `bezel_chin.stl` | 272 x 26 x 9 | 47 cm³ |
 | P6 | 1 | `power_plate.stl` | 44 x 26 x 45 | 5.2 cm³ |
+| P7 | 1 | `nd65_fit_test.stl`, optional: one ND65 recess, to test-fit a driver before printing P1 | 75 x 75 x 16 | 28 cm³ |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |

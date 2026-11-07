@@ -73,6 +73,7 @@ already oriented for printing.
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
 | `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers. Prints floor down, supports only in the outside driver recesses |
+| `nd65_fit_test` | 75 x 75 x 16 | Optional, 28 cm³. One ND65 recess cut from the tub, with its mounting face, solder-tab opening and pilot holes. Print it and screw a driver in before you commit to the tub. Prints back face down, no supports; the top of the tab opening bridges 36 mm |
 | `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub. Prints lid down, no supports |
 | `grille_ring` | 299 x 149 x 111 | Linen version. Linen wraps around it. Slides on from below, held by magnets. Prints bottom edge down |
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints bottom edge down |
@@ -200,7 +201,7 @@ chambers needs support, so the supports stay outside where you can reach them:
 - **Bottom edge.** The outer bottom edge has a 0.6 mm chamfer, so elephant's foot doesn't stop the
   ring or shell from sliding on.
 
-Only the arched tops of the four driver recesses, three on the front and one on the rear, need
+Only the tops of the four driver recesses, three on the front and one on the rear, need
 support. The feet recesses under the floor are 10.5 mm bridges.
 
 Suggested settings for PLA+ on a Bambu H2S, 0.4 mm nozzle:
@@ -316,6 +317,19 @@ excursion: 4 mm for the ND65s, 5 mm for the woofer and 9 mm for the passive radi
 measured to the inner face of the ring or shell, which is closer than the linen, so it holds for
 both finishes. A thickened ring behind each
 recess carries blind pilot holes on the published bolt circles.
+
+The ND65 recesses are plain rounded squares, 67 mm across the flats and 82 mm across the corners.
+On the first build they followed the frame outline from Dayton's model, 0.5 mm all round. That
+model is 64.0 x 64.9 mm across the flats and 75.7 mm across the ear tips. The real drivers would
+not go in; they caught at the ears and screw corners. Against the model, the rounded square leaves at
+least 1 mm at the flats and 3.5 to 5 mm around the ears, with the driver turned up to 5°. Even a
+64.9 mm square frame with its corners cut off at the ear tips would fit. The screws locate the
+driver, so the extra room doesn't matter, and the grille covers it.
+
+Don't open a recess up with a rotary tool. The mounting ring behind it extends only 4 mm past the
+recess wall (`ring_wall`). Beyond that, the mounting face is 0.25 mm from the inside of the baffle,
+so grinding further breaks into the chamber. To check a driver before printing the whole tub, print
+`nd65_fit_test`: the right-hand recess with its mounting face and ring, cut from the tub.
 
 The ND65's solder tabs stand 0.7 mm outside its 52.6 mm cutout and are square-cornered. So each
 ND65 recess has an opening through the mounting face above the cutout: 32.8 mm wide, reaching
@@ -678,7 +692,7 @@ These items came out of reviewing the Cowork export.
 | No room for a USB-C plug past the tablet edge | Fixed. A flat FPC 90° adapter in a 4 mm channel beside the tablet |
 | No mounts for the small boards in the tray | Fixed. Cradles for the PD module, UGREEN adapter, 5 V buck and ESP32-C3 |
 | No pilot holes for the driver screws | Fixed. Blind pilots on Dayton's published bolt circles: 66 mm for the ND65, 108.5 mm for the ND105 pair |
-| Woofer and passive radiator surrounds stood 3 to 4 mm proud of the fabric | Fixed. Every driver sits in a recess shaped to its frame, with excursion clearance to the covering |
+| Woofer and passive radiator surrounds stood 3 to 4 mm proud of the fabric | Fixed. Every driver sits in a recess with excursion clearance to the covering |
 | Driver clearance was measured to the linen, but the grille ring's rails sit 2.25 mm closer | Fixed. Clearance is measured to the inner face of the ring or shell |
 | Full-range drivers can be overdriven | Fixed in the app with a media volume cap, 80 % by default. Tune it by ear |
 | Four non-manifold edges in `base_tub` | Fixed. Two brace columns now overlap the side walls instead of touching them |
@@ -691,3 +705,4 @@ These items came out of reviewing the Cowork export.
 | Bezel shell: the two small lip tabs at the bottom corners of the window break easily (first PETG build). They are 1.2 mm thick, held on two sides, and sit over the gaps that let the tablet's corners slide in | Fixed for the next build (first build works as printed). The chin bar now runs up to `CHIN_SPLIT` (26 mm), where the corner blocks are still 1.5 mm thick at the pocket wall. It carries solid blocks that fill the pocket corners outside the tablet's rounded corners, with the lip's corners on their front. Checked: the bar slides straight back into place past the seated tablet without contact |
 | Power: the tablet's 5 V comes from its own converter (E6), separate from the MP1584 buck (E5) | Works as built. For a future build, use one 5 A, 20 V to 5 V buck for all three loads: the XIAO through its diode, the radar, and a USB-C plug lead with a 10 kΩ CC pull-up for the tablet. The MP1584 alone is too small for tablet charging (2–3 A) in the warm tray, and a USB-C plug with no CC pull-up delivers no power |
 | Bezel shell: the four chin-screw bosses stood off the back wall with about 4 mm of air above the tray floor (first build) | Fixed for the next build. Each boss sits on a solid 9 mm pedestal down into the tray floor, so it is tied to the floor and the back wall. The tablet's and the camera bump's slide-in paths are still clear |
+| Base tub: the ND65s would not go into their recesses (first build). The frame-shaped recess cleared Dayton's model by only 0.4 to 0.5 mm at the ears, and opening it up with a rotary tool broke into the chambers | Fixed; reprint the tub. The ND65 recesses are rounded squares, 67 mm across the flats and 82 mm across the corners: 1 mm or more from the model's frame all round, 3.5 to 5 mm around the ears. The mounting ring behind each one is 4 mm wider than the recess all round. The woofer and radiator recesses fit and are unchanged. `nd65_fit_test` checks a driver before the full print |
