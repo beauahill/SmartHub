@@ -233,7 +233,10 @@ Other details:
 - **Lid edge.** The bottom outer edge has a 0.4 mm chamfer, so elephant's foot doesn't leave a lip
   at the joint with the tub.
 - **Dowels.** The lid's dowel holes are 2.8 mm deep and the tub's are 4 mm. The 6 mm dowels
-  therefore have 0.8 mm of slack and can't hold the lid off the tub.
+  therefore have 0.8 mm of slack and can't hold the lid off the tub. The holes are 4.6 mm for the
+  4 mm pins (`DOWEL_HOLE_D`). Small FDM holes print 0.2 to 0.4 mm under size, and at the first
+  build's 4.3 mm the pins had to be forced in. The pins only locate the lid while the glue sets,
+  so the slack doesn't matter.
 
 For PLA+ on the H2S, use the same settings as the tub, either nozzle, but with these changes:
 - **Supports:** off.
@@ -327,6 +330,14 @@ gasket. The opening's corners come within about 0.5 mm of the flange edge, so th
 is thin. Assembly step 4 seals it with glue from inside. Each recess allows for a
 1 mm compressed gasket under the flange (`GASKET_T`). The ND105 ear shape is inferred from the
 drawing, so its recesses have 1 mm of extra clearance.
+
+The real ND65 frames are bigger than Dayton's model around the ears. On the first build the
+gaskets fitted the recesses, but the metal frames did not, and the ears had to be ground down to
+go in. The recess now has 0.8 mm of clearance around the round part of the frame and 2.3 mm
+around each ear (`well_clr` and `ear_clr` in `DRIVERS["nd65"]`), and the mounting ring behind it
+grows with the ears so the wall around the recess stays about 3 mm. These are not measured
+values. If your frames are still tight, measure the ear tips and raise `ear_clr`; the gasket seal
+sits under the flange, not at the recess wall, so extra room here costs nothing.
 
 **The bezel has raised labels for every component.** On the inside of the tray's back wall, each
 cradle is labeled with its board, the amp standoffs say `KABD-430 AMP`, and `USB-C FPC` marks the

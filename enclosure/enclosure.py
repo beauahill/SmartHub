@@ -73,6 +73,9 @@ FR_CH_Y1 = 80.0                # full range chamber back wall outer face
 #                  Measured to the inner face of the grille ring / grille shell (RECESS - RING_GAP from
 #                  the outside), which is closer than the linen, so it holds for both base versions.
 #   well_clr   clearance around the frame in its recess
+#   ear_clr    extra clearance around the ears only, on top of well_clr. The ND65 frames of the first
+#              build were bigger than Dayton's model around the ears and had to be ground to fit a
+#              recess with 0.5 mm all round, while the gaskets fitted. Cast frames vary; leave room.
 DRIVERS = {
     # ND65-4: 64 mm frame, 52 mm cutout, 48 mm deep (43 behind the mounting face), Xmax 3.5 mm.
     # Outline, proud height and solder tabs measured from Dayton's STEP/STL. The tabs reach 27 mm from
@@ -80,14 +83,14 @@ DRIVERS = {
     # under the flange). They pass through the mounting face as the driver goes in, so the notch opens
     # through it. Mount the ND65s with the tabs up.
     "nd65":   dict(body_r=32.45, ear_c=34.5, ear_r=3.4, flange_t=1.0, proud=4.1, cut=52.6, tab_notch=(16.4, 27.8, 18.0, 42.0, 2.0),
-                   bc=66.0, cover_clear=4.0, well_clr=0.5),
+                   bc=66.0, cover_clear=4.0, well_clr=0.8, ear_clr=1.5),
     # ND105-4: 105 mm frame, ears to 120 mm, 93 mm cutout, 67 mm deep (57 behind the mounting face),
     # Xmax 4 mm. Ear shape inferred from the drawing, so the recess has extra clearance.
     "nd105":  dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=5.0, well_clr=1.0),
+                   bc=108.5, cover_clear=5.0, well_clr=1.0, ear_clr=0.0),
     # ND105-PR: same frame as the ND105-4, 40.5 mm deep (30.5 behind the mounting face), Xmax 11 mm.
     "nd105pr": dict(body_r=52.5, ear_c=55.0, ear_r=5.0, flange_t=1.7, proud=10.0, cut=93.4, tab_notch=None,
-                   bc=108.5, cover_clear=9.0, well_clr=1.0),
+                   bc=108.5, cover_clear=9.0, well_clr=1.0, ear_clr=0.0),
 }
 FR_X = 96.0                            # full range centers at +/-X
 DRV_Z = (FLOOR + TUB_H) / 2.0          # full range center height
@@ -98,6 +101,8 @@ MOUNT_MEAT = 7.0                       # baffle material behind each mounting fa
 GASKET_T = 1.0                         # foam gasket under each flange (compressed); seats sit this much deeper
 PILOT_D = 2.5                          # blind pilots for M3 thread-forming or #4 screws
 PILOT_DEPTH = 6.0                      # leaves 1 mm before the chamber
+DOWEL_HOLE_D = 4.6                     # holes for the 4 mm lid dowels, in the tub and the lid. FDM holes come out
+                                       # 0.2 to 0.4 mm under size; at 4.3 mm the first build's pins had to be hammered in
 
 # Tablet (Galaxy Tab A9+ : 257.1 x 168.7 x 6.9)
 TAB_W, TAB_H, TAB_T, TAB_R = 257.1, 168.7, 6.9, 10.0
@@ -295,12 +300,13 @@ for (x, y) in BOSSES:
     col = M.batch_hull([cyl_z(x, y, FLOOR - 1, TUB_H, 10), cyl_z(math.copysign(IX + 1, x), y, FLOOR - 1, TUB_H, 10)])
     tub = tub + (col ^ extrude(inner.offset(1, m3.JoinType.Round), 0, TUB_H))
 for (x, y) in BOSSES:
-    tub = tub - cyl_z(x, y, TUB_H - 4, TUB_H + 1, 4.3)
+    tub = tub - cyl_z(x, y, TUB_H - 4, TUB_H + 1, DOWEL_HOLE_D)
 
 # Driver mounts. Each driver sits in a recessed well deep enough that its surround clears the fabric
 # by cover_clear, on a mounting ring that thickens the baffle behind it for the screws.
-def frame_outline(d, grow=0.0):
-    ears = [CS.circle(d["ear_r"] + grow, 48).translate([d["ear_c"] * math.cos(math.radians(a)),
+def frame_outline(d, grow=0.0, ear_grow=0.0):
+    """Frame footprint grown by `grow` all round, and by `ear_grow` more around the ears."""
+    ears = [CS.circle(d["ear_r"] + grow + ear_grow, 48).translate([d["ear_c"] * math.cos(math.radians(a)),
                                                         d["ear_c"] * math.sin(math.radians(a))])
             for a in (45, 135, 225, 315)]
     return CS.batch_hull([CS.circle(d["body_r"] + grow, SEG)] + ears)
@@ -310,10 +316,10 @@ def prism_y(cs, x, z, y0, y1):
     Profile +y ends up as -Z."""
     return cs.extrude(y1 - y0).rotate([-90, 0, 0]).translate([x, y0, z])
 
-def teardrop_down(d, grow):
+def teardrop_down(d, grow, ear_grow=0.0):
     """Frame outline with a 45 deg V below it, so the underside of a mounting ring prints unsupported."""
-    h = max(d["body_r"], d["ear_c"] + d["ear_r"]) + grow     # extent along the 45 deg diagonals
-    return CS.batch_hull([frame_outline(d, grow), CS.circle(0.01, 4).translate([0, h * math.sqrt(2)])])
+    h = max(d["body_r"] + grow, d["ear_c"] + d["ear_r"] + grow + ear_grow)     # extent along the 45 deg diagonals
+    return CS.batch_hull([frame_outline(d, grow, ear_grow), CS.circle(0.01, 4).translate([0, h * math.sqrt(2)])])
 
 def teardrop_up(r):
     """Circle of radius r with 45 deg sides above it, capped flat at its own top (a bridge)."""
@@ -334,13 +340,13 @@ def mount_driver(tub, name, x, z, rear=False):
     # the ring runs from the baffle to the back of the mounting face, so the well gets solid walls
     baffle = BD - WALL_REAR + 1 if rear else IY0 - 1
     lo, hi = sorted((baffle, back))
-    ring = prism_y(teardrop_down(d, 4.0), x, z, lo, hi) ^ INTERIOR
+    ring = prism_y(teardrop_down(d, 4.0, d["ear_clr"]), x, z, lo, hi) ^ INTERIOR   # ring grows with the ears, same wall
     tub = tub + ring
     # well: from the recessed surface down to the mounting face. Keep the skin above the fabric line.
     w0, w1 = sorted((surface - sgn * 0.3, seat))
-    tub = tub - prism_y(frame_outline(d, d["well_clr"]), x, z, w0, w1)
+    tub = tub - prism_y(frame_outline(d, d["well_clr"], d["ear_clr"]), x, z, w0, w1)
     e0, e1 = sorted((surface + sgn * 1.0, surface - sgn * 0.3))
-    tub = tub - (prism_y(frame_outline(d, d["well_clr"]), x, z, e0, e1) ^ box(-BW, BW, -10, BD + 10, -10, CH_Z - 0.01))
+    tub = tub - (prism_y(frame_outline(d, d["well_clr"], d["ear_clr"]), x, z, e0, e1) ^ box(-BW, BW, -10, BD + 10, -10, CH_Z - 0.01))
     # cutout through the ring (45 deg sides and a flat top, so it bridges), plus the solder-tab relief
     # on the top side. The notch floor sits below where its sides meet the cutout, so no sliver is left.
     c0, c1 = sorted((seat + sgn * 1.0, back - sgn * 5.0))
@@ -407,11 +413,11 @@ CH = 1.2   # top edge chamfer
 LID_FOOT = 0.4                             # bottom outer edge chamfer: hides elephant's foot at the joint with the tub
 lid = M.batch_hull([extrude(outline.offset(-LID_FOOT, m3.JoinType.Round), LID_Z0, LID_Z0 + 0.01),
                     extrude(outline, LID_Z0 + LID_FOOT, TOPZ - CH), extrude(outline.offset(-CH, m3.JoinType.Round), TOPZ - CH, TOPZ)])
-# 4 mm dowel holes (dowels align lid to tub for gluing). 4 mm deep in the tub + 2.8 mm here = 6.8 mm for 6 mm
-# dowels, so a short hole can't hold the lid off the tub.
+# Dowel holes (DOWEL_HOLE_D; 4 mm dowels align lid to tub for gluing). 4 mm deep in the tub + 2.8 mm here
+# = 6.8 mm for 6 mm dowels, so a short hole can't hold the lid off the tub.
 LID_DOWEL_DEPTH = 2.8
 for (x, y) in BOSSES:
-    lid = lid - cyl_z(x, y, LID_Z0 - 1, LID_Z0 + LID_DOWEL_DEPTH, 4.3)
+    lid = lid - cyl_z(x, y, LID_Z0 - 1, LID_Z0 + LID_DOWEL_DEPTH, DOWEL_HOLE_D)
 # Speaker wire hole into the woofer chamber, at the bottom of the spine's cable channel. Sized for three
 # 20 AWG zip-cord pairs (about 2 x 4 mm each) and hot-glued shut around them: any gap here acts as a port.
 # In front of the PD trigger's cavity, so the speaker wires come straight up the channel and never have
