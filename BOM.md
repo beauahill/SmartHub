@@ -56,7 +56,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | H3 | 4 | M3 x 16 socket head cap screws | Bezel to spine, from the spine's rear. The lower pair sits about 38 mm down its counterbores, so use the long arm of a 2.5 mm hex key | `SPINE_PTS`, `SPINE_GRIP` |
 | H3a | 2 | M3 x 8 countersunk (flat head) screws | Power plate to spine, flush with the plate | `PWR_SCREW_X` |
 | H4 | 4 | M3 x 6 thread-forming screws | KABD-430 into its 2.6 mm standoff pilots, which are about 4.9 mm deep. Longer screws bottom out | Amp standoffs |
-| H5 | 6 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.6 mm (FDM holes print under size; 4.3 mm was a hammer fit), 4 mm deep in the tub and 2.8 mm in the lid | `BOSSES`, `DOWEL_HOLE_D`, `LID_DOWEL_DEPTH` |
+| H5 | 6 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm, a tap fit (tap them in with a punch), 4 mm deep in the tub and 2.8 mm in the lid | `BOSSES`, `DOWEL_HOLE_D`, `LID_DOWEL_DEPTH` |
 | H6 | 12 | Neodymium disc magnets, 6 x 2 mm, N52 | One per tub pocket. Sits 0.2 mm below the surface | `MAG_T_TUB` |
 | H7 | 12 | Neodymium disc magnets, 6 x 1 mm, N52 | One per grille ring or grille shell pocket, flush. Opposite polarity to H6 | `MAG_T_FRAME` |
 | H8 | 4 | Silicone bumper feet, 10 mm diameter, about 3 mm tall | Lift the fabric edge off the counter | 10.5 mm recesses |

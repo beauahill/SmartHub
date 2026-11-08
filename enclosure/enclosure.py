@@ -101,8 +101,9 @@ MOUNT_MEAT = 7.0                       # baffle material behind each mounting fa
 GASKET_T = 1.0                         # foam gasket under each flange (compressed); seats sit this much deeper
 PILOT_D = 2.5                          # blind pilots for M3 thread-forming or #4 screws
 PILOT_DEPTH = 6.0                      # leaves 1 mm before the chamber
-DOWEL_HOLE_D = 4.6                     # holes for the 4 mm lid dowels, in the tub and the lid. FDM holes come out
-                                       # 0.2 to 0.4 mm under size; at 4.3 mm the first build's pins had to be hammered in
+DOWEL_HOLE_D = 4.3                     # holes for the 4 mm lid dowels, in the tub and the lid. FDM holes print under
+                                       # size, so this is a tap fit: on the first build the pins went in with a punch
+                                       # and the lid almost snaps on. Kept deliberately; raise it for a slip fit.
 
 # Tablet (Galaxy Tab A9+ : 257.1 x 168.7 x 6.9)
 TAB_W, TAB_H, TAB_T, TAB_R = 257.1, 168.7, 6.9, 10.0

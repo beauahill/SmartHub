@@ -233,10 +233,11 @@ Other details:
 - **Lid edge.** The bottom outer edge has a 0.4 mm chamfer, so elephant's foot doesn't leave a lip
   at the joint with the tub.
 - **Dowels.** The lid's dowel holes are 2.8 mm deep and the tub's are 4 mm. The 6 mm dowels
-  therefore have 0.8 mm of slack and can't hold the lid off the tub. The holes are 4.6 mm for the
-  4 mm pins (`DOWEL_HOLE_D`). Small FDM holes print 0.2 to 0.4 mm under size, and at the first
-  build's 4.3 mm the pins had to be forced in. The pins only locate the lid while the glue sets,
-  so the slack doesn't matter.
+  therefore have 0.8 mm of slack and can't hold the lid off the tub. The holes are 4.3 mm for the
+  4 mm pins (`DOWEL_HOLE_D`). Small FDM holes print under size, so this is a tap fit: tap the pins
+  into the tub with a punch and a small hammer. On the first build the lid then almost snaps on,
+  which holds it square while the glue sets. Raise `DOWEL_HOLE_D` to about 4.6 mm if you want a
+  slip fit instead.
 
 For PLA+ on the H2S, use the same settings as the tub, either nozzle, but with these changes:
 - **Supports:** off.
