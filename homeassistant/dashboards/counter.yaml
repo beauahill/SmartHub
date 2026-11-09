@@ -28,6 +28,10 @@ views:
     type: sections
     max_columns: 3
     dense_section_placement: true
+    background:
+      image: /api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original
+      size: cover
+      attachment: fixed
     badges:
       - type: entity
         entity: sun.sun
@@ -83,18 +87,39 @@ views:
           # met.no entity, reads about 30 °F low here and is not used.)
           - type: custom:clock-weather-card
             entity: weather.kgcc_daynight
-            temperature_sensor: sensor.main_outdoor_temperature_2
             sun_entity: sun.sun
-            forecast_rows: 5
             locale: en-US
-            time_format: 12
-            time_pattern: "h:mm"
-            date_pattern: EEEE, MMMM d
-            hide_today_section: false
-            hide_forecast_section: false
-            show_humidity: false
-            use_browser_time: false
             time_zone: America/Denver
+            tap_action: { action: more-info }
+            additional_sensors:
+              temperature: sensor.main_outdoor_temperature_2   # the Venstar's outdoor probe
+            sections:
+              header:
+                rows:
+                  - font_size: 1.2rem
+                    segments:
+                      - type: icon
+                        icon: mdi:thermometer
+                      - type: weather
+                        attribute: temperature
+                      - type: spacer
+                      - type: weather
+                  - font_size: 4.5rem
+                    alignment: center
+                    segments:
+                      - type: time
+                        time_pattern: "h:mm"        # Luxon pattern; no AM/PM, it clips in this column
+                  - font_size: 1.2rem
+                    alignment: center
+                    segments:
+                      - type: date
+                        date_pattern: "EEEE, MMMM d"
+              forecast_strip:
+                count: 6
+                time_pattern: "h a"
+                hide_attribute: true
+              forecast_list:
+                count: 5
           - type: tile
             entity: sensor.main_outdoor_temperature_2
             name: Outside
@@ -304,6 +329,10 @@ views:
     type: sections
     max_columns: 3
     dense_section_placement: true
+    background:
+      image: /api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original
+      size: cover
+      attachment: fixed
     badges:
       - type: entity
         entity: sun.sun
@@ -531,6 +560,10 @@ views:
     type: sections
     max_columns: 3
     dense_section_placement: true
+    background:
+      image: /api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original
+      size: cover
+      attachment: fixed
     badges:
       - type: entity
         entity: sun.sun
@@ -799,6 +832,10 @@ views:
     type: sections
     max_columns: 3
     dense_section_placement: true
+    background:
+      image: /api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original
+      size: cover
+      attachment: fixed
     badges:
       - type: entity
         entity: sun.sun
@@ -997,6 +1034,10 @@ views:
     type: sections
     max_columns: 3
     dense_section_placement: true
+    background:
+      image: /api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original
+      size: cover
+      attachment: fixed
     badges:
       - type: entity
         entity: sun.sun

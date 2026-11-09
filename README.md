@@ -629,16 +629,25 @@ kiosk mode, each starting with the same row of navigation chips because the kios
 | Security | Locks, alarm panel, every door and window sensor, four cameras |
 | Calendar | Month view plus a "coming up" list of the household and Gillette calendars |
 
-It needs the HACS cards `mushroom`, `clock-weather-card` and `mini-graph-card`. The scripts in
+It needs the HACS cards `mushroom`, `clock-weather-card`, `mini-graph-card` and `kiosk-mode`
+(the dashboard's `kiosk_mode:` block hides the header and sidebar for non-admin users, so the
+tablet's `counter` user stays in kiosk mode when it switches views). The scripts in
 [`homeassistant/scripts/`](homeassistant/scripts) talk to Home Assistant with a long-lived access
 token, read from `HA_TOKEN` or from `ha_token:` in the git-ignored `android/keystore/ha-secrets.yaml`
-(`pip install websockets pyyaml` first):
+(`pip install websockets pyyaml pillow` first):
 
 ```
 python3 homeassistant/scripts/push_dashboard.py     # save counter.yaml as dashboard-counter, reload the tablet
 python3 homeassistant/scripts/setup_calendars.py    # create the Gillette community calendars (idempotent)
 python3 homeassistant/scripts/sync_home_games.py    # fill the Pronghorn and Gillette Wild home-game calendars
+python3 homeassistant/scripts/set_wallpaper.py      # upload the wallpaper and set it as every view's background
 ```
+
+The wallpaper is a dark mesh gradient rendered by
+[`homeassistant/dashboards/wallpaper/make_wallpaper.py`](homeassistant/dashboards/wallpaper/make_wallpaper.py);
+`set_wallpaper.py` puts the PNG in Home Assistant's image store (served without a login, so the
+kiosk user can load it) and writes its URL into each view's `background:`. To use your own picture,
+`set_wallpaper.py path/to/image.jpg` then `push_dashboard.py`.
 
 `setup_calendars.py` subscribes Home Assistant's built-in Remote Calendar integration to the
 Campbell County events and Rockpile Museum feeds (campbellcountywy.gov) and the Gillette College
@@ -649,10 +658,14 @@ Pronghorn Center, and copies the Gillette Wild home dates from
 (the NA3HL site has no feed, so that file is updated by hand each season). Re-run it when a
 schedule changes; it only adds what's missing.
 
-The shared household calendar is a Google calendar. Link it once in Settings > Devices & services >
-Add integration > Google Calendar (with Home Assistant Cloud that is a sign-in, no Google Cloud
-project needed), then add its `calendar.*` entity to the two calendar cards and the "Coming up" card
-in `counter.yaml` and push again. `homeassistant/dashboards/previous/` keeps the dashboard that was
+The shared household calendar is a Google calendar. The Google Calendar integration needs its own
+OAuth client: in the [Google Cloud console](https://console.cloud.google.com) create a project,
+enable the Google Calendar API, configure the OAuth consent screen (External, add yourself as a
+test user) and create an OAuth client ID of type "Web application" with
+`https://my.home-assistant.io/redirect/oauth` as the redirect URI. Then in Home Assistant go to
+Settings > Devices & services > Add integration > Google Calendar, paste the client ID and secret,
+and sign in. Add the resulting `calendar.*` entity to the two calendar cards and the "Coming up"
+card in `counter.yaml` and push again. `homeassistant/dashboards/previous/` keeps the dashboard that was
 replaced.
 
 | Time with nobody present | What happens |
