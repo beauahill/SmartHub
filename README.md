@@ -57,6 +57,9 @@ The full parts list is in [BOM.md](BOM.md).
 | [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
 | [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
+| [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml) | The five-view kiosk dashboard the tablet shows |
+| [`homeassistant/scripts/`](homeassistant/scripts) | Push the dashboard, create the Gillette calendars, sync the home-game calendars |
+| [`homeassistant/calendars/`](homeassistant/calendars) | Gillette Wild home dates (no feed exists), copied into a local calendar |
 | [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates every STL |
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
 | `enclosure/renders/` | `current_*` renders of the current design, plus the original Cowork renders |
@@ -613,6 +616,44 @@ ICP1 or KPX programmer, can drop the Bluetooth input.
 
 The automations expect the presence entity `binary_sensor.counter_presence_presence`, which the
 ESPHome config creates.
+
+**The dashboard.** [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml)
+is the `dashboard-counter` dashboard the tablet loads: five views for an 11" landscape screen in
+kiosk mode, each starting with the same row of navigation chips because the kiosk hides HA's tabs.
+
+| View | What's on it |
+| --- | --- |
+| Home | Clock and forecast, the two garage doors and the gate as big tap tiles with their open/closed state, gate camera, house thermostat, fireplace, hot tub and security summaries, the next few calendar events |
+| Hot Tub | Set point, water and heater temperatures, jets, light colours, salt system, locks and clean cycle, 24 h graphs |
+| Lights | Every light by room, dimmer sliders, the Normal / Go Bills / Go Pokes scenes, an "everything off" button |
+| Security | Locks, alarm panel, every door and window sensor, four cameras |
+| Calendar | Month view plus a "coming up" list of the household and Gillette calendars |
+
+It needs the HACS cards `mushroom`, `clock-weather-card` and `mini-graph-card`. The scripts in
+[`homeassistant/scripts/`](homeassistant/scripts) talk to Home Assistant with a long-lived access
+token, read from `HA_TOKEN` or from `ha_token:` in the git-ignored `android/keystore/ha-secrets.yaml`
+(`pip install websockets pyyaml` first):
+
+```
+python3 homeassistant/scripts/push_dashboard.py     # save counter.yaml as dashboard-counter, reload the tablet
+python3 homeassistant/scripts/setup_calendars.py    # create the Gillette community calendars (idempotent)
+python3 homeassistant/scripts/sync_home_games.py    # fill the Pronghorn and Gillette Wild home-game calendars
+```
+
+`setup_calendars.py` subscribes Home Assistant's built-in Remote Calendar integration to the
+Campbell County events and Rockpile Museum feeds (campbellcountywy.gov) and the Gillette College
+events feed, which update themselves. The two sports calendars are Local Calendars:
+`sync_home_games.py` reads the college's PrestoSports iCal feeds and keeps only games at the
+Pronghorn Center, and copies the Gillette Wild home dates from
+[`homeassistant/calendars/gillette_wild_home.yaml`](homeassistant/calendars/gillette_wild_home.yaml)
+(the NA3HL site has no feed, so that file is updated by hand each season). Re-run it when a
+schedule changes; it only adds what's missing.
+
+The shared household calendar is a Google calendar. Link it once in Settings > Devices & services >
+Add integration > Google Calendar (with Home Assistant Cloud that is a sign-in, no Google Cloud
+project needed), then add its `calendar.*` entity to the two calendar cards and the "Coming up" card
+in `counter.yaml` and push again. `homeassistant/dashboards/previous/` keeps the dashboard that was
+replaced.
 
 | Time with nobody present | What happens |
 | --- | --- |
