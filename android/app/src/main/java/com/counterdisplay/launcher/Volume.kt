@@ -38,6 +38,27 @@ object Volume {
         }
     }
 
+    /** Sets media volume to [pct] percent of the stream range, never above the cap. Returns the new percent. */
+    fun set(ctx: Context, cfg: Config, pct: Int): Int {
+        val max = am(ctx).getStreamMaxVolume(STREAM)
+        val idx = ((max * pct.coerceIn(0, 100) + 50) / 100).coerceAtMost(capIndex(ctx, cfg))
+        am(ctx).setStreamVolume(STREAM, idx, 0)
+        return percent(ctx)
+    }
+
+    /** One volume step up or down, never above the cap. Returns the new percent. */
+    fun step(ctx: Context, cfg: Config, up: Boolean): Int {
+        val cur = am(ctx).getStreamVolume(STREAM)
+        val idx = (if (up) cur + 1 else cur - 1).coerceIn(0, capIndex(ctx, cfg))
+        am(ctx).setStreamVolume(STREAM, idx, 0)
+        return percent(ctx)
+    }
+
+    /** Shows Android's media volume slider, for when the side keys are hidden by the bezel. */
+    fun showPanel(ctx: Context) {
+        am(ctx).adjustStreamVolume(STREAM, AudioManager.ADJUST_SAME, AudioManager.FLAG_SHOW_UI)
+    }
+
     /** Current media volume as a percentage of the stream maximum. */
     fun percent(ctx: Context): Int {
         val max = am(ctx).getStreamMaxVolume(STREAM)

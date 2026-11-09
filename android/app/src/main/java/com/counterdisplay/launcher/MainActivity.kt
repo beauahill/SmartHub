@@ -20,7 +20,9 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
+import android.net.http.SslError
 import android.webkit.CookieManager
+import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -277,6 +279,9 @@ class MainActivity : Activity() {
             "assist" -> openAssist()
             "reload" -> web.reload()
             "home" -> loadDashboard()
+            "volume" -> Volume.showPanel(this)
+            "volume_up" -> { Volume.step(this, cfg, true); Volume.showPanel(this) }
+            "volume_down" -> { Volume.step(this, cfg, false); Volume.showPanel(this) }
             null -> tile.pkg?.let { openPackage(it, tile.label) }
             else -> toast("Unknown action ${tile.action}")
         }
@@ -350,6 +355,7 @@ class MainActivity : Activity() {
         if (t.length < 16) { toast("Token too short"); return }
         cfg.token = t
         i.getStringExtra("provision_url")?.takeIf { it.startsWith("http") }?.let { cfg.haUrl = it }
+        i.getStringExtra("provision_cert_name")?.let { cfg.haCertName = it }
         cfg.provisioned = true
         ControlService.restartServer(this)
         toast("Provisioned")
@@ -377,6 +383,17 @@ class MainActivity : Activity() {
     private inner class DashboardClient : WebViewClient() {
         override fun onPageFinished(view: WebView?, url: String?) {
             offline.visibility = View.GONE
+        }
+
+        override fun onReceivedSslError(view: WebView?, h: SslErrorHandler, error: SslError) {
+            if (Tls.acceptNameMismatch(cfg, error)) {
+                h.proceed()
+            } else {
+                h.cancel()
+                offline.visibility = View.VISIBLE
+                handler.removeCallbacks(retry)
+                handler.postDelayed(retry, 10_000)
+            }
         }
 
         override fun onReceivedError(view: WebView?, req: WebResourceRequest?, err: WebResourceError?) {

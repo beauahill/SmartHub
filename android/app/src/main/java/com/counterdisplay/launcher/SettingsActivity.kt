@@ -41,6 +41,7 @@ class SettingsActivity : Activity() {
             14f, false, "#9AA4AE"))
 
         val url = field(col, "Home Assistant dashboard URL", cfg.haUrl)
+        val certName = field(col, "Certificate name, only for an HTTPS URL by IP (e.g. myhome.duckdns.org)", cfg.haCertName)
         val tiles = field(col, "Dock tiles (JSON)", cfg.tilesJson, multiline = true, mono = true)
         val dock = field(col, "Dock side: right, left or bottom", cfg.dockSide)
         val port = field(col, "API port", cfg.port.toString(), number = true)
@@ -66,6 +67,7 @@ class SettingsActivity : Activity() {
                 val oldPort = cfg.port
                 cfg.tilesJson = tiles.text.toString()
                 cfg.haUrl = url.text.toString()
+                cfg.haCertName = certName.text.toString()
                 cfg.dockSide = dock.text.toString().trim().lowercase().takeIf { it in setOf("left", "right", "bottom") } ?: "right"
                 cfg.port = port.text.toString().toIntOrNull() ?: 2323
                 cfg.token = token.text.toString()
@@ -90,11 +92,13 @@ class SettingsActivity : Activity() {
         col.addView(button(if (State.kioskPaused) "Resume kiosk lock" else "Pause kiosk lock and open Android settings") {
             if (State.kioskPaused) {
                 State.kioskPaused = false
+                Kiosk.applyPolicies(this, cfg) // restore the allowlist; MainActivity re-locks on resume
                 finish()
             } else {
                 State.kioskPaused = true
                 Kiosk.exitLock(this)
-                startActivity(Intent(Settings.ACTION_SETTINGS))
+                Kiosk.applyPolicies(this, cfg) // empty allowlist, status bar back
+                startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         })
 

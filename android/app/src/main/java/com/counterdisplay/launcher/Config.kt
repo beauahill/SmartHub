@@ -43,6 +43,14 @@ class Config(context: Context) {
         get() = prefs.getString(KEY_URL, DEFAULT_URL)!!
         set(v) = prefs.edit().putString(KEY_URL, v.trim()).apply()
 
+    /**
+     * Name on Home Assistant's TLS certificate, for loading an HTTPS dashboard by LAN IP.
+     * Empty means certificate names are checked normally. See [Tls].
+     */
+    var haCertName: String
+        get() = prefs.getString(KEY_CERT_NAME, "")!!
+        set(v) = prefs.edit().putString(KEY_CERT_NAME, v.trim().lowercase()).apply()
+
     var port: Int
         get() = prefs.getInt(KEY_PORT, 2323)
         set(v) = prefs.edit().putInt(KEY_PORT, v).apply()
@@ -118,6 +126,7 @@ class Config(context: Context) {
 
     fun toJson(includeSecrets: Boolean = false): JSONObject = JSONObject().apply {
         put("haUrl", haUrl)
+        put("haCertName", haCertName)
         put("port", port)
         put("kioskLock", kioskLock)
         put("dockSide", dockSide)
@@ -135,6 +144,7 @@ class Config(context: Context) {
     /** Applies any keys present in [o]; unknown keys are ignored. */
     fun apply(o: JSONObject) {
         if (o.has("haUrl")) haUrl = o.getString("haUrl")
+        if (o.has("haCertName")) haCertName = o.getString("haCertName")
         if (o.has("port")) port = o.getInt("port")
         if (o.has("kioskLock")) kioskLock = o.getBoolean("kioskLock")
         if (o.has("dockSide")) dockSide = o.getString("dockSide")
@@ -156,6 +166,7 @@ class Config(context: Context) {
     companion object {
         const val HA_COMPANION = "io.homeassistant.companion.android"
         private const val KEY_URL = "ha_url"
+        private const val KEY_CERT_NAME = "ha_cert_name"
         private const val KEY_PORT = "port"
         private const val KEY_TOKEN = "token"
         private const val KEY_PIN = "pin"

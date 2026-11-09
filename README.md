@@ -53,7 +53,7 @@ The full parts list is in [BOM.md](BOM.md).
 | Path | What it is |
 | --- | --- |
 | [`android/`](android) | Counter Home launcher: Kotlin source, Gradle build, `setup.sh` provisioning script |
-| `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap and camera, so build v1.2.0 from source |
+| `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap and camera, so build the current version from source |
 | [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
 | [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
@@ -505,30 +505,61 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 
 ### 4. Provision the tablet
 
-1. Build Counter Home v1.2.0, as described in [Building the app](#building-the-app). `setup.sh`
+1. Build Counter Home v1.2.1, as described in [Building the app](#building-the-app). `setup.sh`
    installs that build when it exists, and otherwise falls back to the prebuilt v1.0.0, which has no
    volume cap or camera.
-2. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on USB debugging.
-   Device owner can only be set while the tablet has no accounts.
-3. On your computer, with Android platform-tools installed:
+2. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on
+   developer options. Device owner can only be set while the tablet has no accounts.
+3. Connect adb. In the finished enclosure the tablet's only USB-C port feeds the audio adapter, so
+   use wireless debugging with the computer on the same Wi-Fi. Turn on Settings > Developer options >
+   Wireless debugging, tap "Pair device with pairing code", then:
+
+   ```
+   adb pair <tablet_ip>:<pairing_port>
+   adb connect <tablet_ip>:<port>
+   ```
+
+   The connect port is the one on the Wireless debugging screen, not the pairing port.
+4. On your computer, with Android platform-tools installed:
 
    ```
    cd android
    ./setup.sh http://<HA_IP>:8123/dashboard-counter/0?kiosk
    ```
 
-   It installs the APK, makes Counter Home the device owner, removes Samsung extras, and prints the
+   It installs the APK, makes Counter Home the device owner, removes bloat, and prints the
    tablet IP, the API token and the Home Assistant secrets. Reserve that IP on your router.
-4. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
+5. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
    "Pause kiosk lock and open Android settings". Sign in to Google, install Spotify, YouTube TV,
-   IPTV Smarters and the Home Assistant app, set Battery protection to Maximum, and make Home
+   an IPTV player such as OTT Play and the Home Assistant app, set Battery protection to Maximum, and make Home
    Assistant the default digital assistant. Then tap "Resume kiosk lock".
-5. Change the settings PIN. The default PIN is public in this repository.
-6. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
+6. Change the settings PIN. The default PIN is public in this repository.
+7. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
    settings screen if the full-range drivers distort or bottom out.
-7. To use the camera, tick "Allow the camera" in the settings screen. It stays off until Home
+8. To use the camera, tick "Allow the camera" in the settings screen. It stays off until Home
    Assistant turns it on. Also check that Android's camera access toggle is on: Settings > Security
    and privacy > More privacy settings > Camera access. When it's off, every frame comes out black.
+
+**HTTPS dashboards by LAN IP.** If Home Assistant is HTTPS-only with a certificate for a public
+name, such as a DuckDNS address, the tablet usually can't reach that name from the LAN: most routers
+don't loop the public address back in. Load the dashboard by Home Assistant's LAN IP instead, and set
+"Certificate name" in the settings screen (`haCertName` in `POST /config`) to the name on the
+certificate. Counter Home then accepts the certificate for that IP only when it names that host and
+is otherwise valid: trusted, in date, and for the configured dashboard host. At provisioning time:
+
+```
+HA_CERT_NAME=myhome.duckdns.org ./setup.sh https://192.168.0.50:8123/dashboard-counter/0?kiosk
+```
+
+A local DNS entry that points the public name at the LAN IP also works, with no setting needed.
+
+**Debloat.** `setup.sh` runs `debloat.sh`, which removes about a hundred Samsung, Google, Microsoft
+and Meta apps listed in `android/debloat-packages.txt`. It keeps Play services, the Play Store,
+Android System WebView, Chrome, One UI Home, Samsung Keyboard and Device care; the list's header
+says why each stays. Removal is per user, so `/system` is untouched. Preview with
+`./debloat.sh --dry-run`, put one app back with `./restore.sh <package>`, or everything with
+`./restore.sh --all`. A factory reset, and sometimes a major One UI update, brings the apps back;
+rerun `./debloat.sh` after an update.
 
 Do the YouTube TV and Spotify sign-ins while the kiosk lock is paused. Google's login screens
 belong to other packages, and lock task mode blocks them.
@@ -609,11 +640,12 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | `POST /navigate?url=...` | Load any URL in the dashboard view, such as a camera page when the doorbell rings |
 | `POST /brightness?value=0-255` or `?value=auto` | Backlight |
 | `POST /reload` | Reload the dashboard |
+| `POST /volume?value=0-100`, `/volume/up`, `/volume/down` | Media volume as a percentage, never above the cap. Returns the new `volume` |
 | `POST /camera/on?minutes=N` | Camera on. With `minutes`, it turns itself off after that long. Needs "Allow the camera" |
 | `POST /camera/off` | Camera off |
 | `GET /camera.jpg` | Latest frame as JPEG. 503 while the camera is off |
 | `GET /camera.mjpeg` | MJPEG stream, up to 3 at once. It ends when the camera turns off |
-| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port |
+| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port |
 
 `volume` and `maxVolume` are percentages of the tablet's media volume range.
 
@@ -633,12 +665,21 @@ Example tiles JSON, for the settings screen or `POST /config`:
 {"tiles": [
   {"label": "Music",   "package": "com.spotify.music", "color": "#1F8F4E"},
   {"label": "Live TV", "package": "com.google.android.apps.youtube.unplugged", "color": "#C43B33"},
-  {"label": "IPTV",    "package": "com.nst.iptvsmarterstvbox", "color": "#3A62B8"},
+  {"label": "IPTV",    "package": "com.ottplay.ottplay", "color": "#3A62B8"},
+  {"label": "Volume",  "action": "volume", "color": "#5B6470"},
   {"label": "Assist",  "action": "assist", "color": "#16A3C9"}
 ]}
 ```
 
-Tile actions are `assist`, `reload` and `home`. The dock can sit on the right, left or bottom.
+Tile actions are `assist`, `reload`, `home`, `volume`, `volume_up` and `volume_down`. `volume`
+opens Android's media volume slider over whatever is on screen.
+
+**Volume without side keys.** The bezel covers the tablet's volume keys, so volume comes from three
+places: the Volume dock tile, the `input_number.counter_display_volume` slider that the Home
+Assistant package adds (put it on the dashboard), and `POST /volume`. All three respect the cap.
+While Spotify or another app fills the screen the dock is hidden; use the slider in Home Assistant,
+or turn on Samsung's floating Assistant menu (Settings > Accessibility > Interaction and dexterity),
+which has volume buttons. The dock can sit on the right, left or bottom.
 
 ## Building the app
 

@@ -39,6 +39,10 @@ rest:
         value_template: "{{ value_json.batteryTempC }}"
         unit_of_measurement: "°C"
         device_class: temperature
+      - name: Counter display volume
+        unique_id: counter_display_volume
+        value_template: "{{ value_json.volume }}"
+        unit_of_measurement: "%"
     binary_sensor:
       - name: Counter display screen
         unique_id: counter_display_screen
@@ -52,6 +56,17 @@ rest:
       - name: Counter display camera
         unique_id: counter_display_camera
         value_template: "{{ value_json.camera.running }}"
+
+# Media volume slider for the dashboard. The tablet's side keys are hidden by the bezel, so this,
+# the Volume dock tile and POST /volume are the ways to change it. The app's cap still applies.
+input_number:
+  counter_display_volume:
+    name: Counter display volume
+    min: 0
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:volume-high
 
 script:
   counter_display:
@@ -214,3 +229,13 @@ automation:
       #     data:
       #       image: /local/counter_display/last_motion.jpg
       - delay: "00:01:00"   # at most one snapshot a minute
+
+  - alias: Counter display set volume from slider
+    id: counter_display_set_volume
+    triggers:
+      - trigger: state
+        entity_id: input_number.counter_display_volume
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: "volume?value={{ states('input_number.counter_display_volume') | int }}"

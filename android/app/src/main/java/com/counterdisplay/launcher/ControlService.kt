@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *   POST /launch?app=Music          -> tile label or package name
  *   POST /navigate?url=...          -> load a URL in the dashboard view
  *   POST /brightness?value=0-255|auto
+ *   POST /volume?value=0-100 | /volume/up | /volume/down   -> media volume, held under the cap
  *   GET  /config, POST /config      -> read or update settings (JSON body)
  *   POST /camera/on?minutes=N       -> camera on, optional auto-off (needs "Allow the camera" in settings)
  *   POST /camera/off
@@ -242,6 +243,12 @@ class ControlService : Service() {
                            else Kiosk.setBrightness(this, v.toIntOrNull() ?: return 400 to err("value 0-255 or auto"))
                 if (!done) return 409 to err("brightness needs device owner")
             }
+            "/volume" -> {
+                val v = q["value"]?.toIntOrNull() ?: return 400 to err("value 0-100")
+                return 200 to JSONObject().put("ok", true).put("volume", Volume.set(this, cfg, v))
+            }
+            "/volume/up" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, true))
+            "/volume/down" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, false))
             "/camera/on" -> {
                 if (!cfg.cameraAllowed) return 403 to err("camera is turned off in Counter Home settings")
                 if (!cameraForeground) goForeground(withCamera = true)
@@ -396,4 +403,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.2.0" }
+object BuildConfigShim { const val VERSION = "1.3.0" }

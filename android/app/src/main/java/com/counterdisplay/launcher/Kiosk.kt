@@ -44,7 +44,11 @@ object Kiosk {
         val dpm = dpm(ctx)
         val admin = admin(ctx)
         try {
-            dpm.setLockTaskPackages(admin, cfg.allowedPackages(ctx.packageName))
+            // While paused the allowlist is empty. That drops any running lock task, and because
+            // MainActivity's lockTaskMode is if_whitelisted it also stops the home screen from
+            // re-locking itself when Android relaunches it. stopLockTask() alone isn't enough.
+            dpm.setLockTaskPackages(admin,
+                if (State.kioskPaused) arrayOf() else cfg.allowedPackages(ctx.packageName))
             // HOME lets the nav home button bring you back here from Spotify etc.
             // GLOBAL_ACTIONS keeps the power menu so you can still restart it by hand.
             dpm.setLockTaskFeatures(
@@ -57,7 +61,7 @@ object Kiosk {
             // It still only runs when "Allow the camera" is on in Counter Home settings.
             dpm.setPermissionGrantState(admin, ctx.packageName, android.Manifest.permission.CAMERA,
                 DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
-            dpm.setStatusBarDisabled(admin, true)
+            dpm.setStatusBarDisabled(admin, !State.kioskPaused)
 
             // Make this the permanent home app.
             val home = IntentFilter(Intent.ACTION_MAIN).apply {
