@@ -140,10 +140,7 @@ class MainActivity : Activity() {
             setAcceptThirdPartyCookies(web, true)
         }
 
-        dock = LinearLayout(this).apply {
-            setBackgroundColor(Color.parseColor("#0C0E11"))
-            setPadding(dp(10), dp(10), dp(10), dp(10))
-        }
+        dock = LinearLayout(this)   // styled and filled by layoutDock()
 
         content = LinearLayout(this)
         root.addView(content, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
@@ -185,60 +182,81 @@ class MainActivity : Activity() {
         layoutDock()
     }
 
-    /** Rebuilds the dock from config. Called at start and whenever config changes. */
+    /**
+     * Rebuilds the dock from config. Called at start and whenever config changes.
+     *
+     * The dock lines up with the dashboard beside it as a fourth column: the clock sits in the
+     * dashboard's title row, the privacy lamps where the section headings are, and the tiles start
+     * and end level with the dashboard's tiles (20 + 72 + 20 + 30 + 10 dp down, 45 dp off the bottom).
+     */
     private fun layoutDock() {
         content.removeAllViews()
         dock.removeAllViews()
-        val bottom = cfg.dockSide == "bottom"
+        val side = cfg.dockSide
+        val bottom = side == "bottom"
         content.orientation = if (bottom) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
         dock.orientation = if (bottom) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+        dock.background = Dock.background(side)
+        when (side) {
+            "bottom" -> dock.setPadding(dp(28), dp(4), dp(28), dp(20))
+            "left" -> dock.setPadding(dp(24), dp(20), 0, dp(45))
+            else -> dock.setPadding(0, dp(20), dp(24), dp(45))
+        }
 
         // The clock doubles as the hidden settings handle: hold it for 3 seconds.
         val clock = TextClock(this).apply {
             format12Hour = "h:mm"
             format24Hour = "H:mm"
-            setTextColor(Color.parseColor("#E8E8E8"))
-            textSize = 26f
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            setTextColor(Color.WHITE)
+            textSize = 28f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            includeFontPadding = false
             gravity = Gravity.CENTER
             setOnTouchListener(SecretHold { askPin() })
         }
-        dock.addView(clock, if (bottom) LinearLayout.LayoutParams(dp(130), MATCH_PARENT)
-                            else LinearLayout.LayoutParams(MATCH_PARENT, dp(64)))
 
-        // Privacy indicators: shown whenever the camera or the microphone is in use.
-        camIndicator = indicator("● CAM", "#FF453A", CameraStreamer.running)
-        dock.addView(camIndicator, if (bottom) LinearLayout.LayoutParams(dp(70), MATCH_PARENT)
-                                   else LinearLayout.LayoutParams(MATCH_PARENT, dp(22)))
-        micIndicator = indicator("● MIC", "#30D158", VoiceSatellite.running)
-        dock.addView(micIndicator, if (bottom) LinearLayout.LayoutParams(dp(70), MATCH_PARENT)
-                                   else LinearLayout.LayoutParams(MATCH_PARENT, dp(22)))
+        // Privacy lamps: shown whenever the camera or the microphone is in use.
+        camIndicator = indicator("\u25CF CAM", "#FF453A", CameraStreamer.running)
+        micIndicator = indicator("\u25CF MIC", "#30D158", VoiceSatellite.running)
+        val lamps = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            addView(camIndicator, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+            addView(micIndicator, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+        }
 
-        for (tile in cfg.tiles) {
-            val b = TextView(this).apply {
-                text = tile.label
-                setTextColor(Color.WHITE)
-                textSize = 18f
-                typeface = Typeface.DEFAULT_BOLD
+        if (bottom) {
+            val head = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                background = GradientDrawable().apply {
-                    cornerRadius = dp(18).toFloat()
-                    setColor(safeColor(tile.color))
-                }
-                setOnClickListener { runTile(tile) }
+                addView(clock, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                addView(lamps, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
             }
-            val lp = if (bottom) LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)
-                     else LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f)
-            lp.setMargins(dp(4), dp(4), dp(4), dp(4))
-            dock.addView(b, lp)
+            dock.addView(head, LinearLayout.LayoutParams(dp(120), MATCH_PARENT))
+        } else {
+            dock.addView(clock, LinearLayout.LayoutParams(MATCH_PARENT, dp(72)))
+            dock.addView(lamps, LinearLayout.LayoutParams(MATCH_PARENT, dp(30)).apply { topMargin = dp(20) })
+        }
+
+        val tiles = cfg.tiles
+        for (tile in tiles) {
+            val lp = if (bottom) LinearLayout.LayoutParams(0, MATCH_PARENT, 1f).apply { leftMargin = dp(Dock.GAP_DP) }
+                     else LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f).apply { topMargin = dp(Dock.GAP_DP) }
+            dock.addView(Dock.tile(this, tile) { runTile(tile) }, lp)
+        }
+        // A short list leaves the rest of the dock empty instead of stretching its tiles.
+        val spare = (if (bottom) Dock.SLOTS_BOTTOM else Dock.SLOTS_SIDE) - tiles.size
+        if (spare > 0) {
+            dock.addView(View(this), if (bottom) LinearLayout.LayoutParams(0, MATCH_PARENT, spare.toFloat())
+                                     else LinearLayout.LayoutParams(MATCH_PARENT, 0, spare.toFloat()))
         }
 
         val webLp = if (bottom) LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f)
                     else LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)
-        val dockLp = if (bottom) LinearLayout.LayoutParams(MATCH_PARENT, dp(110))
-                     else LinearLayout.LayoutParams(dp(150), MATCH_PARENT)
+        val dockLp = if (bottom) LinearLayout.LayoutParams(MATCH_PARENT, dp(Dock.SIZE_DP))
+                     else LinearLayout.LayoutParams(dp(Dock.SIZE_DP), MATCH_PARENT)
         (web.parent as? LinearLayout)?.removeView(web)
-        if (cfg.dockSide == "left") {
+        if (side == "left") {
             content.addView(dock, dockLp); content.addView(web, webLp)
         } else {
             content.addView(web, webLp); content.addView(dock, dockLp)
@@ -248,9 +266,12 @@ class MainActivity : Activity() {
     private fun indicator(label: String, color: String, on: Boolean) = TextView(this).apply {
         text = label
         setTextColor(Color.parseColor(color))
-        textSize = 13f
+        textSize = 11f
         typeface = Typeface.DEFAULT_BOLD
+        letterSpacing = 0.06f
+        includeFontPadding = false
         gravity = Gravity.CENTER
+        setPadding(dp(4), 0, dp(4), 0)
         visibility = if (on) View.VISIBLE else View.GONE
     }
 

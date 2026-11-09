@@ -519,4 +519,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.4.0" }
+object BuildConfigShim { const val VERSION = "1.5.0" }

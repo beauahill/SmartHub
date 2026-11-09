@@ -11,13 +11,15 @@ data class Tile(
     val label: String,
     val pkg: String? = null,       // e.g. com.spotify.music
     val action: String? = null,    // "assist", "reload", "home"
-    val color: String = "#2A3038",
+    val color: String = "#2A3038", // tints the glyph; greys leave it white
+    val icon: String? = null,      // glyph name, see Dock.kt; guessed from the tile when absent
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("label", label)
         pkg?.let { put("package", it) }
         action?.let { put("action", it) }
         put("color", color)
+        icon?.let { put("icon", it) }
     }
 
     companion object {
@@ -26,6 +28,7 @@ data class Tile(
             pkg = o.optString("package").takeIf { it.isNotBlank() },
             action = o.optString("action").takeIf { it.isNotBlank() },
             color = o.optString("color", "#2A3038"),
+            icon = o.optString("icon").takeIf { it.isNotBlank() },
         )
     }
 }

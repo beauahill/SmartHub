@@ -78,7 +78,10 @@ def main() -> None:
     args = ap.parse_args()
 
     config = yaml.safe_load(args.file.read_text())
-    config.pop("_nav", None)  # YAML anchor scratch key, not part of the dashboard
+    if not isinstance(config, dict) or not config.get("views"):
+        sys.exit(f"{args.file}: no views found, nothing pushed")
+    for key in [k for k in config if k.startswith("_")]:
+        config.pop(key)  # YAML anchor scratch keys (_defs), not part of the dashboard
     views = config.get("views", [])
     print(f"{args.file.name}: {len(views)} views -> {args.url_path}")
 

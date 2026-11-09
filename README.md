@@ -629,19 +629,25 @@ ESPHome config creates.
 
 **The dashboard.** [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml)
 is the `dashboard-counter` dashboard the tablet loads: five views for an 11" landscape screen in
-kiosk mode, each starting with the same row of navigation chips because the kiosk hides HA's tabs.
+kiosk mode. Each view is one screen with no scrolling: the view's title and a navigation pill on
+top (the kiosk hides HA's tabs), then three columns of dark glass tiles over the wallpaper. A tile
+turns white while its light is on, its door is open or its lock is unlocked. Tap a tile to act,
+hold it for the details (brightness, thermostat, history).
 
 | View | What's on it |
 | --- | --- |
-| Home | Clock and forecast, the two garage doors and the gate as big tap tiles with their open/closed state, gate camera, house thermostat, fireplace, hot tub and security summaries, the next few calendar events |
-| Hot Tub | Set point, water and heater temperatures, jets, light colours, salt system, locks and clean cycle, 24 h graphs |
-| Lights | Every light by room, dimmer sliders, the Normal / Go Bills / Go Pokes scenes, an "everything off" button |
-| Security | Locks, alarm panel, every door and window sensor, four cameras |
-| Calendar | Month view plus a "coming up" list of the household and Gillette calendars |
+| Home | Weather for the next hours, house thermostat, fireplace and the room units, the two garage doors and the gate as big tap tiles, the garage entry lock, the next four calendar events, the gate camera, and one line each for lights, security and the hot tub that leads to its view |
+| Lights | Every light by room, the Normal / Go Bills / Go Pokes scenes, "all lights off" |
+| Security | Locks (tap asks before it locks or unlocks), alarm, garage doors and gate, every door and window sensor, the gate camera |
+| Hot Tub | Set point dial, 24 h graph, jets, lights and their colours, salt system, locks and timers, temperatures |
+| Calendar | Month view of the household and Gillette calendars |
 
-It needs the HACS cards `mushroom`, `clock-weather-card`, `mini-graph-card` and `kiosk-mode`
+It needs the HACS cards `button-card` (version 7 or newer), `mini-graph-card` and `kiosk-mode`
 (the dashboard's `kiosk_mode:` block hides the header and sidebar for non-admin users, so the
-tablet's `counter` user stays in kiosk mode when it switches views). The scripts in
+tablet's `counter` user stays in kiosk mode when it switches views). The look is in the file
+itself, as button-card templates at the top of `counter.yaml`; it does not use card-mod or a Home
+Assistant theme, so it is the same whichever theme the tablet's user has. A column holds eight
+72 px rows; more than that runs off the screen. The scripts in
 [`homeassistant/scripts/`](homeassistant/scripts) talk to Home Assistant with a long-lived access
 token, read from `HA_TOKEN` or from `ha_token:` in the git-ignored `android/keystore/ha-secrets.yaml`
 (`pip install websockets pyyaml pillow` first):
@@ -653,11 +659,14 @@ python3 homeassistant/scripts/sync_home_games.py    # fill the Pronghorn and Gil
 python3 homeassistant/scripts/set_wallpaper.py      # upload the wallpaper and set it as every view's background
 ```
 
-The wallpaper is a dark mesh gradient rendered by
+The wallpaper is a mesh gradient (blue through indigo to a warm corner) rendered by
 [`homeassistant/dashboards/wallpaper/make_wallpaper.py`](homeassistant/dashboards/wallpaper/make_wallpaper.py);
 `set_wallpaper.py` puts the PNG in Home Assistant's image store (served without a login, so the
-kiosk user can load it) and writes its URL into each view's `background:`. To use your own picture,
-`set_wallpaper.py path/to/image.jpg` then `push_dashboard.py`.
+kiosk user can load it) and writes its URL into the dashboard's `wallpaper` anchor, which every
+view uses. To use your own picture, `set_wallpaper.py path/to/image.jpg` then `push_dashboard.py`.
+The dock in Counter Home paints the same edge colours so the wallpaper appears to run behind it;
+with another picture, change the `EDGE_` colours in
+[`Dock.kt`](android/app/src/main/java/com/counterdisplay/launcher/Dock.kt) to match.
 
 `setup_calendars.py` subscribes Home Assistant's built-in Remote Calendar integration to the
 Campbell County events and Rockpile Museum feeds (campbellcountywy.gov) and the Gillette College
@@ -793,10 +802,18 @@ Example tiles JSON, for the settings screen or `POST /config`:
   {"label": "Music",   "package": "com.spotify.music", "color": "#1F8F4E"},
   {"label": "Live TV", "package": "com.google.android.apps.youtube.unplugged", "color": "#C43B33"},
   {"label": "IPTV",    "package": "com.ottplay.ottplay", "color": "#3A62B8"},
+  {"label": "Recipes", "package": "com.example.recipes", "color": "#E8702A", "icon": "globe"},
   {"label": "Volume",  "action": "volume", "color": "#5B6470"},
   {"label": "Assist",  "action": "assist", "color": "#16A3C9"}
 ]}
 ```
+
+The dock is drawn as a fourth column of the dashboard: the clock in the title row, then glass
+tiles with a glyph and a label. A tile's `color` tints its glyph (the hue is kept, the shade is
+lifted to suit dark glass; greys stay white). `icon` picks the glyph: `music`, `tv`, `play`,
+`radio`, `volume`, `mic`, `home`, `reload`, `video`, `globe` or `apps`. Leave it out and the dock
+guesses from the action, label and package. Up to six tiles keep their full size on a side dock;
+more than that share the height.
 
 Tile actions are `assist`, `reload`, `home`, `volume`, `volume_up` and `volume_down`. `volume`
 opens Android's media volume slider over whatever is on screen.

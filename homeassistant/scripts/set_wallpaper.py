@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload the dashboard wallpaper to Home Assistant and point every view of counter.yaml at it.
+"""Upload the dashboard wallpaper to Home Assistant and point counter.yaml (every view) at it.
 
     python3 homeassistant/dashboards/wallpaper/make_wallpaper.py      # render the PNG (optional)
     python3 homeassistant/scripts/set_wallpaper.py [image.png]        # upload + rewrite counter.yaml
@@ -25,11 +25,6 @@ import ha_api  # noqa: E402
 
 DASHBOARD = ha_api.REPO / "homeassistant" / "dashboards" / "counter.yaml"
 DEFAULT_IMAGE = ha_api.REPO / "homeassistant" / "dashboards" / "wallpaper" / "counter_wallpaper.png"
-BACKGROUND = """    background:
-      image: {url}
-      size: cover
-      attachment: fixed
-"""
 
 
 def upload(path: Path) -> str:
@@ -72,8 +67,10 @@ def main() -> None:
         except SystemExit as e:  # already gone; harmless
             print(f"  (previous wallpaper not deleted: {e})")
     else:
-        text, n = re.subn(r"(    dense_section_placement: true\n)", r"\1" + BACKGROUND.format(url=url), text)
-        print(f"background added to {n} views")
+        sys.exit(
+            f"uploaded, but {DASHBOARD.name} has no /api/image/serve/<id>/original to replace: "
+            f"set the image under _defs: wallpaper: to {url}"
+        )
     DASHBOARD.write_text(text)
     print(f"{DASHBOARD.name} updated; run push_dashboard.py to publish")
 
