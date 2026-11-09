@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+    <!-- Hands-free voice: the microphone streams to Home Assistant's Assist pipeline, only while it is switched on. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Lets the launcher see the apps it starts from its tiles (Android 11+ package visibility). -->
@@ -62,7 +66,7 @@
         <service
             android:name=".ControlService"
             android:exported="false"
-            android:foregroundServiceType="specialUse|camera">
+            android:foregroundServiceType="specialUse|camera|microphone">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Local network control endpoint for a wall/counter kiosk display" />

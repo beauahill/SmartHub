@@ -61,6 +61,9 @@ object Kiosk {
             // It still only runs when "Allow the camera" is on in Counter Home settings.
             dpm.setPermissionGrantState(admin, ctx.packageName, android.Manifest.permission.CAMERA,
                 DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
+            // Same for the microphone; it is only opened while hands-free voice is switched on.
+            dpm.setPermissionGrantState(admin, ctx.packageName, android.Manifest.permission.RECORD_AUDIO,
+                DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
             dpm.setStatusBarDisabled(admin, !State.kioskPaused)
 
             // Make this the permanent home app.
@@ -164,4 +167,8 @@ sealed class Command {
     data class CameraState(val on: Boolean) : Command()
     object Assist : Command()
     object ConfigChanged : Command()
+    /** The line under the clock on the sleep screen (outdoor temperature and conditions). */
+    data class AmbientInfo(val line: String) : Command()
+    /** Hands-free voice progress, for the on-screen caption and the MIC dot. */
+    data class Voice(val event: VoiceSatellite.Event) : Command()
 }

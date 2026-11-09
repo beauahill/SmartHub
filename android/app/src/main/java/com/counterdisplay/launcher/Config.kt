@@ -113,6 +113,46 @@ class Config(context: Context) {
         get() = prefs.getString(KEY_DOCK, "right")!!
         set(v) = prefs.edit().putString(KEY_DOCK, v).apply()
 
+    /**
+     * Hands-free voice: while the screen is on, the microphone streams to Home Assistant's Assist
+     * pipeline, which listens for the wake word, understands the request and answers. Off until
+     * someone turns it on, because it needs [haToken].
+     */
+    var voiceEnabled: Boolean
+        get() = prefs.getBoolean(KEY_VOICE, false)
+        set(v) = prefs.edit().putBoolean(KEY_VOICE, v).apply()
+
+    /** Long-lived Home Assistant access token, used for the voice websocket and wallpaper downloads. */
+    var haToken: String
+        get() = prefs.getString(KEY_HA_TOKEN, "")!!
+        set(v) = prefs.edit().putString(KEY_HA_TOKEN, v.trim()).apply()
+
+    /** Assist pipeline id to use for voice; empty means Home Assistant's preferred pipeline. */
+    var voicePipeline: String
+        get() = prefs.getString(KEY_VOICE_PIPELINE, "")!!
+        set(v) = prefs.edit().putString(KEY_VOICE_PIPELINE, v.trim()).apply()
+
+    /** Minutes between wallpaper changes on the clock screen. */
+    var ambientIntervalMin: Int
+        get() = prefs.getInt(KEY_AMBIENT_MIN, 10)
+        set(v) = prefs.edit().putInt(KEY_AMBIENT_MIN, v.coerceIn(1, 24 * 60)).apply()
+
+    /**
+     * Extra wallpapers for the clock screen, as image URLs (for example pictures in Home Assistant's
+     * www folder, https://ha/local/wallpapers/a.jpg). Pictures pushed to the tablet with
+     * PUT /wallpapers/<name> and the built-in gradients are used as well.
+     */
+    var wallpaperUrls: List<String>
+        get() = prefs.getString(KEY_WALLPAPER_URLS, "")!!.lines().map { it.trim() }.filter { it.startsWith("http") }
+        set(v) = prefs.edit().putString(KEY_WALLPAPER_URLS, v.joinToString("\n")).apply()
+
+    /** scheme://host[:port] of the dashboard URL, for the websocket and API calls to Home Assistant. */
+    fun haBase(): String {
+        val u = android.net.Uri.parse(haUrl)
+        val port = if (u.port > 0) ":${u.port}" else ""
+        return "${u.scheme}://${u.host}$port"
+    }
+
     var tiles: List<Tile>
         get() = parseTiles(prefs.getString(KEY_TILES, null) ?: DEFAULT_TILES)
         set(v) = prefs.edit().putString(KEY_TILES, JSONArray(v.map { it.toJson() }).toString(2)).apply()
@@ -138,7 +178,12 @@ class Config(context: Context) {
         put("cameraQuality", cameraQuality)
         put("cameraRotation", cameraRotation)
         put("tiles", JSONArray(tilesJson))
-        if (includeSecrets) { put("token", token); put("pin", pin) }
+        put("voiceEnabled", voiceEnabled)
+        put("voicePipeline", voicePipeline)
+        put("haTokenSet", haToken.isNotEmpty())
+        put("ambientIntervalMin", ambientIntervalMin)
+        put("wallpaperUrls", JSONArray(wallpaperUrls))
+        if (includeSecrets) { put("token", token); put("pin", pin); put("haToken", haToken) }
     }
 
     /** Applies any keys present in [o]; unknown keys are ignored. */
@@ -157,6 +202,14 @@ class Config(context: Context) {
         if (o.has("cameraRotation")) cameraRotation = o.getInt("cameraRotation")
         if (o.has("tiles")) tilesJson = o.getJSONArray("tiles").toString(2)
         if (o.has("pin")) pin = o.getString("pin")
+        if (o.has("voiceEnabled")) voiceEnabled = o.getBoolean("voiceEnabled")
+        if (o.has("voicePipeline")) voicePipeline = o.getString("voicePipeline")
+        if (o.has("haToken")) haToken = o.getString("haToken")
+        if (o.has("ambientIntervalMin")) ambientIntervalMin = o.getInt("ambientIntervalMin")
+        if (o.has("wallpaperUrls")) {
+            val a = o.getJSONArray("wallpaperUrls")
+            wallpaperUrls = (0 until a.length()).map { a.getString(it) }
+        }
     }
 
     /** Packages the launcher may open while lock task mode is on. */
@@ -181,6 +234,11 @@ class Config(context: Context) {
         private const val KEY_CAM_FPS = "camera_fps"
         private const val KEY_CAM_QUALITY = "camera_quality"
         private const val KEY_CAM_ROTATION = "camera_rotation"
+        private const val KEY_VOICE = "voice_enabled"
+        private const val KEY_HA_TOKEN = "ha_token"
+        private const val KEY_VOICE_PIPELINE = "voice_pipeline"
+        private const val KEY_AMBIENT_MIN = "ambient_interval_min"
+        private const val KEY_WALLPAPER_URLS = "wallpaper_urls"
         /** Roughly 6 to 8 dB below full scale on Android's volume curve. Tune it by ear. */
         const val DEFAULT_MAX_VOLUME = 80
         const val DEFAULT_URL = "http://homeassistant.local:8123/dashboard-counter/0?kiosk"
@@ -190,6 +248,8 @@ class Config(context: Context) {
               {"label": "Music",   "package": "com.spotify.music",                         "color": "#1F8F4E"},
               {"label": "Live TV", "package": "com.google.android.apps.youtube.unplugged", "color": "#C43B33"},
               {"label": "IPTV",    "package": "com.nst.iptvsmarterstvbox",                 "color": "#3A62B8"},
+              {"label": "Radio",   "package": "com.radiocom",                              "color": "#E8702A"},
+              {"label": "Volume",  "action": "volume",                                     "color": "#4A5361"},
               {"label": "Assist",  "action": "assist",                                     "color": "#16A3C9"}
             ]
         """.trimIndent()

@@ -55,6 +55,17 @@ class SettingsActivity : Activity() {
         }
         col.addView(camAllowed)
         val camFacing = field(col, "Camera: front or back", cfg.cameraFacing)
+        val voice = CheckBox(this).apply {
+            text = "Hands-free voice: stream the microphone to Home Assistant's Assist pipeline while the screen is on (a green MIC dot shows)"
+            isChecked = cfg.voiceEnabled
+            setTextColor(Color.WHITE)
+        }
+        col.addView(voice)
+        val haToken = field(col, "Home Assistant long-lived access token (for voice; a non-admin user's token is enough)", cfg.haToken, mono = true)
+        val pipeline = field(col, "Assist pipeline id (blank = Home Assistant's preferred pipeline)", cfg.voicePipeline, mono = true)
+        val ambientMin = field(col, "Sleep screen: minutes between wallpaper changes", cfg.ambientIntervalMin.toString(), number = true)
+        val wallpapers = field(col, "Sleep screen: extra wallpaper image URLs, one per line (pictures pushed with PUT /wallpapers are used too)",
+            cfg.wallpaperUrls.joinToString("\n"), multiline = true, mono = true)
         val lock = CheckBox(this).apply {
             text = "Kiosk lock (pin the launcher; needs device owner)"
             isChecked = cfg.kioskLock
@@ -79,8 +90,14 @@ class SettingsActivity : Activity() {
                 if (!cfg.cameraAllowed || (CameraStreamer.running && CameraStreamer.facing != cfg.cameraFacing)) {
                     CameraStreamer.stop()             // Home Assistant turns it back on with the new camera
                 }
+                cfg.voiceEnabled = voice.isChecked
+                cfg.haToken = haToken.text.toString()
+                cfg.voicePipeline = pipeline.text.toString()
+                cfg.ambientIntervalMin = ambientMin.text.toString().toIntOrNull() ?: 10
+                cfg.wallpaperUrls = wallpapers.text.toString().lines()
                 Volume.enforce(this, cfg)
                 if (cfg.port != oldPort) ControlService.restartServer(this)
+                ControlService.syncVoice(this)
                 Bus.post(Command.ConfigChanged)
                 toast("Saved")
                 finish()

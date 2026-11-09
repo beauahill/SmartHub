@@ -47,6 +47,14 @@ The full parts list is in [BOM.md](BOM.md).
 - **Camera.** The tablet's front camera, looking out through the bezel, can act as a security camera
   for Home Assistant. Counter Home serves snapshots and an MJPEG stream through its API, only while
   Home Assistant has turned the camera on, and only if it is allowed on the tablet.
+- **Voice.** Say "OK Nabu, open the gate" from across the kitchen: while the screen is on, Counter
+  Home streams the microphone into Home Assistant's Assist pipeline, which detects the wake word
+  (openWakeWord add-on), understands the request (Home Assistant Cloud speech-to-text) and answers
+  through the speakers. A green MIC dot shows in the dock whenever the microphone is open.
+- **Sleep screen.** When nobody has been near for two minutes the dashboard gives way to a large
+  clock, the date and the outdoor temperature over a wallpaper that changes every ten minutes:
+  your own photos, pictures from Home Assistant, or built-in gradients that follow the time of
+  day. The radar brings the dashboard back when someone walks up.
 
 ## Repository layout
 
@@ -567,8 +575,10 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
    tablet IP, the API token and the Home Assistant secrets. Reserve that IP on your router.
 5. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
    "Pause kiosk lock and open Android settings". Sign in to Google, install Spotify, YouTube TV,
-   an IPTV player such as OTT Play and the Home Assistant app, set Battery protection to Maximum, and make Home
-   Assistant the default digital assistant. Then tap "Resume kiosk lock".
+   an IPTV player such as OTT Play, Audacy (the Radio tile) and the Home Assistant app, set Battery
+   protection to Maximum, and make Home Assistant the default digital assistant. Then tap "Resume
+   kiosk lock". The default dock is Music, Live TV, IPTV, Radio, Volume and Assist; edit the tiles
+   JSON in the settings screen (or `POST /config`) to change it.
 6. Change the settings PIN. The default PIN is public in this repository.
 7. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
    settings screen if the full-range drivers distort or bottom out.
@@ -675,9 +685,32 @@ replaced.
 | Time with nobody present | What happens |
 | --- | --- |
 | Someone arrives | Screen on. Brightness 25 from 22:00 to 06:00, auto otherwise |
-| 2 minutes | Dim clock overlay, if the dashboard is in front |
-| 10 minutes | Panel off, if the dashboard is in front |
-| 30 minutes | Back to the dashboard and panel off, if another app was open |
+| 2 minutes | Sleep screen (clock, date, outdoor temperature, rotating wallpaper), if the dashboard is in front |
+| 10 minutes, 23:00–06:00 only | Panel off; at 23:00 as well if it has been alone for 10 minutes. During the day the clock stays up |
+| 30 minutes | Back to the dashboard if another app was open, then the sleep screen (or panel off late at night) |
+
+The outdoor temperature line comes from `sensor.main_outdoor_temperature_2` (the Venstar's probe)
+and the NWS weather entity; the `counter_display_ambient_info` automation sends it to the tablet
+every 15 minutes with `POST /ambient/info`. Change the entities there if yours differ.
+
+**Wallpapers.** The sleep screen shows pictures from three places, mixed at random: photos pushed to
+the tablet with [`android/wallpapers.sh`](android/wallpapers.sh) (`./wallpapers.sh push *.jpg`,
+`list`, `delete`), image URLs entered in Counter Home's settings (for example pictures in Home
+Assistant's `www` folder, `https://ha/local/wallpapers/a.jpg`), and built-in soft gradients whose
+colours follow the time of day. With no photos it shows only the gradients. Pictures around
+1920 x 1200 look best; bigger ones are scaled down on the tablet.
+
+**Hands-free voice.** `python3 homeassistant/scripts/setup_voice.py` prepares Home Assistant: it
+installs and starts the openWakeWord add-on, adds its Wyoming integration, puts "OK Nabu" on the
+preferred Assist pipeline, creates the `Radio` and `Counter dashboard` scripts ("turn on the
+radio" opens the Radio tile) and gives the gate, garage doors and locks spoken aliases. The
+pipeline needs speech-to-text and text-to-speech engines; Home Assistant Cloud provides both. On
+the tablet, tick "Hands-free voice" in Counter Home's settings and paste a long-lived access token
+(create one from the profile page of the non-admin `counter` user; an admin token also works but
+gives the tablet more than it needs). Voice runs only while the panel is on, so at night, with the
+screen off, the microphone is closed. `POST /voice/off` pauses it from an automation (a dinner
+party, say) and `/voice/on` resumes. The wake word can be changed with
+`setup_voice.py --wake-word hey_jarvis` (`okay_nabu`, `hey_jarvis`, `alexa`, `hey_mycroft`, `hey_rhasspy`).
 
 A notification fires if the tablet battery stays above 42 °C for 5 minutes.
 
@@ -724,7 +757,10 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | --- | --- |
 | `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, cameraAllowed, camera, ip |
 | `POST /screen/on`, `/screen/off`, `/screen/toggle` | Panel power |
-| `POST /ambient/on`, `/ambient/off` | Dim clock overlay, tap to dismiss |
+| `POST /ambient/on`, `/ambient/off` | Sleep screen (clock, date, wallpaper), tap to dismiss |
+| `POST /ambient/info?temperature=44&unit=°F&condition=Sunny` or `?line=...` | The line under the clock on the sleep screen |
+| `GET /wallpapers`, `PUT /wallpapers/<name>` (image body, ≤ 20 MB), `DELETE /wallpapers/<name>` | Pictures for the sleep screen |
+| `POST /voice/on`, `/voice/off` | Start or pause hands-free voice (needs it enabled in settings). `/status` reports `voice` |
 | `POST /home` | Back to the dashboard from any app |
 | `POST /launch?app=Music` | Tile label or package name |
 | `POST /assist` | Opens the default assistant (HA Assist) |
@@ -736,7 +772,7 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | `POST /camera/off` | Camera off |
 | `GET /camera.jpg` | Latest frame as JPEG. 503 while the camera is off |
 | `GET /camera.mjpeg` | MJPEG stream, up to 3 at once. It ends when the camera turns off |
-| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port |
+| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port, voiceEnabled, voicePipeline, haToken (write-only), ambientIntervalMin, wallpaperUrls |
 
 `volume` and `maxVolume` are percentages of the tablet's media volume range.
 

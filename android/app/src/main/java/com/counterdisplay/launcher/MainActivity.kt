@@ -39,6 +39,8 @@ object State {
     @Volatile var ambient = false
     @Volatile var foreground = false
     @Volatile var kioskPaused = false
+    /** The line under the clock on the sleep screen, last sent by Home Assistant. */
+    @Volatile var ambientInfo = ""
 }
 
 class MainActivity : Activity() {
@@ -47,12 +49,15 @@ class MainActivity : Activity() {
     private lateinit var web: WebView
     private lateinit var dock: LinearLayout
     private lateinit var content: LinearLayout
-    private lateinit var ambient: FrameLayout
+    private lateinit var ambient: AmbientView
     private lateinit var offline: TextView
+    private lateinit var caption: TextView
     private var camIndicator: TextView? = null
+    private var micIndicator: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
     private var loadedUrl: String? = null
     private val retry = Runnable { web.reload() }
+    private val hideCaption = Runnable { caption.visibility = View.GONE }
 
     // ---------------------------------------------------------------- lifecycle
 
@@ -79,9 +84,10 @@ class MainActivity : Activity() {
         hideSystemBars()
         Kiosk.applyPolicies(this, cfg) // picks up apps installed since the last launch
         if (!State.kioskPaused) Kiosk.enterLock(this, cfg)
-        // We're on screen, so the service may claim camera access now and keep it in the background.
+        // We're on screen, so the service may claim camera and microphone access now and keep them in the background.
         ControlService.refreshForeground(this)
         showCameraState(CameraStreamer.running)
+        showMicState(VoiceSatellite.running)
         // Settings may have changed while we were away.
         if (cfg.haUrl != loadedUrl) loadDashboard()
     }
@@ -153,8 +159,27 @@ class MainActivity : Activity() {
         }
         root.addView(offline, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
-        ambient = buildAmbient()
+        ambient = AmbientView(this, cfg).apply { setOnClickListener { setAmbient(false) } }
         root.addView(ambient, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+
+        // Voice caption: what was heard and what Assist answered, over everything else for a few seconds.
+        caption = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setPadding(dp(28), dp(16), dp(28), dp(16))
+            maxLines = 3
+            background = GradientDrawable().apply {
+                cornerRadius = dp(28).toFloat()
+                setColor(Color.parseColor("#E0141A22"))
+                setStroke(dp(1), Color.parseColor("#3316A3C9"))
+            }
+            visibility = View.GONE
+            setOnClickListener { visibility = View.GONE }
+        }
+        root.addView(caption, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            bottomMargin = dp(36); leftMargin = dp(60); rightMargin = dp(60)
+        })
 
         setContentView(root)
         layoutDock()
@@ -181,16 +206,12 @@ class MainActivity : Activity() {
         dock.addView(clock, if (bottom) LinearLayout.LayoutParams(dp(130), MATCH_PARENT)
                             else LinearLayout.LayoutParams(MATCH_PARENT, dp(64)))
 
-        // Privacy indicator: shown whenever the camera is running.
-        camIndicator = TextView(this).apply {
-            text = "\u25CF CAM"
-            setTextColor(Color.parseColor("#FF453A"))
-            textSize = 13f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            visibility = if (CameraStreamer.running) View.VISIBLE else View.GONE
-        }
+        // Privacy indicators: shown whenever the camera or the microphone is in use.
+        camIndicator = indicator("● CAM", "#FF453A", CameraStreamer.running)
         dock.addView(camIndicator, if (bottom) LinearLayout.LayoutParams(dp(70), MATCH_PARENT)
+                                   else LinearLayout.LayoutParams(MATCH_PARENT, dp(22)))
+        micIndicator = indicator("● MIC", "#30D158", VoiceSatellite.running)
+        dock.addView(micIndicator, if (bottom) LinearLayout.LayoutParams(dp(70), MATCH_PARENT)
                                    else LinearLayout.LayoutParams(MATCH_PARENT, dp(22)))
 
         for (tile in cfg.tiles) {
@@ -224,31 +245,13 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun buildAmbient(): FrameLayout {
-        val frame = FrameLayout(this).apply {
-            setBackgroundColor(Color.BLACK)
-            visibility = View.GONE
-            setOnClickListener { setAmbient(false) }
-        }
-        val col = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-        }
-        col.addView(TextClock(this).apply {
-            format12Hour = "h:mm"; format24Hour = "H:mm"
-            setTextColor(Color.parseColor("#6E747A"))
-            textSize = 120f
-            typeface = Typeface.create("sans-serif-thin", Typeface.NORMAL)
-            gravity = Gravity.CENTER
-        }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
-        col.addView(TextClock(this).apply {
-            format12Hour = "EEEE, MMM d"; format24Hour = "EEEE, d MMM"
-            setTextColor(Color.parseColor("#4A4F55"))
-            textSize = 28f
-            gravity = Gravity.CENTER
-        }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
-        frame.addView(col, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.CENTER))
-        return frame
+    private fun indicator(label: String, color: String, on: Boolean) = TextView(this).apply {
+        text = label
+        setTextColor(Color.parseColor(color))
+        textSize = 13f
+        typeface = Typeface.DEFAULT_BOLD
+        gravity = Gravity.CENTER
+        visibility = if (on) View.VISIBLE else View.GONE
     }
 
     private fun hideSystemBars() {
@@ -321,9 +324,32 @@ class MainActivity : Activity() {
         camIndicator?.visibility = if (on) View.VISIBLE else View.GONE
     }
 
+    private fun showMicState(on: Boolean) {
+        micIndicator?.visibility = if (on) View.VISIBLE else View.GONE
+    }
+
     private fun setAmbient(on: Boolean) {
         State.ambient = on
-        ambient.visibility = if (on) View.VISIBLE else View.GONE
+        ambient.setActive(on)
+    }
+
+    /** Shows a line over everything for a few seconds (voice progress). */
+    private fun showCaption(text: String, forMs: Long = 6000) {
+        caption.text = text
+        caption.visibility = View.VISIBLE
+        handler.removeCallbacks(hideCaption)
+        handler.postDelayed(hideCaption, forMs)
+    }
+
+    private fun onVoice(ev: VoiceSatellite.Event) {
+        when (ev) {
+            VoiceSatellite.Event.Started -> showMicState(true)
+            VoiceSatellite.Event.Stopped -> { showMicState(false); caption.visibility = View.GONE }
+            VoiceSatellite.Event.WakeWord -> { Kiosk.screenOn(this); showCaption("Listening…", 15_000) }
+            is VoiceSatellite.Event.Heard -> showCaption("“${ev.text}”", 15_000)
+            is VoiceSatellite.Event.Reply -> showCaption(ev.text.ifBlank { "Done" })
+            is VoiceSatellite.Event.Error -> if (caption.visibility == View.VISIBLE) showCaption("Voice: ${ev.message}")
+        }
     }
 
     private fun onCommand(cmd: Command) {
@@ -336,9 +362,12 @@ class MainActivity : Activity() {
             is Command.Navigate -> { setAmbient(false); bringToFront(); web.loadUrl(cmd.url) }
             Command.Assist -> openAssist()
             is Command.CameraState -> showCameraState(cmd.on)
+            is Command.AmbientInfo -> ambient.setInfo(cmd.line)
+            is Command.Voice -> onVoice(cmd.event)
             Command.ConfigChanged -> {
                 Kiosk.applyPolicies(this, cfg)
                 layoutDock()
+                ambient.refresh()
                 if (cfg.haUrl != loadedUrl) loadDashboard()
             }
         }
