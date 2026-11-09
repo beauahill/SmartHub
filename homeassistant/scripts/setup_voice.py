@@ -7,9 +7,9 @@
    Wyoming integration, which gives wake_word.openwakeword.
 2. Puts that wake word on the preferred Assist pipeline (the tablet uses the preferred pipeline
    unless Counter Home's "voicePipeline" setting names another).
-3. Creates script.counter_radio ("Radio": opens the Radio tile on the tablet) and
-   script.counter_dashboard ("Counter dashboard": back to the dashboard), exposes them to Assist,
-   and gives the gate, garage doors and locks short aliases so "open the gate" just works.
+3. Creates one script per dock tile (Radio, Spotify, YouTube TV, IPTV, Counter dashboard) so
+   "turn on <app>" opens it on the tablet, exposes them and the hub's Spotify player to Assist, and
+   gives the gate, garage doors, locks and sensors short aliases so "open the gate" just works.
 
 Needs `pip install websockets`; token and URL as in ha_api.py.
 """
@@ -48,12 +48,35 @@ ALIASES = {
     "weather.kgcc_daynight": ["weather", "gillette weather"],
 }
 
+# One script per dock tile, so "turn on <name>" opens the app on the tablet. The spoken aliases are
+# set on the script entities below (SCRIPT_ALIASES); the path is the tile label in Counter Home.
 SCRIPTS = {
     "counter_radio": {
         "alias": "Radio",
         "icon": "mdi:radio",
         "description": "Opens the Radio (Audacy) tile on the counter display. Say: turn on the radio.",
         "sequence": [{"action": "rest_command.counter_display", "data": {"path": "launch?app=Radio"}}],
+        "mode": "single",
+    },
+    "counter_music": {
+        "alias": "Spotify",
+        "icon": "mdi:spotify",
+        "description": "Opens the Music (Spotify) tile on the counter display. Say: turn on Spotify.",
+        "sequence": [{"action": "rest_command.counter_display", "data": {"path": "launch?app=Music"}}],
+        "mode": "single",
+    },
+    "counter_live_tv": {
+        "alias": "YouTube TV",
+        "icon": "mdi:youtube-tv",
+        "description": "Opens the Live TV (YouTube TV) tile on the counter display. Say: turn on YouTube TV.",
+        "sequence": [{"action": "rest_command.counter_display", "data": {"path": "launch?app=Live TV"}}],
+        "mode": "single",
+    },
+    "counter_iptv": {
+        "alias": "IPTV",
+        "icon": "mdi:television-classic",
+        "description": "Opens the IPTV tile on the counter display. Say: turn on IPTV.",
+        "sequence": [{"action": "rest_command.counter_display", "data": {"path": "launch?app=IPTV"}}],
         "mode": "single",
     },
     "counter_dashboard": {
@@ -63,6 +86,21 @@ SCRIPTS = {
         "sequence": [{"action": "rest_command.counter_display", "data": {"path": "home"}}],
         "mode": "single",
     },
+}
+
+# Assist's built-in matcher only reliably matches scripts by alias, so the names are repeated here.
+SCRIPT_ALIASES = {
+    "script.counter_radio": ["radio", "the radio", "Audacy"],
+    "script.counter_music": ["Spotify", "music", "the music app", "Spotify on the hub"],
+    "script.counter_live_tv": ["YouTube TV", "live TV", "YouTube TV on the hub"],
+    "script.counter_iptv": ["IPTV", "Telvizio", "the IPTV app"],
+    "script.counter_dashboard": ["counter dashboard", "the dashboard", "the hub dashboard", "the counter display"],
+}
+
+# Spotify sees the tablet as a Connect device, so the built-in media sentences ("pause the hub",
+# "next song on the hub", "set the hub volume to 40") work once the player is exposed.
+MEDIA_PLAYERS = {
+    "media_player.spotify_beauhill": ["the hub", "hub music", "kitchen music", "the counter speaker"],
 }
 
 
@@ -161,13 +199,14 @@ def step_scripts_and_aliases() -> None:
     for sid, body in SCRIPTS.items():
         ha_api.post(f"/api/config/script/config/{sid}", body)
         print(f"  script.{sid} ({body['alias']})")
-    asyncio.run(ws_call([{"type": "homeassistant/expose_entity", "assistants": ["conversation"],
-                          "entity_ids": [f"script.{s}" for s in SCRIPTS], "should_expose": True}]))
-    msgs = [{"type": "config/entity_registry/update", "entity_id": e, "aliases": a} for e, a in ALIASES.items()]
+    time.sleep(3)  # saving scripts reloads them; aliases set during the reload are lost
+    everything = {**ALIASES, **SCRIPT_ALIASES, **MEDIA_PLAYERS}
+    msgs = [{"type": "config/entity_registry/update", "entity_id": e, "aliases": a} for e, a in everything.items()]
     results = asyncio.run(ws_call(msgs))
     print(f"  aliases set on {len(results)} entities")
     asyncio.run(ws_call([{"type": "homeassistant/expose_entity", "assistants": ["conversation"],
-                          "entity_ids": list(ALIASES), "should_expose": True}]))
+                          "entity_ids": list(everything), "should_expose": True}]))
+    print(f"  {len(everything)} entities exposed to Assist")
 
 
 def main() -> None:

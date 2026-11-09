@@ -711,8 +711,13 @@ colours follow the time of day. With no photos it shows only the gradients. Pict
 
 **Hands-free voice.** `python3 homeassistant/scripts/setup_voice.py` prepares Home Assistant: it
 installs and starts the openWakeWord add-on, adds its Wyoming integration, puts "OK Nabu" on the
-preferred Assist pipeline, creates the `Radio` and `Counter dashboard` scripts ("turn on the
-radio" opens the Radio tile) and gives the gate, garage doors and locks spoken aliases. The
+preferred Assist pipeline, creates one script per dock tile ("turn on the radio", "turn on
+Spotify", "turn on YouTube TV", "turn on IPTV", "turn on the dashboard" open that app on the
+tablet) and gives the gate, garage doors, locks and sensors spoken aliases. The hub's Spotify
+app shows up in Home Assistant's Spotify integration as a Connect device, and that player is
+exposed as "the hub", so "pause the hub", "next song on the hub" and "set the hub volume to 40"
+work while Spotify plays. Starting a particular song or playlist by voice is not covered: Home
+Assistant itself can't search Spotify, so that needs Spotcast (HACS) or Music Assistant. The
 pipeline needs speech-to-text and text-to-speech engines; Home Assistant Cloud provides both. On
 the tablet, tick "Hands-free voice" in Counter Home's settings and paste a long-lived access token
 (create one from the profile page of the non-admin `counter` user; an admin token also works but
