@@ -264,6 +264,8 @@ views:
           - type: calendar
             initial_view: listWeek
             entities:
+              - calendar.hillhomeassistant_gmail_com   # shared household Google calendar
+              - calendar.birthdays
               - calendar.campbell_county_events
               - calendar.rockpile_museum
               - calendar.gillette_college
@@ -1092,8 +1094,8 @@ views:
             title: Household & Gillette
             initial_view: dayGridMonth
             entities:
-              # Shared household Google calendar: added once the Google Calendar integration
-              # is linked (see README).
+              - calendar.hillhomeassistant_gmail_com   # shared household Google calendar
+              - calendar.birthdays
               - calendar.campbell_county_events
               - calendar.rockpile_museum
               - calendar.gillette_college
@@ -1110,6 +1112,8 @@ views:
           - type: calendar
             initial_view: listWeek
             entities:
+              - calendar.hillhomeassistant_gmail_com   # shared household Google calendar
+              - calendar.birthdays
               - calendar.campbell_county_events
               - calendar.rockpile_museum
               - calendar.gillette_college

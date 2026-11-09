@@ -664,8 +664,12 @@ enable the Google Calendar API, configure the OAuth consent screen (External, ad
 test user) and create an OAuth client ID of type "Web application" with
 `https://my.home-assistant.io/redirect/oauth` as the redirect URI. Then in Home Assistant go to
 Settings > Devices & services > Add integration > Google Calendar, paste the client ID and secret,
-and sign in. Add the resulting `calendar.*` entity to the two calendar cards and the "Coming up"
-card in `counter.yaml` and push again. `homeassistant/dashboards/previous/` keeps the dashboard that was
+and sign in. If Google sends you to a private-IP redirect, `configuration.yaml` is missing `my:`
+(it comes with `default_config`), and if the last hop fails with an empty response, the Home
+Assistant URL saved at my.home-assistant.io must be the `https://` one. `counter.yaml` lists the
+account's primary calendar (`calendar.hillhomeassistant_gmail_com`, shown as "Household") and its
+birthdays calendar; share other family calendars with that Google account and add their entities
+the same way. `homeassistant/dashboards/previous/` keeps the dashboard that was
 replaced.
 
 | Time with nobody present | What happens |
