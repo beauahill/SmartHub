@@ -115,6 +115,25 @@ def step_addon() -> None:
         time.sleep(3)
 
 
+def step_agent(agent: str) -> None:
+    """Make [agent] (a conversation.* entity, e.g. Claude) the pipeline's brain, with built-in
+    sentences tried first so device commands stay instant and free."""
+    if not any(s["entity_id"] == agent for s in ha_api.get("/api/states")):
+        sys.exit(f"  no such conversation agent: {agent}")
+    (lst,) = asyncio.run(ws_call([{"type": "assist_pipeline/pipeline/list"}]))
+    pipeline = next(p for p in lst["pipelines"] if p["id"] == lst["preferred_pipeline"])
+    if pipeline.get("conversation_engine") == agent and pipeline.get("prefer_local_intents"):
+        print(f"  pipeline '{pipeline['name']}' already uses {agent}")
+        return
+    fields = ["name", "language", "conversation_language", "stt_engine", "stt_language",
+              "tts_engine", "tts_language", "tts_voice", "wake_word_entity", "wake_word_id"]
+    msg = {"type": "assist_pipeline/pipeline/update", "pipeline_id": pipeline["id"],
+           **{k: pipeline.get(k) for k in fields if k in pipeline},
+           "conversation_engine": agent, "prefer_local_intents": True}
+    asyncio.run(ws_call([msg]))
+    print(f"  pipeline '{pipeline['name']}': conversation agent {agent}, local sentences first")
+
+
 def step_pipeline(wake_word_id: str) -> None:
     ww = wake_word_entity()
     if not ww:
@@ -154,9 +173,13 @@ def step_scripts_and_aliases() -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--wake-word", default="okay_nabu", help="okay_nabu, hey_jarvis, alexa, hey_mycroft or hey_rhasspy")
+    ap.add_argument("--conversation-agent", metavar="ENTITY",
+                    help="conversation.* entity to answer with, e.g. conversation.claude_conversation (Anthropic integration)")
     args = ap.parse_args()
     print("Wake word service"); step_addon()
     print("Assist pipeline"); step_pipeline(args.wake_word)
+    if args.conversation_agent:
+        print("Conversation agent"); step_agent(args.conversation_agent)
     print("Scripts and aliases"); step_scripts_and_aliases()
 
 

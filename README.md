@@ -721,6 +721,14 @@ screen off, the microphone is closed. `POST /voice/off` pauses it from an automa
 party, say) and `/voice/on` resumes. The wake word can be changed with
 `setup_voice.py --wake-word hey_jarvis` (`okay_nabu`, `hey_jarvis`, `alexa`, `hey_mycroft`, `hey_rhasspy`).
 
+**Claude as the brain.** Out of the box Assist only understands its fixed sentences. Add the
+Anthropic integration (Settings > Devices & services > Add integration > Anthropic, with an API
+key from console.anthropic.com; tick "Control Home Assistant" and pick a fast model such as
+Haiku), then run `setup_voice.py --conversation-agent conversation.claude_conversation`. The
+pipeline keeps trying the built-in sentences first, so "open the gate" is still instant and free,
+and hands anything else ("is anything unlocked?", "turn off everything but the kitchen") to Claude,
+which answers in plain speech. The wake word, speech-to-text and text-to-speech are unchanged.
+
 A notification fires if the tablet battery stays above 42 °C for 5 minutes.
 
 ### 6. Camera in Home Assistant (optional)
