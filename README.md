@@ -79,7 +79,7 @@ already oriented for printing.
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
 | `bezel_chin` | 272 x 26 x 9 | Prints back face down, no supports. The chin bar: holds the radar, the lip along the bottom of the glass and the pocket's bottom corners |
 | `power_plate` | 44 x 26 x 45 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
-| `power_plate_adafruit_first_build` | 44 x 26 x 33 | Only for a lid and spine printed before the HUNSOOL change (spine 55 mm deep at the lid): the plate for the Adafruit HUSB238 trigger. See "First-build spine" below |
+| `power_plate_adafruit_first_build` | 44 x 26 x 26 | Only for a lid and spine printed before the HUNSOOL change (spine 55 mm deep at the lid): the plate for the Adafruit HUSB238 breakout (5807). Prints snout face down with the tongue standing up, no supports. See "First-build spine" below |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
@@ -247,15 +247,42 @@ The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm 
 the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
 
 **First-build spine.** A lid and spine printed before the HUNSOOL change is 55 mm deep at the lid
-(the current one is about 67 mm). Use it with the Adafruit HUSB238 and
-`power_plate_adafruit_first_build.stl`. On that spine the lid's wire hole, 74 mm from the lid's front
-edge, sits under the trigger's sled, so the speaker wires can't get past. To rework it:
-1. Drill a new 8 mm hole on the centre line, 62 mm from the lid's front edge, from underneath. It is
-   about 14 mm to the trigger cavity, just in front of the board's end.
-2. Fill the old hole solid with epoxy or hot glue.
-3. Run the speaker leads up through the new hole, laid flat in front of the board's end and into the
-   channel.
-4. Hot-glue the new hole shut around the wires.
+(the current one is about 67 mm). Use it with the Adafruit HUSB238 breakout (product 5807) and
+`power_plate_adafruit_first_build.stl`. The plate is built by `power_plate_first_build.py`, from
+Adafruit's CAD model of the board. It replaces an earlier plate for this spine with two problems:
+- **Plug jammed.** That plate assumed the socket sat on the PCB's centre line. On the 5807 it sits on
+  top of the board, 2.4 mm higher, so the plug's overmold hit the top of the plate's opening.
+- **Wire hole covered.** Its sled ran over the lid's wire hole, 74 mm from the lid's front edge, and the
+  12 mm throat above it. The speaker wires couldn't get past, and the hole couldn't be sealed.
+
+![First-build power plate](enclosure/renders/first_build_power.png)
+
+The new plate works like this:
+- **Snout.** A tapered snout stands 9 mm out of the spine's rear face and holds the front of the board.
+  The socket's mouth sits 0.2 mm behind the snout's face, in a hole that hugs the receptacle, so the
+  plug seats fully against the face.
+- **Board.** The board slides in from the inside, USB end first, until its edge stops against the face.
+  Two M2.5 x 6 thread-forming screws go down through the two holes on top of the snout, through the
+  board's mounting holes, into the floor. A tongue inside the spine carries the board's far end, with a
+  slot for the terminal's pins.
+- **Wire hole clear.** The board now ends 2 mm behind the wire hole's throat, so nothing sits over it.
+  The speaker wires come straight up through the original hole.
+- **Same mounting.** It uses the spine's pocket and M3 inserts and the same M3 x 8 countersunk screws.
+  The screws go in through wells in the snout's sides.
+
+![Old and new plate in section](enclosure/renders/first_build_power_section.png)
+
+To fit it:
+1. Run the speaker leads up through the original wire hole and the cable channel.
+2. With the plate out, hot-glue the hole shut around the wires. Reach in through the open pocket; the
+   hole is about 24 mm in from the rear face, at the bottom of the cavity.
+3. Screw the board to the plate and put the 18 AWG leads in its terminal. Feed them through the cavity
+   and up the channel.
+4. Slide the plate in, tongue first, and screw it flush.
+
+If you already drilled the 62 mm hole from the earlier rework, use either hole for the wires and fill
+the other with epoxy or hot glue. Both are open from the pocket now. The plug stands 9 mm further back
+over the lid than before, closer to the cable clip, so a right-angle plug that points down works best.
 
 **USB-C power plate.** The PD trigger mounts on a sled molded onto the back of the plate, using its
 own four mounting holes. The geometry is the HUNSOOL PD3.1 trigger as measured:
@@ -346,6 +373,12 @@ To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenera
 ```
 pip install -r enclosure/requirements.txt
 python enclosure/enclosure.py enclosure/out
+```
+
+The first-build power plate has its own script, which also checks its fit against the first-build spine:
+
+```
+python enclosure/power_plate_first_build.py enclosure/out
 ```
 
 The script prints part volumes and the air volume of each chamber: about 0.54 L per full-range
@@ -727,6 +760,7 @@ These items came out of reviewing the Cowork export.
 | Setup script printed the wrong Home Assistant secret names | Fixed |
 | KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth follows the amp height: 27 mm for the 20 mm board on Dayton's spec sheet |
 | Wide printed frame covered the tablet's glass, light sensor and camera | Changed to a frameless bezel: a thin rim, the tablet glass showing, and a one-piece shell plus chin |
+| First-build spine: the USB-C plug's overmold hit the power plate's opening, and the trigger's sled covered the lid's wire hole so it couldn't be sealed | Fixed with a new plate for the Adafruit HUSB238 (5807). A snout 9 mm out of the spine holds the socket at the face and carries the board clear of the wire hole |
 | 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |
 | The 12 mm lid hole left the woofer chamber open to the bezel tray through the cable channel, which spoiled the passive radiator alignment | Fixed. The hole is 8 mm, sized for three 20 AWG pairs, the channel no longer cuts through the lid, and assembly step 3 seals the hole with hot glue |
 | Bezel shell: the two small lip tabs at the bottom corners of the window break easily (first PETG build). They are 1.2 mm thick, held on two sides, and sit over the gaps that let the tablet's corners slide in | Fixed for the next build (first build works as printed). The chin bar now runs up to `CHIN_SPLIT` (26 mm), where the corner blocks are still 1.5 mm thick at the pocket wall. It carries solid blocks that fill the pocket corners outside the tablet's rounded corners, with the lip's corners on their front. Checked: the bar slides straight back into place past the seated tablet without contact |
