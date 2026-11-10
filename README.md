@@ -65,8 +65,9 @@ The full parts list is in [BOM.md](BOM.md).
 | [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
 | [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
-| [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml) | The five-view kiosk dashboard the tablet shows |
-| [`homeassistant/scripts/`](homeassistant/scripts) | Push the dashboard, create the Gillette calendars, sync the home-game calendars |
+| [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml) | The six-view kiosk dashboard the tablet shows |
+| [`homeassistant/maintenance/tasks.yaml`](homeassistant/maintenance/tasks.yaml) | Home maintenance jobs and their intervals (hot tub, furnace filter, sprinkler blowout, ...) |
+| [`homeassistant/scripts/`](homeassistant/scripts) | Push the dashboard, create the Gillette calendars, sync the home-game calendars, set up maintenance tracking |
 | [`homeassistant/calendars/`](homeassistant/calendars) | Gillette Wild home dates (no feed exists), copied into a local calendar |
 | [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates every STL |
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
@@ -628,7 +629,7 @@ The automations expect the presence entity `binary_sensor.counter_presence_prese
 ESPHome config creates.
 
 **The dashboard.** [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml)
-is the `dashboard-counter` dashboard the tablet loads: five views for an 11" landscape screen in
+is the `dashboard-counter` dashboard the tablet loads: six views for an 11" landscape screen in
 kiosk mode. Each view is one screen with no scrolling: the view's title and a navigation pill on
 top (the kiosk hides HA's tabs), then three columns of dark glass tiles over the wallpaper. A tile
 turns white while its light is on, its door is open or its lock is unlocked. Tap a tile to act,
@@ -640,6 +641,7 @@ hold it for the details (brightness, thermostat, history).
 | Lights | Every light by room, the Normal / Go Bills / Go Pokes scenes, "all lights off" |
 | Security | Locks (tap asks before it locks or unlocks), alarm, garage doors and gate, every door and window sensor, the gate camera |
 | Hot Tub | Set point dial, 24 h graph, jets, lights and their colours, salt system, locks and timers, temperatures |
+| Upkeep | Home maintenance: the hot tub water test (readings coloured against their targets, with what to add), quick "added pH down / shock / salt" logging, the seven most pressing jobs, thermostat and water heater alerts, low batteries. All tasks (from the Upkeep view) has every job by area |
 | Calendar | Month view of the household and Gillette calendars |
 
 It needs the HACS cards `button-card` (version 7 or newer), `mini-graph-card` and `kiosk-mode`
@@ -657,6 +659,7 @@ python3 homeassistant/scripts/push_dashboard.py     # save counter.yaml as dashb
 python3 homeassistant/scripts/setup_calendars.py    # create the Gillette community calendars (idempotent)
 python3 homeassistant/scripts/sync_home_games.py    # fill the Pronghorn and Gillette Wild home-game calendars
 python3 homeassistant/scripts/set_wallpaper.py      # upload the wallpaper and set it as every view's background
+python3 homeassistant/scripts/setup_maintenance.py  # create or update the maintenance helpers, scripts and reminders
 ```
 
 The wallpaper is a mesh gradient (blue through indigo to a warm corner) rendered by
@@ -733,6 +736,40 @@ Haiku), then run `setup_voice.py --conversation-agent conversation.claude_conver
 pipeline keeps trying the built-in sentences first, so "open the gate" is still instant and free,
 and hands anything else ("is anything unlocked?", "turn off everything but the kitchen") to Claude,
 which answers in plain speech. The wake word, speech-to-text and text-to-speech are unchanged.
+
+**Home maintenance.** [`homeassistant/maintenance/tasks.yaml`](homeassistant/maintenance/tasks.yaml)
+lists the recurring jobs: the hot tub (weekly water test, drain and refill, salt cartridge, filter
+rinse, soak and replacement, cover), furnace filter, humidifier pad, HVAC and fireplace service,
+water heater, fridge, dryer vent and range hood filters, sprinkler startup and blowout, hoses,
+gutters, garage doors, smoke alarms and the fire extinguisher. Each has either `every: <days>` or
+`season: "MM-DD"` (a once-a-year job tied to the calendar, like the blowout). Edit the list, then
+run `setup_maintenance.py`, which works entirely through the API (no access to the config folder
+needed) and is safe to re-run:
+
+- one date helper per job, `input_datetime.maint_<job>` ("Furnace filter due"), holding the date
+  the job is next **due**. A job nobody has recorded yet holds 2000-01-01 and shows as "Not set";
+  seasonal jobs start at their next date.
+- `script.maint_done` (job, optional date and note) moves the due date on by the interval, or to
+  next year's date for a seasonal job, and writes "✓ Furnace filter" on the **Home Maintenance**
+  local calendar, which is the permanent log. `script.maint_snooze` puts a job off by N days.
+- the water test: `input_number.maint_tub_fc / ph / ta / ch / salt` hold the latest strip
+  readings; `script.maint_log_water_test` saves them to the log ("✓ Hot tub water test · FC 3 ·
+  pH 7.6 · TA 80 · Salt 1750") and sets the next test a week out. `script.maint_tub_dose` logs
+  what went into the tub. The dashboard colours each reading against Hot Spring's FreshWater salt
+  system targets (free chlorine 1–5 ppm, pH 7.2–7.8, alkalinity 40–120 ppm, calcium 25–75 ppm,
+  salt 1500–2000 ppm) and says what to add when one is off; change them in the Upkeep view of
+  `counter.yaml` for another kind of tub.
+- reminders at 09:00 to the phones listed under `notify:` in `tasks.yaml`: a notification with
+  **Done** and **Snooze a week** buttons for each job due that day, and on Saturdays a digest of
+  what is overdue or due that week.
+- everything is exposed to Assist, so with Claude as the brain "we changed the furnace filter on
+  September 3", "when is the sprinkler blowout due?", "pH was 7.8 and chlorine 3" or "I added a
+  cup of salt to the hot tub" work by voice.
+
+On the tablet, tap a job when it's done (it asks first), or hold it to set its due date by hand.
+To add a job, add it to `tasks.yaml`, run the script, and add its helper to the `upkeep_tasks`
+list in `counter.yaml` (plus a tile on the All tasks view); the script warns when the two lists
+disagree, and `--prune` deletes helpers for jobs taken out of `tasks.yaml`.
 
 A notification fires if the tablet battery stays above 42 °C for 5 minutes.
 

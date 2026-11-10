@@ -1,0 +1,206 @@
+# Home maintenance: the list of recurring jobs Home Assistant keeps track of.
+#
+# Apply changes with
+#   python3 homeassistant/scripts/setup_maintenance.py
+# which creates or updates, for each task, a date helper input_datetime.maint_<id> holding the
+# date the task is next DUE, plus the scripts, reminders and log calendar that move those dates
+# along (see the script's docstring). Nothing here is a YAML package: it all goes in through the
+# Home Assistant API, so no file access to the HA config folder is needed.
+#
+# Each task has
+#   name      what the date helper is called ("<name> due"); Assist and the "Up next" list use it
+#   icon      mdi icon
+#   every     days between jobs; marking it done moves the due date to done + every
+#   season    "MM-DD" instead of every: a once-a-year job tied to the calendar (sprinkler blowout,
+#             humidifier pad). Done moves the due date to the next MM-DD at least ~3 months away,
+#             so doing it a bit early or late still lands on next year's date.
+#   note      optional, why the interval is what it is (only for people reading this file)
+#
+# To add a task: add it here, run the setup script, and add one line for it to the "upkeep_tasks"
+# list in homeassistant/dashboards/counter.yaml (and a tile on the All tasks view if you like).
+# Removing a task here and running the script with --prune deletes its date helper.
+
+# Phones that get the reminders: notify.<service>. A task due today gets its own notification
+# with Done / Snooze buttons; Saturday mornings bring a digest of what is overdue or due that week.
+notify:
+  - mobile_app_beaucephusiphone
+  # - mobile_app_erinsiphone
+reminder_time: "09:00:00"
+
+# The hot tub water test readings (input_number.maint_tub_<id>). A reading of 0 means "not
+# tested yet". The target ranges the dashboard colours against live in counter.yaml (_defs.water).
+water:
+  fc:   { name: Hot tub free chlorine,     unit: ppm, min: 0, max: 20,   step: 0.5, icon: mdi:flask-outline }
+  ph:   { name: Hot tub pH,                unit: "",  min: 0, max: 9,    step: 0.1, icon: mdi:ph }
+  ta:   { name: Hot tub total alkalinity,  unit: ppm, min: 0, max: 400,  step: 10,  icon: mdi:beaker-outline }
+  ch:   { name: Hot tub calcium hardness,  unit: ppm, min: 0, max: 1000, step: 5,   icon: mdi:water-opacity }
+  salt: { name: Hot tub salt,              unit: ppm, min: 0, max: 5000, step: 50,  icon: mdi:shaker-outline }
+
+# What can be logged as "added to the hot tub" (script.maint_tub_dose and the dashboard chips).
+chemicals:
+  - pH decreaser
+  - pH increaser
+  - Alkalinity increaser
+  - Calcium increaser
+  - Shock
+  - Salt
+  - Other
+
+categories:
+  hot_tub: Hot tub
+  hvac: Heating & air
+  water: Water & appliances
+  outdoor: Outdoor
+  safety: Safety
+
+tasks:
+  # --------------------------------------------------------------- Hot tub (Hot Spring, FreshWater salt)
+  hot_tub_test:
+    category: hot_tub
+    name: Hot tub water test
+    icon: mdi:test-tube
+    every: 7
+  hot_tub_water:
+    category: hot_tub
+    name: Hot tub drain & refill
+    icon: mdi:water-sync
+    every: 120
+    note: Hot Spring says up to a year with the salt system and a fresh cartridge every 4 months;
+      120 days keeps it in step with the cartridge. Stretch it if the water stays clear.
+  hot_tub_cartridge:
+    category: hot_tub
+    name: Salt cartridge
+    icon: mdi:battery-sync-outline
+    every: 120
+    note: FreshWater salt system cartridge, 4 months (the spa's panel prompts too).
+  hot_tub_filter_rinse:
+    category: hot_tub
+    name: Hot tub filter rinse
+    icon: mdi:spray
+    every: 30
+  hot_tub_filter_soak:
+    category: hot_tub
+    name: Hot tub filter soak
+    icon: mdi:bucket-outline
+    every: 120
+    note: Overnight in filter cleaner; easiest at a water change.
+  hot_tub_filter_replace:
+    category: hot_tub
+    name: New hot tub filter
+    icon: mdi:air-filter
+    every: 365
+  hot_tub_cover:
+    category: hot_tub
+    name: Hot tub cover care
+    icon: mdi:shield-sun-outline
+    every: 90
+
+  # --------------------------------------------------------------- Heating & air
+  furnace_filter:
+    category: hvac
+    name: Furnace filter
+    icon: mdi:air-filter
+    every: 90
+    note: The Venstar also raises binary_sensor.main_air_filter on its own runtime count.
+  humidifier_pad:
+    category: hvac
+    name: Humidifier pad
+    icon: mdi:air-humidifier
+    season: "10-01"
+    note: One pad per heating season, fitted when the humidifier goes back on.
+  hvac_service:
+    category: hvac
+    name: Furnace & heat pump service
+    icon: mdi:hvac
+    season: "09-15"
+  heat_pump_coil:
+    category: hvac
+    name: Heat pump coil rinse
+    icon: mdi:fan
+    season: "05-15"
+  uv_lamp:
+    category: hvac
+    name: UV lamp
+    icon: mdi:lightbulb-fluorescent-tube-outline
+    every: 365
+    note: The Venstar raises binary_sensor.main_uv_lamp too.
+
+  # --------------------------------------------------------------- Water & appliances
+  water_heater_flush:
+    category: water
+    name: Water heater flush
+    icon: mdi:water-boiler
+    every: 365
+  water_heater_filter:
+    category: water
+    name: Water heater air filter
+    icon: mdi:air-filter
+    every: 180
+    note: Heat pump water heater intake screen.
+  fridge_filter:
+    category: water
+    name: Fridge water filter
+    icon: mdi:fridge-outline
+    every: 180
+  dryer_vent:
+    category: water
+    name: Dryer vent cleaning
+    icon: mdi:tumble-dryer
+    every: 365
+  range_hood:
+    category: water
+    name: Range hood filter
+    icon: mdi:stove
+    every: 90
+
+  # --------------------------------------------------------------- Outdoor
+  sprinkler_blowout:
+    category: outdoor
+    name: Sprinkler blowout
+    icon: mdi:sprinkler-variant
+    season: "10-10"
+    note: Before the first hard freeze in Gillette.
+  sprinkler_startup:
+    category: outdoor
+    name: Sprinkler startup
+    icon: mdi:sprinkler
+    season: "05-01"
+  hose_bibs:
+    category: outdoor
+    name: Disconnect hoses
+    icon: mdi:water-pump-off
+    season: "10-10"
+  gutters:
+    category: outdoor
+    name: Gutter cleaning
+    icon: mdi:home-roof
+    season: "10-25"
+  garage_doors:
+    category: outdoor
+    name: Garage door tune-up
+    icon: mdi:garage-variant
+    season: "04-15"
+    note: Lubricate rollers, hinges and springs; test the auto-reverse.
+
+  # --------------------------------------------------------------- Safety
+  smoke_test:
+    category: safety
+    name: Smoke & CO alarm test
+    icon: mdi:smoke-detector-variant
+    every: 90
+    note: The NFPA says monthly; 90 days keeps it off the list most of the time.
+  smoke_batteries:
+    category: safety
+    name: Smoke alarm batteries
+    icon: mdi:battery-alert-variant-outline
+    season: "11-01"
+  fire_extinguisher:
+    category: safety
+    name: Fire extinguisher check
+    icon: mdi:fire-extinguisher
+    every: 365
+  fireplace:
+    category: safety
+    name: Fireplace service
+    icon: mdi:fireplace
+    season: "09-15"

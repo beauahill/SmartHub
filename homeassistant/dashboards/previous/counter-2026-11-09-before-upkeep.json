@@ -1,0 +1,2439 @@
+{
+ "title": "Counter",
+ "kiosk_mode": {
+  "non_admin_settings": {
+   "kiosk": true
+  }
+ },
+ "button_card_templates": {
+  "title": {
+   "section_mode": true,
+   "show_icon": false,
+   "show_name": true,
+   "show_label": true,
+   "tap_action": {
+    "action": "none"
+   },
+   "hold_action": {
+    "action": "none"
+   },
+   "variables": {
+    "title": "",
+    "glass": {
+     "--ha-section-grid-row-height": "72px",
+     "--ha-section-grid-row-gap": "10px",
+     "--ha-section-grid-column-gap": "10px",
+     "--ha-view-sections-column-gap": "28px",
+     "--ha-view-sections-row-gap": "20px",
+     "--ha-card-background": "rgba(22, 24, 34, 0.44)",
+     "--card-background-color": "rgba(22, 24, 34, 0.44)",
+     "--ha-card-border-radius": "20px",
+     "--ha-card-border-width": "0px",
+     "--ha-card-box-shadow": "inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)",
+     "--ha-card-backdrop-filter": "blur(24px) saturate(1.6)",
+     "--primary-text-color": "rgba(255, 255, 255, 0.96)",
+     "--rgb-primary-text-color": "255, 255, 255",
+     "--text-primary-color": "#1d1d1f",
+     "--secondary-text-color": "rgba(235, 235, 245, 0.62)",
+     "--ha-color-text-secondary": "rgba(235, 235, 245, 0.62)",
+     "--disabled-text-color": "rgba(235, 235, 245, 0.32)",
+     "--divider-color": "rgba(255, 255, 255, 0.10)",
+     "--primary-color": "#ff9f0a",
+     "--accent-color": "#ff9f0a",
+     "--state-inactive-color": "rgba(235, 235, 245, 0.55)"
+    }
+   },
+   "name": "[[[ return variables.title ]]]",
+   "label": "[[[\n  let view = this;\n  while (view && view.localName !== 'hui-sections-view') view = view.parentNode || view.host;\n  if (view && view.dataset.glass !== '1') {\n    view.dataset.glass = '1';\n    Object.entries(variables.glass).forEach(([name, value]) => view.style.setProperty(name, value));\n  }\n  void states['sun.sun'];   // re-render through the day, so the date rolls over\n  return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });\n]]]\n",
+   "styles": {
+    "card": [
+     {
+      "background": "none"
+     },
+     {
+      "box-shadow": "none"
+     },
+     {
+      "backdrop-filter": "none"
+     },
+     {
+      "-webkit-backdrop-filter": "none"
+     },
+     {
+      "border": "none"
+     },
+     {
+      "border-radius": 0
+     },
+     {
+      "padding": "0 6px"
+     },
+     {
+      "cursor": "default"
+     },
+     {
+      "overflow": "visible"
+     }
+    ],
+    "grid": [
+     {
+      "grid-template-areas": "\"l\" \"n\""
+     },
+     {
+      "grid-template-columns": "1fr"
+     },
+     {
+      "grid-template-rows": "min-content min-content"
+     },
+     {
+      "align-content": "center"
+     },
+     {
+      "row-gap": "1px"
+     }
+    ],
+    "name": [
+     {
+      "justify-self": "start"
+     },
+     {
+      "font-size": "34px"
+     },
+     {
+      "font-weight": 700
+     },
+     {
+      "letter-spacing": "-0.5px"
+     },
+     {
+      "line-height": "40px"
+     },
+     {
+      "color": "#fff"
+     }
+    ],
+    "label": [
+     {
+      "justify-self": "start"
+     },
+     {
+      "font-size": "13px"
+     },
+     {
+      "font-weight": 600
+     },
+     {
+      "letter-spacing": "0.7px"
+     },
+     {
+      "text-transform": "uppercase"
+     },
+     {
+      "color": "rgba(235, 235, 245, 0.62)"
+     }
+    ]
+   }
+  },
+  "nav_item": {
+   "show_icon": true,
+   "show_name": true,
+   "layout": "icon_name",
+   "size": "20px",
+   "tap_action": {
+    "action": "navigate",
+    "navigation_path": "[[[ return '/' + window.location.pathname.split('/')[1] + '/' + variables.path ]]]"
+   },
+   "hold_action": {
+    "action": "none"
+   },
+   "styles": {
+    "card": [
+     {
+      "height": "44px"
+     },
+     {
+      "padding": "0 16px 0 12px"
+     },
+     {
+      "border-radius": "22px"
+     },
+     {
+      "border": "none"
+     },
+     {
+      "backdrop-filter": "none"
+     },
+     {
+      "-webkit-backdrop-filter": "none"
+     },
+     {
+      "background": "[[[ return variables.path === variables.active ? 'rgba(255, 255, 255, 0.94)' : 'transparent' ]]]"
+     },
+     {
+      "box-shadow": "[[[ return variables.path === variables.active ? '0 4px 14px -4px rgba(0, 0, 0, 0.35)' : 'none' ]]]"
+     },
+     {
+      "color": "[[[ return variables.path === variables.active ? '#1d1d1f' : 'rgba(255, 255, 255, 0.86)' ]]]"
+     }
+    ],
+    "grid": [
+     {
+      "grid-template-columns": "min-content min-content"
+     },
+     {
+      "column-gap": "7px"
+     },
+     {
+      "justify-content": "center"
+     }
+    ],
+    "img_cell": [
+     {
+      "width": "20px"
+     },
+     {
+      "height": "20px"
+     }
+    ],
+    "icon": [
+     {
+      "width": "20px"
+     },
+     {
+      "height": "20px"
+     },
+     {
+      "color": "[[[ return variables.path === variables.active ? '#1d1d1f' : 'rgba(255, 255, 255, 0.86)' ]]]"
+     }
+    ],
+    "name": [
+     {
+      "font-size": "14px"
+     },
+     {
+      "font-weight": 600
+     },
+     {
+      "letter-spacing": "0.1px"
+     },
+     {
+      "white-space": "nowrap"
+     }
+    ]
+   }
+  },
+  "nav": {
+   "section_mode": true,
+   "show_icon": false,
+   "show_name": false,
+   "tap_action": {
+    "action": "none"
+   },
+   "hold_action": {
+    "action": "none"
+   },
+   "styles": {
+    "card": [
+     {
+      "background": "none"
+     },
+     {
+      "box-shadow": "none"
+     },
+     {
+      "backdrop-filter": "none"
+     },
+     {
+      "-webkit-backdrop-filter": "none"
+     },
+     {
+      "border": "none"
+     },
+     {
+      "border-radius": 0
+     },
+     {
+      "padding": 0
+     },
+     {
+      "cursor": "default"
+     },
+     {
+      "overflow": "visible"
+     },
+     {
+      "display": "flex"
+     },
+     {
+      "align-items": "center"
+     },
+     {
+      "justify-content": "flex-end"
+     }
+    ],
+    "grid": [
+     {
+      "width": "fit-content"
+     },
+     {
+      "height": "52px"
+     },
+     {
+      "box-sizing": "border-box"
+     },
+     {
+      "padding": "4px"
+     },
+     {
+      "border-radius": "26px"
+     },
+     {
+      "background": "rgba(22, 24, 34, 0.44)"
+     },
+     {
+      "backdrop-filter": "blur(24px) saturate(1.6)"
+     },
+     {
+      "-webkit-backdrop-filter": "blur(24px) saturate(1.6)"
+     },
+     {
+      "box-shadow": "inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)"
+     },
+     {
+      "grid-template-areas": "\"home lights security tub calendar\""
+     },
+     {
+      "grid-template-columns": "repeat(5, min-content)"
+     },
+     {
+      "grid-template-rows": "44px"
+     },
+     {
+      "column-gap": "2px"
+     }
+    ]
+   },
+   "custom_fields": {
+    "home": {
+     "card": {
+      "type": "custom:button-card",
+      "template": "nav_item",
+      "name": "Home",
+      "icon": "mdi:home-variant",
+      "variables": {
+       "path": "home",
+       "active": "[[[ return variables.active ]]]"
+      }
+     }
+    },
+    "lights": {
+     "card": {
+      "type": "custom:button-card",
+      "template": "nav_item",
+      "name": "Lights",
+      "icon": "mdi:lightbulb",
+      "variables": {
+       "path": "lights",
+       "active": "[[[ return variables.active ]]]"
+      }
+     }
+    },
+    "security": {
+     "card": {
+      "type": "custom:button-card",
+      "template": "nav_item",
+      "name": "Security",
+      "icon": "mdi:shield-home",
+      "variables": {
+       "path": "security",
+       "active": "[[[ return variables.active ]]]"
+      }
+     }
+    },
+    "tub": {
+     "card": {
+      "type": "custom:button-card",
+      "template": "nav_item",
+      "name": "Hot Tub",
+      "icon": "mdi:hot-tub",
+      "variables": {
+       "path": "hot-tub",
+       "active": "[[[ return variables.active ]]]"
+      }
+     }
+    },
+    "calendar": {
+     "card": {
+      "type": "custom:button-card",
+      "template": "nav_item",
+      "name": "Calendar",
+      "icon": "mdi:calendar-blank",
+      "variables": {
+       "path": "calendar",
+       "active": "[[[ return variables.active ]]]"
+      }
+     }
+    }
+   }
+  },
+  "heading": {
+   "show_icon": false,
+   "show_name": true,
+   "tap_action": {
+    "action": "none"
+   },
+   "hold_action": {
+    "action": "none"
+   },
+   "styles": {
+    "card": [
+     {
+      "background": "none"
+     },
+     {
+      "box-shadow": "none"
+     },
+     {
+      "backdrop-filter": "none"
+     },
+     {
+      "-webkit-backdrop-filter": "none"
+     },
+     {
+      "border": "none"
+     },
+     {
+      "border-radius": 0
+     },
+     {
+      "padding": "6px 6px 0"
+     },
+     {
+      "height": "30px"
+     },
+     {
+      "cursor": "default"
+     }
+    ],
+    "name": [
+     {
+      "justify-self": "start"
+     },
+     {
+      "align-self": "end"
+     },
+     {
+      "font-size": "17px"
+     },
+     {
+      "font-weight": 600
+     },
+     {
+      "letter-spacing": "-0.1px"
+     },
+     {
+      "color": "rgba(255, 255, 255, 0.92)"
+     }
+    ]
+   }
+  },
+  "tile": {
+   "section_mode": true,
+   "show_icon": true,
+   "show_name": true,
+   "show_label": true,
+   "show_state": false,
+   "size": "22px",
+   "label": "[[[ return variables.text ]]]",
+   "tap_action": {
+    "action": "more-info"
+   },
+   "hold_action": {
+    "action": "more-info"
+   },
+   "variables": {
+    "tint": "#ff9f0a",
+    "accent": false,
+    "lit": "[[[\n  if (!entity) return false;\n  const domain = entity.entity_id.split('.')[0];\n  if (domain === 'lock') return ['unlocked', 'unlocking', 'open', 'jammed'].includes(entity.state);\n  if (domain === 'cover') return ['open', 'opening', 'closing'].includes(entity.state);\n  if (domain === 'climate' || domain === 'alarm_control_panel') return false;\n  return entity.state === 'on';\n]]]\n",
+    "text": "[[[\n  if (!entity) return '';\n  if (entity.state === 'unavailable' || entity.state === 'unknown') return 'No response';\n  const domain = entity.entity_id.split('.')[0];\n  if (domain === 'light' && entity.state === 'on' && entity.attributes.brightness)\n    return Math.round(entity.attributes.brightness / 2.55) + '%';\n  if (domain === 'climate') {\n    const now = entity.attributes.current_temperature;\n    const action = entity.attributes.hvac_action || entity.state;\n    return (now == null ? '' : Math.round(now) + '\u00b0 \u00b7 ') + action.charAt(0).toUpperCase() + action.slice(1);\n  }\n  return helpers.localize(entity);\n]]]\n"
+   },
+   "styles": {
+    "card": [
+     {
+      "padding": "0 10px 0 12px"
+     },
+     {
+      "transition": "background-color 0.25s ease"
+     },
+     {
+      "opacity": "[[[ return entity && entity.state === 'unavailable' ? 0.55 : 1 ]]]"
+     },
+     {
+      "background": "[[[ return variables.lit ? 'rgba(255, 255, 255, 0.94)' : 'rgba(22, 24, 34, 0.44)' ]]]"
+     },
+     {
+      "backdrop-filter": "[[[ return variables.lit ? 'none' : 'blur(24px) saturate(1.6)' ]]]"
+     },
+     {
+      "-webkit-backdrop-filter": "[[[ return variables.lit ? 'none' : 'blur(24px) saturate(1.6)' ]]]"
+     },
+     {
+      "border": "none"
+     },
+     {
+      "border-radius": "20px"
+     },
+     {
+      "box-shadow": "[[[ return variables.lit ? '0 10px 30px -12px rgba(0, 0, 0, 0.45)' : 'inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)' ]]]"
+     }
+    ],
+    "grid": [
+     {
+      "grid-template-areas": "\"i n\" \"i l\""
+     },
+     {
+      "grid-template-columns": "38px 1fr"
+     },
+     {
+      "grid-template-rows": "1fr 1fr"
+     },
+     {
+      "column-gap": "11px"
+     }
+    ],
+    "img_cell": [
+     {
+      "width": "38px"
+     },
+     {
+      "height": "38px"
+     },
+     {
+      "border-radius": "50%"
+     },
+     {
+      "align-self": "center"
+     },
+     {
+      "background": "[[[ return variables.lit || variables.accent ? variables.tint + '33' : 'rgba(255, 255, 255, 0.12)' ]]]"
+     }
+    ],
+    "icon": [
+     {
+      "width": "22px"
+     },
+     {
+      "height": "22px"
+     },
+     {
+      "color": "[[[ return variables.lit || variables.accent ? variables.tint : 'rgba(255, 255, 255, 0.86)' ]]]"
+     }
+    ],
+    "name": [
+     {
+      "justify-self": "start"
+     },
+     {
+      "align-self": "end"
+     },
+     {
+      "max-width": "100%"
+     },
+     {
+      "font-size": "15px"
+     },
+     {
+      "font-weight": 600
+     },
+     {
+      "line-height": "20px"
+     },
+     {
+      "color": "[[[ return variables.lit ? '#1d1d1f' : 'rgba(255, 255, 255, 0.96)' ]]]"
+     }
+    ],
+    "label": [
+     {
+      "justify-self": "start"
+     },
+     {
+      "align-self": "start"
+     },
+     {
+      "max-width": "100%"
+     },
+     {
+      "font-size": "13px"
+     },
+     {
+      "line-height": "18px"
+     },
+     {
+      "color": "[[[ return variables.lit ? 'rgba(60, 60, 67, 0.72)' : 'rgba(235, 235, 245, 0.62)' ]]]"
+     }
+    ]
+   }
+  },
+  "toggle": {
+   "template": "tile",
+   "tap_action": {
+    "action": "toggle"
+   },
+   "variables": {
+    "tint": "#ffb800"
+   }
+  },
+  "opening": {
+   "template": "tile",
+   "variables": {
+    "tint": "#ff9500",
+    "text": "[[[\n  if (entity.state === 'unavailable' || entity.state === 'unknown') return 'No response';\n  if (entity.entity_id.startsWith('cover.')) return entity.state.charAt(0).toUpperCase() + entity.state.slice(1);\n  return entity.state === 'on' ? 'Open' : 'Closed';\n]]]\n"
+   }
+  },
+  "lock": {
+   "template": "tile",
+   "icon": "[[[ return entity.state === 'locked' ? 'mdi:lock' : 'mdi:lock-open-variant' ]]]",
+   "variables": {
+    "tint": "#ff9500"
+   },
+   "tap_action": {
+    "action": "perform-action",
+    "perform_action": "[[[ return entity.state === 'locked' ? 'lock.unlock' : 'lock.lock' ]]]",
+    "target": {
+     "entity_id": "[[[ return entity.entity_id ]]]"
+    },
+    "confirmation": {
+     "text": "[[[ return (entity.state === 'locked' ? 'Unlock ' : 'Lock ') + (this._config.name || 'this door').toLowerCase() + '?' ]]]"
+    }
+   }
+  },
+  "climate": {
+   "template": "tile",
+   "variables": {
+    "accent": "[[[ return ['heating', 'cooling'].includes(entity.attributes.hvac_action) ]]]",
+    "tint": "[[[ return entity.attributes.hvac_action === 'cooling' ? '#64d2ff' : '#ff9f0a' ]]]"
+   }
+  },
+  "summary": {
+   "template": "tile",
+   "hold_action": {
+    "action": "none"
+   },
+   "variables": {
+    "lit": false,
+    "accent": "[[[ return variables.alert ]]]",
+    "alert": false,
+    "text": ""
+   },
+   "styles": {
+    "grid": [
+     {
+      "grid-template-areas": "\"i n c\" \"i l c\""
+     },
+     {
+      "grid-template-columns": "38px 1fr 20px"
+     }
+    ],
+    "custom_fields": {
+     "c": [
+      {
+       "grid-area": "c"
+      },
+      {
+       "align-self": "center"
+      },
+      {
+       "color": "rgba(235, 235, 245, 0.35)"
+      }
+     ]
+    }
+   },
+   "custom_fields": {
+    "c": "<ha-icon icon=\"mdi:chevron-right\" style=\"--mdc-icon-size: 20px;\"></ha-icon>"
+   }
+  },
+  "square": {
+   "styles": {
+    "card": [
+     {
+      "padding": "14px"
+     }
+    ],
+    "grid": [
+     {
+      "grid-template-areas": "\"i\" \"n\" \"l\""
+     },
+     {
+      "grid-template-columns": "1fr"
+     },
+     {
+      "grid-template-rows": "1fr min-content min-content"
+     }
+    ],
+    "img_cell": [
+     {
+      "justify-self": "start"
+     },
+     {
+      "align-self": "start"
+     },
+     {
+      "width": "40px"
+     },
+     {
+      "height": "40px"
+     }
+    ]
+   }
+  },
+  "agenda": {
+   "section_mode": true,
+   "show_icon": false,
+   "show_name": false,
+   "show_label": false,
+   "tap_action": {
+    "action": "navigate",
+    "navigation_path": "[[[ return '/' + window.location.pathname.split('/')[1] + '/calendar' ]]]"
+   },
+   "hold_action": {
+    "action": "none"
+   },
+   "variables": {
+    "calendars": [],
+    "count": 3
+   },
+   "styles": {
+    "card": [
+     {
+      "padding": "6px 16px"
+     },
+     {
+      "background": "rgba(22, 24, 34, 0.44)"
+     },
+     {
+      "backdrop-filter": "blur(24px) saturate(1.6)"
+     },
+     {
+      "-webkit-backdrop-filter": "blur(24px) saturate(1.6)"
+     },
+     {
+      "border": "none"
+     },
+     {
+      "border-radius": "20px"
+     },
+     {
+      "box-shadow": "inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)"
+     },
+     {
+      "color": "rgba(255, 255, 255, 0.96)"
+     }
+    ],
+    "grid": [
+     {
+      "grid-template-areas": "\"list\""
+     },
+     {
+      "grid-template-columns": "1fr"
+     },
+     {
+      "grid-template-rows": "1fr"
+     }
+    ],
+    "custom_fields": {
+     "list": [
+      {
+       "align-self": "stretch"
+      },
+      {
+       "display": "flex"
+      },
+      {
+       "flex-direction": "column"
+      },
+      {
+       "justify-content": "space-evenly"
+      },
+      {
+       "text-align": "left"
+      },
+      {
+       "min-width": 0
+      }
+     ]
+    }
+   },
+   "extra_styles": ".ev { display: grid; grid-template-columns: 76px 1fr; column-gap: 12px; align-items: center; padding: 8px 0; }\n.ev + .ev { border-top: 1px solid rgba(255, 255, 255, 0.09); }\n.ev .d { font-size: 13px; font-weight: 600; color: #ff9f0a; line-height: 18px; }\n.ev .h { font-size: 13px; color: rgba(235, 235, 245, 0.62); line-height: 18px; }\n.ev .t { font-size: 15px; font-weight: 600; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n.ev .c { font-size: 13px; color: rgba(235, 235, 245, 0.62); line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n.none { font-size: 14px; color: rgba(235, 235, 245, 0.62); text-align: center; }\n",
+   "custom_fields": {
+    "list": "[[[\n  const esc = (s) => String(s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\n  const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();\n  const today = day(new Date());\n  const events = variables.calendars\n    .map((id) => states[id])\n    .filter((s) => s && s.attributes.start_time && s.attributes.message)\n    .map((s) => ({\n      title: s.attributes.message,\n      calendar: s.attributes.friendly_name,\n      allDay: !!s.attributes.all_day,\n      start: new Date(s.attributes.start_time.replace(' ', 'T')),\n      end: new Date((s.attributes.end_time || s.attributes.start_time).replace(' ', 'T')),\n    }))\n    .filter((e) => !isNaN(e.start) && e.end.getTime() >= Date.now() - 60000)\n    .sort((a, b) => a.start - b.start)\n    .slice(0, variables.count);\n  if (!events.length) return '<div class=\"none\">Nothing coming up</div>';\n  return events.map((e) => {\n    const n = Math.round((day(e.start) - today) / 86400000);\n    const d = n <= 0 ? 'Today' : n === 1 ? 'Tomorrow'\n      : n < 7 ? e.start.toLocaleDateString('en-US', { weekday: 'long' })\n      : e.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });\n    const h = e.allDay ? 'All day' : e.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });\n    return `<div class=\"ev\"><div><div class=\"d\">${d}</div><div class=\"h\">${h}</div></div>`\n      + `<div style=\"min-width:0\"><div class=\"t\">${esc(e.title)}</div><div class=\"c\">${esc(e.calendar)}</div></div></div>`;\n  }).join('');\n]]]\n"
+   }
+  }
+ },
+ "views": [
+  {
+   "title": "Home",
+   "path": "home",
+   "icon": "mdi:home-variant",
+   "type": "sections",
+   "max_columns": 3,
+   "background": {
+    "image": "/api/image/serve/7de7010cecc4d3ebe21c8a996e618523/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "sections": [
+    {
+     "type": "grid",
+     "column_span": 3,
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "title",
+       "variables": {
+        "title": "Home"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "nav",
+       "variables": {
+        "active": "home"
+       },
+       "grid_options": {
+        "columns": 24,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Weather"
+      },
+      {
+       "type": "weather-forecast",
+       "entity": "weather.kgcc_daynight",
+       "name": "Gillette",
+       "show_current": true,
+       "show_forecast": true,
+       "forecast_type": "hourly",
+       "forecast_slots": 5,
+       "secondary_info_attribute": "humidity",
+       "tap_action": {
+        "action": "more-info"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 4
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Climate"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "climate",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "entity": "climate.main",
+       "name": "House",
+       "icon": "mdi:thermostat",
+       "variables": {
+        "text": "[[[\n  const action = entity.attributes.hvac_action || entity.state;\n  const humidity = Number((states['sensor.main_thermostat_humidity_2'] || {}).state);\n  return Math.round(entity.attributes.current_temperature) + '\u00b0 \u00b7 '\n    + action.charAt(0).toUpperCase() + action.slice(1)\n    + (isNaN(humidity) ? '' : ' \u00b7 ' + Math.round(humidity) + '% humidity');\n]]]\n"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.fireplace_switch_fireplace_switch",
+       "name": "Fireplace",
+       "icon": "mdi:fireplace",
+       "variables": {
+        "tint": "#ff6b22"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "climate",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "climate.garage",
+       "name": "Garage",
+       "icon": "mdi:garage"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "climate",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "climate.office_office_cielo",
+       "name": "Office",
+       "icon": "mdi:air-conditioner"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "climate",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "climate.man_cave",
+       "name": "Man cave",
+       "icon": "mdi:air-conditioner"
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Garage & gate"
+      },
+      {
+       "type": "custom:button-card",
+       "template": [
+        "opening",
+        "square"
+       ],
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "entity": "binary_sensor.single_garage",
+       "name": "Single",
+       "icon": "[[[ return entity.state === 'on' ? 'mdi:garage-open-variant' : 'mdi:garage-variant' ]]]",
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "switch.turn_on",
+        "target": {
+         "entity_id": "switch.garage_opener_single"
+        }
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": [
+        "opening",
+        "square"
+       ],
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "entity": "binary_sensor.double_garage",
+       "name": "Double",
+       "icon": "[[[ return entity.state === 'on' ? 'mdi:garage-open-variant' : 'mdi:garage-variant' ]]]",
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "switch.turn_on",
+        "target": {
+         "entity_id": "switch.garage_opener_double"
+        }
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": [
+        "opening",
+        "square"
+       ],
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "entity": "cover.gate_switch_gate",
+       "name": "Gate",
+       "icon": "[[[ return entity.state === 'closed' ? 'mdi:gate' : 'mdi:gate-open' ]]]",
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "cover.toggle",
+        "target": {
+         "entity_id": "cover.gate_switch_gate"
+        }
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "lock",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "entity": "lock.w_garage_entry_deadbolt",
+       "name": "Garage entry"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Up next"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "agenda",
+       "variables": {
+        "calendars": [
+         "calendar.hillhomeassistant_gmail_com",
+         "calendar.birthdays",
+         "calendar.campbell_county_events",
+         "calendar.rockpile_museum",
+         "calendar.gillette_college",
+         "calendar.pronghorn_home_games",
+         "calendar.gillette_wild_home_games"
+        ],
+        "count": 4
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 4
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Gate"
+      },
+      {
+       "type": "picture-entity",
+       "entity": "camera.gate_keypad_live_view",
+       "camera_view": "auto",
+       "show_state": false,
+       "show_name": false,
+       "fit_mode": "cover",
+       "tap_action": {
+        "action": "more-info"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 4
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Around the house"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "summary",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "name": "Lights",
+       "icon": "mdi:lightbulb",
+       "variables": {
+        "tint": "#ffd60a",
+        "ids": [
+         "light.lr_lamp_dimmer",
+         "light.lr_lamp_dimmer_2",
+         "light.kauf_bulb_304d85_kauf_bulb",
+         "light.workout_room_dimmer_switch_light",
+         "light.man_cave",
+         "light.bar_lights",
+         "light.back_bar",
+         "switch.garage_lights_main",
+         "switch.garageworkbenchlights",
+         "switch.garage_kennel_lights",
+         "light.kauf_garage_patio",
+         "light.garage_bulb_1",
+         "light.garage_bulb_2",
+         "light.garage_bulb_3",
+         "switch.front_porch",
+         "light.back_porch_light_switch_light",
+         "switch.back_patio_lights",
+         "switch.hot_tub_lights"
+        ],
+        "alert": "[[[ return variables.ids.some((id) => states[id] && states[id].state === 'on') ]]]",
+        "text": "[[[\n  const n = variables.ids.filter((id) => states[id] && states[id].state === 'on').length;\n  return n === 0 ? 'All off' : n === 1 ? '1 light on' : n + ' lights on';\n]]]\n"
+       },
+       "tap_action": {
+        "action": "navigate",
+        "navigation_path": "[[[ return '/' + window.location.pathname.split('/')[1] + '/lights' ]]]"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "summary",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "name": "Security",
+       "icon": "mdi:shield-home",
+       "variables": {
+        "tint": "#ff9f0a",
+        "openings": [
+         "binary_sensor.door_front_window_door_is_open",
+         "binary_sensor.door_back_porch_window_door_is_open",
+         "binary_sensor.door_w_garage_entry_window_door_is_open",
+         "binary_sensor.single_garage",
+         "binary_sensor.double_garage",
+         "binary_sensor.window_kitchen_window_door_is_open",
+         "binary_sensor.window_kitchen_2_window_door_is_open",
+         "binary_sensor.window_dining_window_door_is_open",
+         "binary_sensor.window_dining_2_window_door_is_open",
+         "binary_sensor.window_bedroom_e_window_door_is_open",
+         "binary_sensor.window_bedroom_w_window_door_is_open"
+        ],
+        "locks": [
+         "lock.touchscreen_deadbolt_z_wave_plus",
+         "lock.w_garage_entry_deadbolt",
+         "lock.touchscreen_deadbolt_z_wave_plus_2"
+        ],
+        "alert": "[[[ return variables.openings.some((id) => states[id] && states[id].state === 'on')\n  || variables.locks.some((id) => states[id] && states[id].state === 'unlocked') ]]]",
+        "text": "[[[\n  const open = variables.openings.filter((id) => states[id] && states[id].state === 'on').length;\n  const unlocked = variables.locks.filter((id) => states[id] && states[id].state === 'unlocked').length;\n  return (open === 0 ? 'All closed' : open + ' open') + ' \u00b7 '\n    + (unlocked === 0 ? 'all locked' : unlocked + ' unlocked');\n]]]\n"
+       },
+       "tap_action": {
+        "action": "navigate",
+        "navigation_path": "[[[ return '/' + window.location.pathname.split('/')[1] + '/security' ]]]"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "summary",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "entity": "climate.hot_tub_temperature",
+       "name": "Hot tub",
+       "icon": "mdi:hot-tub",
+       "variables": {
+        "tint": "#ff9f0a",
+        "alert": "[[[ return entity.attributes.hvac_action === 'heating' ]]]",
+        "text": "[[[\n  const water = Math.round(Number((states['sensor.hot_tub_current_temperature'] || {}).state));\n  const jets = ['fan.hot_tub_jets_1', 'fan.hot_tub_jets_2'].some((id) => states[id] && states[id].state === 'on');\n  return (isNaN(water) ? '' : water + '\u00b0 \u00b7 ')\n    + (entity.attributes.hvac_action === 'heating' ? 'Heating' : 'Ready') + (jets ? ' \u00b7 Jets on' : '');\n]]]\n"
+       },
+       "tap_action": {
+        "action": "navigate",
+        "navigation_path": "[[[ return '/' + window.location.pathname.split('/')[1] + '/hot-tub' ]]]"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Lights",
+   "path": "lights",
+   "icon": "mdi:lightbulb",
+   "type": "sections",
+   "max_columns": 3,
+   "background": {
+    "image": "/api/image/serve/7de7010cecc4d3ebe21c8a996e618523/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "sections": [
+    {
+     "type": "grid",
+     "column_span": 3,
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "title",
+       "variables": {
+        "title": "Lights"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "nav",
+       "variables": {
+        "active": "lights"
+       },
+       "grid_options": {
+        "columns": 24,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Living room"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.lr_lamp_dimmer",
+       "name": "Lamp 1",
+       "icon": "mdi:floor-lamp"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.lr_lamp_dimmer_2",
+       "name": "Lamp 2",
+       "icon": "mdi:floor-lamp"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.kauf_bulb_304d85_kauf_bulb",
+       "name": "Table lamp",
+       "icon": "mdi:lamp"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.workout_room_dimmer_switch_light",
+       "name": "Workout",
+       "icon": "mdi:dumbbell"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Man cave"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.man_cave",
+       "name": "Man cave",
+       "icon": "mdi:ceiling-light"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.bar_lights",
+       "name": "Bar",
+       "icon": "mdi:glass-cocktail"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.back_bar",
+       "name": "Back bar",
+       "icon": "mdi:bottle-wine"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Scenes"
+      },
+      {
+       "type": "custom:button-card",
+       "template": [
+        "tile",
+        "square"
+       ],
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "entity": "input_boolean.normal_lights",
+       "name": "Normal",
+       "icon": "mdi:lightbulb-on",
+       "variables": {
+        "tint": "#ffb800"
+       },
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "input_boolean.turn_on",
+        "target": {
+         "entity_id": "input_boolean.normal_lights"
+        }
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": [
+        "tile",
+        "square"
+       ],
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "entity": "input_boolean.go_bills",
+       "name": "Go Bills",
+       "icon": "mdi:football",
+       "variables": {
+        "tint": "#0a6cff"
+       },
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "input_boolean.turn_on",
+        "target": {
+         "entity_id": "input_boolean.go_bills"
+        }
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": [
+        "tile",
+        "square"
+       ],
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "entity": "input_boolean.go_pokes",
+       "name": "Go Pokes",
+       "icon": "mdi:football-helmet",
+       "variables": {
+        "tint": "#a2845e"
+       },
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "input_boolean.turn_on",
+        "target": {
+         "entity_id": "input_boolean.go_pokes"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Garage"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.garage_lights_main",
+       "name": "Main",
+       "icon": "mdi:ceiling-light-multiple"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.garageworkbenchlights",
+       "name": "Workbench",
+       "icon": "mdi:hammer-wrench"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.garage_kennel_lights",
+       "name": "Kennel",
+       "icon": "mdi:dog-side"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.kauf_garage_patio",
+       "name": "Garage patio",
+       "icon": "mdi:outdoor-lamp"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.garage_bulb_1",
+       "name": "Bulb 1",
+       "icon": "mdi:lightbulb"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.garage_bulb_2",
+       "name": "Bulb 2",
+       "icon": "mdi:lightbulb"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.garage_bulb_3",
+       "name": "Bulb 3",
+       "icon": "mdi:lightbulb"
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Outdoor"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.front_porch",
+       "name": "Front porch",
+       "icon": "mdi:coach-lamp"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "light.back_porch_light_switch_light",
+       "name": "Back porch",
+       "icon": "mdi:coach-lamp-variant"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.back_patio_lights",
+       "name": "Patio lights",
+       "icon": "mdi:string-lights",
+       "variables": {
+        "tint": "#ff375f"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "input_boolean.landscapelt_toggle",
+       "name": "Landscape",
+       "icon": "mdi:spotlight-beam",
+       "variables": {
+        "tint": "#30b457"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.hot_tub_lights",
+       "name": "Hot tub",
+       "icon": "mdi:hot-tub",
+       "variables": {
+        "tint": "#af52de"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Everything"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "summary",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "name": "All lights off",
+       "icon": "mdi:power",
+       "custom_fields": {
+        "c": ""
+       },
+       "variables": {
+        "tint": "#ffd60a",
+        "ids": [
+         "light.lr_lamp_dimmer",
+         "light.lr_lamp_dimmer_2",
+         "light.kauf_bulb_304d85_kauf_bulb",
+         "light.workout_room_dimmer_switch_light",
+         "light.man_cave",
+         "light.bar_lights",
+         "light.back_bar",
+         "switch.garage_lights_main",
+         "switch.garageworkbenchlights",
+         "switch.garage_kennel_lights",
+         "light.kauf_garage_patio",
+         "light.garage_bulb_1",
+         "light.garage_bulb_2",
+         "light.garage_bulb_3",
+         "switch.front_porch",
+         "light.back_porch_light_switch_light",
+         "switch.back_patio_lights",
+         "switch.hot_tub_lights"
+        ],
+        "alert": "[[[ return variables.ids.some((id) => states[id] && states[id].state === 'on') ]]]",
+        "text": "[[[\n  const n = variables.ids.filter((id) => states[id] && states[id].state === 'on').length;\n  return n === 0 ? 'Nothing is on' : n === 1 ? '1 light on' : n + ' lights on';\n]]]\n"
+       },
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "homeassistant.turn_off",
+        "target": {
+         "entity_id": [
+          "light.lr_lamp_dimmer",
+          "light.lr_lamp_dimmer_2",
+          "light.kauf_bulb_304d85_kauf_bulb",
+          "light.workout_room_dimmer_switch_light",
+          "light.man_cave",
+          "light.bar_lights",
+          "light.back_bar",
+          "switch.garage_lights_main",
+          "switch.garageworkbenchlights",
+          "switch.garage_kennel_lights",
+          "light.kauf_garage_patio",
+          "light.garage_bulb_1",
+          "light.garage_bulb_2",
+          "light.garage_bulb_3",
+          "switch.front_porch",
+          "light.back_porch_light_switch_light",
+          "switch.back_patio_lights",
+          "switch.hot_tub_lights"
+         ]
+        },
+        "confirmation": {
+         "text": "Turn every light off?"
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Security",
+   "path": "security",
+   "icon": "mdi:shield-home",
+   "type": "sections",
+   "max_columns": 3,
+   "background": {
+    "image": "/api/image/serve/7de7010cecc4d3ebe21c8a996e618523/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "sections": [
+    {
+     "type": "grid",
+     "column_span": 3,
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "title",
+       "variables": {
+        "title": "Security"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "nav",
+       "variables": {
+        "active": "security"
+       },
+       "grid_options": {
+        "columns": 24,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Locks"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "lock",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "entity": "lock.touchscreen_deadbolt_z_wave_plus",
+       "name": "Back porch"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "lock",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "entity": "lock.w_garage_entry_deadbolt",
+       "name": "W garage entry"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "lock",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "entity": "lock.touchscreen_deadbolt_z_wave_plus_2",
+       "name": "E garage entry"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Alarm"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       },
+       "entity": "alarm_control_panel.home_alarm",
+       "name": "Home alarm",
+       "variables": {
+        "tint": "#ff453a",
+        "accent": "[[[ return entity.state !== 'disarmed' ]]]"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Garage & gate"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.single_garage",
+       "name": "Single",
+       "icon": "mdi:garage-variant"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.double_garage",
+       "name": "Double",
+       "icon": "mdi:garage-variant"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "cover.gate_switch_gate",
+       "name": "Gate",
+       "icon": "mdi:gate"
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Doors"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.door_front_window_door_is_open",
+       "name": "Front door"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.door_back_porch_window_door_is_open",
+       "name": "Back porch"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.door_w_garage_entry_window_door_is_open",
+       "name": "W garage"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Windows"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.window_kitchen_window_door_is_open",
+       "name": "Kitchen 1"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.window_kitchen_2_window_door_is_open",
+       "name": "Kitchen 2"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.window_dining_window_door_is_open",
+       "name": "Dining 1"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.window_dining_2_window_door_is_open",
+       "name": "Dining 2"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.window_bedroom_e_window_door_is_open",
+       "name": "Bedroom E"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "opening",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.window_bedroom_w_window_door_is_open",
+       "name": "Bedroom W"
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Gate camera"
+      },
+      {
+       "type": "picture-entity",
+       "entity": "camera.gate_keypad_live_view",
+       "camera_view": "auto",
+       "show_state": false,
+       "show_name": false,
+       "fit_mode": "cover",
+       "tap_action": {
+        "action": "more-info"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 4
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.gate_keypad_motion",
+       "name": "Gate motion",
+       "icon": "mdi:motion-sensor",
+       "visibility": [
+        {
+         "condition": "state",
+         "entity": "binary_sensor.gate_keypad_motion",
+         "state_not": "unavailable"
+        }
+       ]
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.gate_keypad_ding",
+       "name": "Keypad ring",
+       "icon": "mdi:bell-ring",
+       "visibility": [
+        {
+         "condition": "state",
+         "entity": "binary_sensor.gate_keypad_ding",
+         "state_not": "unavailable"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Hot Tub",
+   "path": "hot-tub",
+   "icon": "mdi:hot-tub",
+   "type": "sections",
+   "max_columns": 3,
+   "background": {
+    "image": "/api/image/serve/7de7010cecc4d3ebe21c8a996e618523/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "sections": [
+    {
+     "type": "grid",
+     "column_span": 3,
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "title",
+       "variables": {
+        "title": "Hot Tub"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "nav",
+       "variables": {
+        "active": "hot-tub"
+       },
+       "grid_options": {
+        "columns": 24,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "thermostat",
+       "entity": "climate.hot_tub_temperature",
+       "name": " ",
+       "show_current_as_primary": true,
+       "grid_options": {
+        "columns": 12,
+        "rows": 5
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Last 24 hours"
+      },
+      {
+       "type": "custom:mini-graph-card",
+       "hours_to_show": 24,
+       "points_per_hour": 4,
+       "line_width": 3,
+       "height": 112,
+       "lower_bound": "~96",
+       "upper_bound": "~106",
+       "entities": [
+        {
+         "entity": "sensor.hot_tub_current_temperature",
+         "name": "Water",
+         "color": "#64d2ff"
+        },
+        {
+         "entity": "sensor.hot_tub_target_temperature",
+         "name": "Set point",
+         "color": "#ff9f0a",
+         "show_fill": false
+        }
+       ],
+       "show": {
+        "name": false,
+        "icon": false,
+        "state": false,
+        "legend": false,
+        "labels": false,
+        "extrema": false,
+        "fill": "fade"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 2
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Jets & lights"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "fan.hot_tub_jets_1",
+       "name": "Jets 1",
+       "icon": "mdi:fan",
+       "variables": {
+        "tint": "#0a84ff"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "fan.hot_tub_jets_2",
+       "name": "Jets 2",
+       "icon": "mdi:fan",
+       "variables": {
+        "tint": "#0a84ff"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.hot_tub_lights",
+       "name": "Lights",
+       "icon": "mdi:lightbulb-spot",
+       "variables": {
+        "tint": "#af52de"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "select.hot_tub_color_cycle_speed",
+       "name": "Colour cycle",
+       "icon": "mdi:sync"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Colours"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "select.hot_tub_color_underwater",
+       "name": "Underwater",
+       "icon": "mdi:waves"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "select.hot_tub_color_exterior",
+       "name": "Exterior",
+       "icon": "mdi:wall-sconce-flat"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "select.hot_tub_color_bartop",
+       "name": "Bar top",
+       "icon": "mdi:glass-cocktail"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "select.hot_tub_color_pillow",
+       "name": "Pillow",
+       "icon": "mdi:sofa-single"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Power"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "sensor.hot_tub_heater_power",
+       "name": "Heater",
+       "icon": "mdi:radiator"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "sensor.hot_tub_pumps_power",
+       "name": "Pumps",
+       "icon": "mdi:pump"
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Water care"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "sensor.hot_tub_salt_content",
+       "name": "Salt level",
+       "icon": "mdi:shaker-outline"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "number.hot_tub_salt_power",
+       "name": "Salt output",
+       "icon": "mdi:shaker"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.hot_tub_salt_boost",
+       "name": "Salt boost",
+       "icon": "mdi:rocket-launch",
+       "variables": {
+        "tint": "#30b0c7"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.hot_tub_clean_cycle",
+       "name": "Clean cycle",
+       "icon": "mdi:broom",
+       "variables": {
+        "tint": "#30b0c7"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Locks & timers"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.hot_tub_spa_lock",
+       "name": "Spa lock",
+       "icon": "mdi:lock",
+       "variables": {
+        "tint": "#ff3b30"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.hot_tub_temperature_lock",
+       "name": "Temp lock",
+       "icon": "mdi:lock-clock",
+       "variables": {
+        "tint": "#ff3b30"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "toggle",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "switch.hot_tub_summer_timer",
+       "name": "Summer",
+       "icon": "mdi:weather-sunny"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "binary_sensor.hot_tub_salt_level_confirmed",
+       "name": "Salt check",
+       "icon": "mdi:check-decagram",
+       "variables": {
+        "lit": false,
+        "text": "[[[ return entity.state === 'on' ? 'Confirmed' : 'Not confirmed' ]]]"
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "heading",
+       "grid_options": {
+        "columns": 12,
+        "rows": "auto"
+       },
+       "name": "Temperatures"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "sensor.hot_tub_heater_outlet",
+       "name": "Heater outlet",
+       "icon": "mdi:thermometer-water"
+      },
+      {
+       "type": "custom:button-card",
+       "template": "tile",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       },
+       "entity": "sensor.hot_tub_controller_temperature",
+       "name": "Controller",
+       "icon": "mdi:chip"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Calendar",
+   "path": "calendar",
+   "icon": "mdi:calendar-blank",
+   "type": "sections",
+   "max_columns": 3,
+   "background": {
+    "image": "/api/image/serve/7de7010cecc4d3ebe21c8a996e618523/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "sections": [
+    {
+     "type": "grid",
+     "column_span": 3,
+     "cards": [
+      {
+       "type": "custom:button-card",
+       "template": "title",
+       "variables": {
+        "title": "Calendar"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "custom:button-card",
+       "template": "nav",
+       "variables": {
+        "active": "calendar"
+       },
+       "grid_options": {
+        "columns": 24,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "column_span": 3,
+     "cards": [
+      {
+       "type": "calendar",
+       "initial_view": "dayGridMonth",
+       "entities": [
+        "calendar.hillhomeassistant_gmail_com",
+        "calendar.birthdays",
+        "calendar.campbell_county_events",
+        "calendar.rockpile_museum",
+        "calendar.gillette_college",
+        "calendar.pronghorn_home_games",
+        "calendar.gillette_wild_home_games"
+       ],
+       "grid_options": {
+        "columns": "full",
+        "rows": 8
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
