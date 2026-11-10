@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *   POST /navigate?url=...          -> load a URL in the dashboard view
  *   POST /brightness?value=0-255|auto
  *   POST /volume?value=0-100 | /volume/up | /volume/down   -> media volume, held under the cap
+ *   POST /volume/show               -> slide in the volume slider (see [VolumeOverlay])
  *   GET  /config, POST /config      -> read or update settings (JSON body)
  *   POST /camera/on?minutes=N       -> camera on, optional auto-off (needs "Allow the camera" in settings)
  *   POST /camera/off
@@ -64,6 +65,7 @@ class ControlService : Service() {
     private var server: ServerSocket? = null
     private val pool = Executors.newFixedThreadPool(8)      // MJPEG streams hold a thread each
     private val streams = AtomicInteger(0)
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var cpuLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
 
@@ -71,6 +73,7 @@ class ControlService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.getIntExtra(Volume.EXTRA_STREAM, -1) == android.media.AudioManager.STREAM_MUSIC) {
                 Volume.enforce(context, cfg)
+                VolumeOverlay.refresh()
             }
         }
     }
@@ -79,6 +82,9 @@ class ControlService : Service() {
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) { syncVoice() }
     }
+
+    /** Voice lets go of the microphone while a video call has it, and comes back after. */
+    private val modeListener = android.media.AudioManager.OnModeChangedListener { syncVoice() }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -91,9 +97,13 @@ class ControlService : Service() {
         holdLocks()
         startServer()
         watchVolume()
+        VolumeOverlay.sync(this)
         registerReceiver(screenReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_SCREEN_OFF)
         })
+        if (Build.VERSION.SDK_INT >= 31) {
+            getSystemService(android.media.AudioManager::class.java).addOnModeChangedListener(mainExecutor, modeListener)
+        }
         VoiceSatellite.onEvent = { ev -> Bus.post(Command.Voice(ev)) }
         syncVoice()
     }
@@ -101,7 +111,10 @@ class ControlService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_RESTART_SERVER -> startServer()
-            ACTION_REFRESH_FOREGROUND -> { goForeground(withDevices = true); syncVoice() }   // sent from MainActivity.onResume
+            ACTION_REFRESH_FOREGROUND -> {                  // sent from MainActivity.onResume
+                goForeground(withDevices = true); syncVoice()
+                VolumeOverlay.sync(this)                   // picks up an overlay permission granted since
+            }
             ACTION_SYNC_VOICE -> syncVoice()
         }
         return START_STICKY
@@ -109,7 +122,11 @@ class ControlService : Service() {
 
     override fun onDestroy() {
         try { unregisterReceiver(volumeReceiver) } catch (_: Exception) { }
+        VolumeOverlay.release()
         try { unregisterReceiver(screenReceiver) } catch (_: Exception) { }
+        if (Build.VERSION.SDK_INT >= 31) {
+            try { getSystemService(android.media.AudioManager::class.java).removeOnModeChangedListener(modeListener) } catch (_: Exception) { }
+        }
         VoiceSatellite.stop()
         CameraStreamer.stop()
         try { server?.close() } catch (_: Exception) { }
@@ -179,9 +196,9 @@ class ControlService : Service() {
         Volume.enforce(this, cfg)
     }
 
-    /** Starts voice when it is enabled and the panel is on; stops it otherwise. */
+    /** Starts voice when it is enabled, the panel is on and no call is up; stops it otherwise. */
     private fun syncVoice() {
-        val want = cfg.voiceEnabled && !voicePausedByApi && Kiosk.isScreenOn(this)
+        val want = cfg.voiceEnabled && !voicePausedByApi && Kiosk.isScreenOn(this) && !Calls.inCall(this)
         if (want && !VoiceSatellite.running) {
             if (!micForeground) goForeground(withDevices = true)
             VoiceSatellite.start(this, cfg)?.let { Log.w(TAG, "voice not started: $it") }
@@ -274,10 +291,19 @@ class ControlService : Service() {
         when (p) {
             "/", "/status" -> return 200 to status()
             "/screen/on" -> { Kiosk.screenOn(this); Bus.post(Command.WakeUp); Bus.post(Command.Ambient(false)); syncVoice() }
-            "/screen/off" -> if (!Kiosk.screenOff(this)) return 409 to err("screen off needs device owner")
-            "/screen/toggle" -> if (Kiosk.isScreenOn(this)) Kiosk.screenOff(this)
-                                else { Kiosk.screenOn(this); Bus.post(Command.WakeUp) }
-            "/ambient/on" -> { Kiosk.screenOn(this); Bus.post(Command.Ambient(true)) }
+            // A video call keeps the panel awake: idle automations mustn't hang up on someone.
+            "/screen/off" -> {
+                if (Calls.inCall(this)) return 409 to err("a call is in progress")
+                if (!Kiosk.screenOff(this)) return 409 to err("screen off needs device owner")
+            }
+            "/screen/toggle" -> if (Kiosk.isScreenOn(this)) {
+                                    if (Calls.inCall(this)) return 409 to err("a call is in progress")
+                                    Kiosk.screenOff(this)
+                                } else { Kiosk.screenOn(this); Bus.post(Command.WakeUp) }
+            "/ambient/on" -> {
+                if (Calls.inCall(this)) return 409 to err("a call is in progress")
+                Kiosk.screenOn(this); Bus.post(Command.Ambient(true))
+            }
             "/ambient/off" -> Bus.post(Command.Ambient(false))
             "/ambient/info" -> {
                 val line = q["line"] ?: buildString {
@@ -310,6 +336,7 @@ class ControlService : Service() {
             }
             "/volume/up" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, true))
             "/volume/down" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, false))
+            "/volume/show" -> { mainHandler.post { Volume.showPanel(this) }; return 200 to ok }
             "/camera/on" -> {
                 if (!cfg.cameraAllowed) return 403 to err("camera is turned off in Counter Home settings")
                 if (!cameraForeground) goForeground(withDevices = true)
@@ -343,6 +370,7 @@ class ControlService : Service() {
                         CameraStreamer.start(this, cfg, left)
                     }
                     Bus.post(Command.ConfigChanged)
+                    mainHandler.post { VolumeOverlay.sync(this) }
                     if (cfg.port != oldPort) startServer()
                     if (VoiceSatellite.running) VoiceSatellite.stop()   // picks up a new token or pipeline
                     syncVoice()
@@ -401,10 +429,12 @@ class ControlService : Service() {
             .put("charging", plugged)
             .put("volume", Volume.percent(this))
             .put("maxVolume", cfg.maxVolume)
+            .put("edgeVolume", cfg.edgeVolume && VolumeOverlay.allowed(this))
             .put("cameraAllowed", cfg.cameraAllowed)
             .put("camera", CameraStreamer.statusJson())
             .put("voiceEnabled", cfg.voiceEnabled)
             .put("voice", VoiceSatellite.statusJson())
+            .put("inCall", Calls.inCall(this))
             .put("wallpapers", wallpaperList().length())
             .put("batteryTempC", temp)
             .put("ip", ipAddress(this) ?: "")
@@ -519,4 +549,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.5.0" }
+object BuildConfigShim { const val VERSION = "1.7.0" }

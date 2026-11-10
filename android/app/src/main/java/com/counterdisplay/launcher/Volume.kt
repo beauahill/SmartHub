@@ -54,8 +54,22 @@ object Volume {
         return percent(ctx)
     }
 
-    /** Shows Android's media volume slider, for when the side keys are hidden by the bezel. */
+    /** Volume as a fraction of the allowed range: 0 is silent, 1 is the cap. Drives the edge slider. */
+    fun level(ctx: Context, cfg: Config): Float =
+        (am(ctx).getStreamVolume(STREAM).toFloat() / capIndex(ctx, cfg)).coerceIn(0f, 1f)
+
+    /** Sets the volume to [fraction] of the allowed range (see [level]). */
+    fun setLevel(ctx: Context, cfg: Config, fraction: Float) {
+        val idx = Math.round(fraction.coerceIn(0f, 1f) * capIndex(ctx, cfg))
+        if (idx != am(ctx).getStreamVolume(STREAM)) am(ctx).setStreamVolume(STREAM, idx, 0)
+    }
+
+    /**
+     * Shows a volume slider, for when the side keys are hidden by the bezel: Counter Home's own
+     * (see [VolumeOverlay]) when it may draw over apps, otherwise Android's.
+     */
     fun showPanel(ctx: Context) {
+        if (VolumeOverlay.show(ctx)) return
         am(ctx).adjustStreamVolume(STREAM, AudioManager.ADJUST_SAME, AudioManager.FLAG_SHOW_UI)
     }
 

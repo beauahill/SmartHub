@@ -62,6 +62,10 @@ adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS || true
 adb shell pm grant "$PKG" android.permission.CAMERA || true   # used only when "Allow the camera" is on
 adb shell dumpsys deviceidle whitelist +"$PKG" >/dev/null || true
 adb shell cmd appops set "$PKG" RUN_ANY_IN_BACKGROUND allow || true
+# Lets Counter Home open a calling app's ringing screen, which the kiosk lock would otherwise hide.
+adb shell cmd notification allow_listener "$PKG/$PKG.CallWatcher" || true
+# The volume slider that slides in from the right edge draws over other apps.
+adb shell cmd appops set "$PKG" SYSTEM_ALERT_WINDOW allow || true
 
 echo "== Removing Samsung, Google and partner bloat (restore.sh undoes it)"
 ./debloat.sh

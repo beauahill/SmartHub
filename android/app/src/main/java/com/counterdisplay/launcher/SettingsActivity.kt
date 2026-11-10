@@ -48,6 +48,13 @@ class SettingsActivity : Activity() {
         val token = field(col, "API token (Home Assistant needs this)", cfg.token, mono = true)
         val pin = field(col, "Settings PIN", cfg.pin, number = true)
         val maxVol = field(col, "Max media volume, % (protects the speakers; 100 = no cap)", cfg.maxVolume.toString(), number = true)
+        val edgeVol = CheckBox(this).apply {
+            text = "Swipe in from the right edge for a volume slider, over any app" +
+                if (VolumeOverlay.allowed(this@SettingsActivity)) "" else " (needs the overlay permission: run setup.sh)"
+            isChecked = cfg.edgeVolume
+            setTextColor(Color.WHITE)
+        }
+        col.addView(edgeVol)
         val camAllowed = CheckBox(this).apply {
             text = "Allow the camera (Home Assistant can turn it on; a red CAM dot shows while it runs)"
             isChecked = cfg.cameraAllowed
@@ -85,6 +92,8 @@ class SettingsActivity : Activity() {
                 cfg.pin = pin.text.toString().ifBlank { "2580" }
                 cfg.kioskLock = lock.isChecked
                 cfg.maxVolume = maxVol.text.toString().toIntOrNull() ?: Config.DEFAULT_MAX_VOLUME
+                cfg.edgeVolume = edgeVol.isChecked
+                VolumeOverlay.sync(this)
                 cfg.cameraAllowed = camAllowed.isChecked
                 cfg.cameraFacing = camFacing.text.toString().trim().lowercase()
                 if (!cfg.cameraAllowed || (CameraStreamer.running && CameraStreamer.facing != cfg.cameraFacing)) {

@@ -79,6 +79,13 @@ SCRIPTS = {
         "sequence": [{"action": "rest_command.counter_display", "data": {"path": "launch?app=IPTV"}}],
         "mode": "single",
     },
+    "counter_call": {
+        "alias": "Video call",
+        "icon": "mdi:video",
+        "description": "Opens Google Meet (the Call tile) on the counter display to start a video call. Say: start a video call.",
+        "sequence": [{"action": "rest_command.counter_display", "data": {"path": "launch?app=Call"}}],
+        "mode": "single",
+    },
     "counter_dashboard": {
         "alias": "Counter dashboard",
         "icon": "mdi:tablet-dashboard",
@@ -94,6 +101,7 @@ SCRIPT_ALIASES = {
     "script.counter_music": ["Spotify", "music", "the music app", "Spotify on the hub"],
     "script.counter_live_tv": ["YouTube TV", "live TV", "YouTube TV on the hub"],
     "script.counter_iptv": ["IPTV", "Telvizio", "the IPTV app"],
+    "script.counter_call": ["video call", "a video call", "Google Meet", "Meet", "the call app"],
     "script.counter_dashboard": ["counter dashboard", "the dashboard", "the hub dashboard", "the counter display"],
 }
 

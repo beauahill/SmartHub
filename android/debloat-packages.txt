@@ -120,7 +120,7 @@ com.google.android.gm                      # Gmail
 com.google.android.apps.maps
 com.google.android.apps.photos
 com.google.android.apps.docs               # Drive
-com.google.android.apps.tachyon            # Meet
+# com.google.android.apps.tachyon          # Meet: kept, it is the Call tile
 com.google.android.videos                  # Google TV
 com.google.android.apps.messaging
 com.google.android.calendar

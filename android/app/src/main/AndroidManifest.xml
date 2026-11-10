@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The edge-swipe volume slider draws over other apps; setup.sh grants it with appops. See VolumeOverlay.kt. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <!-- Lets the launcher see the apps it starts from its tiles (Android 11+ package visibility). -->
     <queries>
@@ -70,6 +72,17 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Local network control endpoint for a wall/counter kiosk display" />
+        </service>
+
+        <!-- Rings incoming video calls under the kiosk lock; see Calls.kt. -->
+        <service
+            android:name=".CallWatcher"
+            android:exported="true"
+            android:label="Counter Home calls"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
         </service>
 
         <receiver

@@ -65,6 +65,9 @@ object Kiosk {
             dpm.setPermissionGrantState(admin, ctx.packageName, android.Manifest.permission.RECORD_AUDIO,
                 DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
             dpm.setStatusBarDisabled(admin, !State.kioskPaused)
+            // Google Meet on a dock tile gets its camera, microphone and notifications up front,
+            // so the first call doesn't stop at permission prompts nobody can reach in the kiosk.
+            if (cfg.tiles.any { it.pkg == Calls.MEET }) grantCallApp(ctx, Calls.MEET)
 
             // Make this the permanent home app.
             val home = IntentFilter(Intent.ACTION_MAIN).apply {
@@ -91,6 +94,16 @@ object Kiosk {
 
     fun exitLock(activity: Activity) {
         try { activity.stopLockTask() } catch (_: Exception) { }
+    }
+
+    private fun grantCallApp(ctx: Context, pkg: String) {
+        val perms = mutableListOf(android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO)
+        if (android.os.Build.VERSION.SDK_INT >= 33) perms += android.Manifest.permission.POST_NOTIFICATIONS
+        for (perm in perms) {
+            try {
+                dpm(ctx).setPermissionGrantState(admin(ctx), pkg, perm, DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
+            } catch (e: Exception) { Log.w(TAG, "grant $perm to $pkg", e) }
+        }
     }
 
     /** Turns the panel off. Needs device admin (force-lock); keyguard is disabled so wake goes straight back. */

@@ -576,9 +576,10 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
    tablet IP, the API token and the Home Assistant secrets. Reserve that IP on your router.
 5. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
    "Pause kiosk lock and open Android settings". Sign in to Google, install Spotify, YouTube TV,
-   an IPTV player such as OTT Play, Audacy (the Radio tile) and the Home Assistant app, set Battery
+   an IPTV player such as OTT Play, Audacy (the Radio tile), Google Meet (the Call tile; the copy
+   built into the tablet is only a placeholder) and the Home Assistant app, set Battery
    protection to Maximum, and make Home Assistant the default digital assistant. Then tap "Resume
-   kiosk lock". The default dock is Music, Live TV, IPTV, Radio, Volume and Assist; edit the tiles
+   kiosk lock". The default dock is Music, Live TV, IPTV, Radio, Call, Volume and Assist; edit the tiles
    JSON in the settings screen (or `POST /config`) to change it.
 6. Change the settings PIN. The default PIN is public in this repository.
 7. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
@@ -608,7 +609,7 @@ says why each stays. Removal is per user, so `/system` is untouched. Preview wit
 `./restore.sh --all`. A factory reset, and sometimes a major One UI update, brings the apps back;
 rerun `./debloat.sh` after an update.
 
-Do the YouTube TV and Spotify sign-ins while the kiosk lock is paused. Google's login screens
+Do the YouTube TV, Spotify and Meet sign-ins while the kiosk lock is paused. Google's login screens
 belong to other packages, and lock task mode blocks them.
 
 The KABD-430 still has Bluetooth, and its default DSP program mixes Bluetooth audio with the AUX
@@ -715,8 +716,8 @@ colours follow the time of day. With no photos it shows only the gradients. Pict
 **Hands-free voice.** `python3 homeassistant/scripts/setup_voice.py` prepares Home Assistant: it
 installs and starts the openWakeWord add-on, adds its Wyoming integration, puts "OK Nabu" on the
 preferred Assist pipeline, creates one script per dock tile ("turn on the radio", "turn on
-Spotify", "turn on YouTube TV", "turn on IPTV", "turn on the dashboard" open that app on the
-tablet) and gives the gate, garage doors, locks and sensors spoken aliases. The hub's Spotify
+Spotify", "turn on YouTube TV", "turn on IPTV", "turn on video call", "turn on the dashboard" open that
+app on the tablet) and gives the gate, garage doors, locks and sensors spoken aliases. The hub's Spotify
 app shows up in Home Assistant's Spotify integration as a Connect device, and that player is
 exposed as "the hub", so "pause the hub", "next song on the hub" and "set the hub volume to 40"
 work while Spotify plays. Starting a particular song or playlist by voice is not covered: Home
@@ -771,6 +772,22 @@ To add a job, add it to `tasks.yaml`, run the script, and add its helper to the 
 list in `counter.yaml` (plus a tile on the All tasks view); the script warns when the two lists
 disagree, and `--prune` deletes helpers for jobs taken out of `tasks.yaml`.
 
+**Video calls.** The Call tile opens Google Meet, which makes and takes video calls to Google
+accounts and phone numbers. Install Meet from the Play Store and sign in to it with the household
+Google account while the kiosk lock is paused; people call the hub at that account. Counter Home
+grants Meet its camera, microphone and notifications itself, so nobody meets a permission prompt.
+Under the kiosk lock the status bar and incoming-call banners are hidden, so Counter Home watches
+for a call notification from any app on the dock and opens that app's ringing screen, waking the
+panel and closing the sleep screen first. That needs notification access, which `setup.sh` grants
+(`adb shell cmd notification allow_listener com.counterdisplay.launcher/com.counterdisplay.launcher.CallWatcher`
+on a tablet set up before 1.6.0). While a call is up the wake-word listener lets go of the
+microphone, and `/screen/off`, `/screen/toggle` and `/ambient/on` answer 409 instead of hanging
+up, so idle automations can't cut a call off. If Home Assistant is using the tablet camera, the
+call takes it over and the camera feed stops until the call ends. Calls play through the KABD-430
+over Bluetooth like everything else; if people hear an echo, lower the volume cap or try the
+tablet's own speaker. Voice can open Meet ("turn on video call") but can't dial a particular
+person, because Meet has no way for another app to start a call to a contact.
+
 A notification fires if the tablet battery stays above 42 °C for 5 minutes.
 
 ### 6. Camera in Home Assistant (optional)
@@ -814,9 +831,9 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 
 | Call | Does |
 | --- | --- |
-| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, cameraAllowed, camera, ip |
-| `POST /screen/on`, `/screen/off`, `/screen/toggle` | Panel power |
-| `POST /ambient/on`, `/ambient/off` | Sleep screen (clock, date, wallpaper), tap to dismiss |
+| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, edgeVolume (on and permitted), cameraAllowed, camera, voice, inCall, ip |
+| `POST /screen/on`, `/screen/off`, `/screen/toggle` | Panel power. Turning it off answers 409 during a video call |
+| `POST /ambient/on`, `/ambient/off` | Sleep screen (clock, date, wallpaper), tap to dismiss. `/ambient/on` answers 409 during a video call |
 | `POST /ambient/info?temperature=44&unit=°F&condition=Sunny` or `?line=...` | The line under the clock on the sleep screen |
 | `GET /wallpapers`, `PUT /wallpapers/<name>` (image body, ≤ 20 MB), `DELETE /wallpapers/<name>` | Pictures for the sleep screen |
 | `POST /voice/on`, `/voice/off` | Start or pause hands-free voice (needs it enabled in settings). `/status` reports `voice` |
@@ -827,11 +844,12 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | `POST /brightness?value=0-255` or `?value=auto` | Backlight |
 | `POST /reload` | Reload the dashboard |
 | `POST /volume?value=0-100`, `/volume/up`, `/volume/down` | Media volume as a percentage, never above the cap. Returns the new `volume` |
+| `POST /volume/show` | Slides in the volume slider over whatever is on screen |
 | `POST /camera/on?minutes=N` | Camera on. With `minutes`, it turns itself off after that long. Needs "Allow the camera" |
 | `POST /camera/off` | Camera off |
 | `GET /camera.jpg` | Latest frame as JPEG. 503 while the camera is off |
 | `GET /camera.mjpeg` | MJPEG stream, up to 3 at once. It ends when the camera turns off |
-| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port, voiceEnabled, voicePipeline, haToken (write-only), ambientIntervalMin, wallpaperUrls |
+| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, edgeVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port, voiceEnabled, voicePipeline, haToken (write-only), ambientIntervalMin, wallpaperUrls |
 
 `volume` and `maxVolume` are percentages of the tablet's media volume range.
 
@@ -863,17 +881,28 @@ tiles with a glyph and a label. A tile's `color` tints its glyph (the hue is kep
 lifted to suit dark glass; greys stay white). `icon` picks the glyph: `music`, `tv`, `play`,
 `radio`, `volume`, `mic`, `home`, `reload`, `video`, `globe` or `apps`. Leave it out and the dock
 guesses from the action, label and package. Up to six tiles keep their full size on a side dock;
-more than that share the height.
+more than that share the height (the default seven are a little shorter).
 
 Tile actions are `assist`, `reload`, `home`, `volume`, `volume_up` and `volume_down`. `volume`
-opens Android's media volume slider over whatever is on screen.
+opens the edge volume slider (below), or Android's own slider if the overlay permission is missing.
 
-**Volume without side keys.** The bezel covers the tablet's volume keys, so volume comes from three
-places: the Volume dock tile, the `input_number.counter_display_volume` slider that the Home
-Assistant package adds (put it on the dashboard), and `POST /volume`. All three respect the cap.
-While Spotify or another app fills the screen the dock is hidden; use the slider in Home Assistant,
-or turn on Samsung's floating Assistant menu (Settings > Accessibility > Interaction and dexterity),
-which has volume buttons. The dock can sit on the right, left or bottom.
+**Volume without side keys.** The bezel covers the tablet's volume keys, so volume comes from
+four places, all held under the cap:
+
+- **Swipe in from the right edge**, over any app (Spotify, YouTube TV, the dashboard). A glass
+  slider slides in. Keep your finger down and move up or down to set the volume in the same
+  motion, or let go and drag the slider. It slides away 2.5 s after the last touch, or as soon as
+  you touch anywhere else. The slider runs from silent to the cap, so 100 % is the loudest the
+  speakers are allowed. The swipe works on the middle 70 % of the edge and the strip is 16 dp wide.
+  It needs Android's "display over other apps" permission, which setup.sh grants
+  (`adb shell cmd appops set com.counterdisplay.launcher SYSTEM_ALERT_WINDOW allow`). Switch it
+  off in Counter Home settings or with `{"edgeVolume": false}`.
+- The Volume dock tile, which opens the same slider.
+- The `input_number.counter_display_volume` slider that the Home Assistant package adds (put it on
+  the dashboard).
+- `POST /volume`.
+
+The dock can sit on the right, left or bottom.
 
 ## Building the app
 

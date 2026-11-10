@@ -111,6 +111,11 @@ class Config(context: Context) {
         get() = prefs.getInt(KEY_CAM_ROTATION, -1)
         set(v) = prefs.edit().putInt(KEY_CAM_ROTATION, if (v in setOf(0, 90, 180, 270)) v else -1).apply()
 
+    /** Swipe in from the right edge, over any app, for a volume slider. See [VolumeOverlay]. */
+    var edgeVolume: Boolean
+        get() = prefs.getBoolean(KEY_EDGE_VOLUME, true)
+        set(v) = prefs.edit().putBoolean(KEY_EDGE_VOLUME, v).apply()
+
     /** "right", "left" or "bottom". */
     var dockSide: String
         get() = prefs.getString(KEY_DOCK, "right")!!
@@ -174,6 +179,7 @@ class Config(context: Context) {
         put("kioskLock", kioskLock)
         put("dockSide", dockSide)
         put("maxVolume", maxVolume)
+        put("edgeVolume", edgeVolume)
         put("cameraAllowed", cameraAllowed)
         put("cameraFacing", cameraFacing)
         put("cameraWidth", cameraWidth)
@@ -197,6 +203,7 @@ class Config(context: Context) {
         if (o.has("kioskLock")) kioskLock = o.getBoolean("kioskLock")
         if (o.has("dockSide")) dockSide = o.getString("dockSide")
         if (o.has("maxVolume")) maxVolume = o.getInt("maxVolume")
+        if (o.has("edgeVolume")) edgeVolume = o.getBoolean("edgeVolume")
         // cameraAllowed is deliberately not settable here; see its comment.
         if (o.has("cameraFacing")) cameraFacing = o.getString("cameraFacing")
         if (o.has("cameraWidth")) cameraWidth = o.getInt("cameraWidth")
@@ -231,6 +238,7 @@ class Config(context: Context) {
         private const val KEY_TILES = "tiles"
         private const val KEY_PROVISIONED = "provisioned"
         private const val KEY_MAX_VOLUME = "max_volume"
+        private const val KEY_EDGE_VOLUME = "edge_volume"
         private const val KEY_CAM_ALLOWED = "camera_allowed"
         private const val KEY_CAM_FACING = "camera_facing"
         private const val KEY_CAM_WIDTH = "camera_width"
@@ -252,6 +260,7 @@ class Config(context: Context) {
               {"label": "Live TV", "package": "com.google.android.apps.youtube.unplugged", "color": "#C43B33"},
               {"label": "IPTV",    "package": "com.nst.iptvsmarterstvbox",                 "color": "#3A62B8"},
               {"label": "Radio",   "package": "com.radiocom",                              "color": "#E8702A"},
+              {"label": "Call",    "package": "com.google.android.apps.tachyon",           "color": "#2FA866", "icon": "video"},
               {"label": "Volume",  "action": "volume",                                     "color": "#4A5361"},
               {"label": "Assist",  "action": "assist",                                     "color": "#16A3C9"}
             ]
