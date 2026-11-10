@@ -73,7 +73,7 @@ already oriented for printing.
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
 | `base_tub` | 300 x 150 x 116 | Speaker box with two sealed full-range chambers. Prints floor down, supports only in the outside driver recesses |
-| `lid_spine` | 300 x 150 x 119 | Top plate and tilted stand in one piece. Glued to the tub. Prints lid down, no supports |
+| `lid_spine` | 300 x 150 x 147 | Top plate and tilted stand in one piece. Glued to the tub. Prints lid down, no supports |
 | `grille_ring` | 299 x 149 x 111 | Linen version. Linen wraps around it. Slides on from below, held by magnets. Prints bottom edge down |
 | `grille_shell` | 300 x 150 x 112 | Fabric-free version, instead of the ring and linen. Prints bottom edge down |
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
@@ -220,6 +220,18 @@ When the drivers are in and the lid is glued on, check the seal: push the woofer
 let go. It should come back slowly. If it springs straight back, there is a leak. Brush a thin coat
 of epoxy or wood glue inside the chambers to seal it.
 
+**Spine.** The spine is 80 mm wide and reaches 145 mm up the back of the tray.
+- **Shape:** its outer edges are rounded (`SPINE_R`), and its sides and front flare out at 45° where
+  they meet the lid.
+- **Bolts:** the bezel bolts sit 45 and 110 mm up the tray back, 65 mm apart vertically, so tapping
+  the screen rocks it much less. The upper pair sit in short 12 mm counterbores; the lower pair are
+  about 38 mm down theirs.
+- **Bracing:** two 12 mm brace columns in the tub (`SPINE_BRACES`) are glued to the lid's underside
+  under the spine's sides. They carry its load to the floor instead of flexing the 4 mm lid. They
+  stand between the woofer's motor and the passive radiator, clear of both, and cost about 25 cm³ of
+  woofer chamber air.
+- **Back-wall vents:** two honeycomb bands of 4 mm hexagons, kept clear of the back-stop posts.
+
 **Printing the lid and spine.** Print it lid down, as exported, with supports off. Everything
 above the lid is either 45° or steeper, or a short bridge:
 - The ceiling of the PD trigger cavity is a 25 mm bridge.
@@ -349,7 +361,7 @@ python enclosure/enclosure.py enclosure/out
 ```
 
 The script prints part volumes and the air volume of each chamber: about 0.54 L per full-range
-chamber and 2.65 L for the woofer chamber, before subtracting the drivers. Those volumes assume a
+chamber and 2.63 L for the woofer chamber, before subtracting the drivers. Those volumes assume a
 closed box, so it also prints the open area through the lid. That should be only the 8 mm speaker
 wire hole (50.3 mm²), which you seal with hot glue during assembly. Copy the `print_*.stl` files over the ones in `enclosure/stl/`.
 
@@ -375,8 +387,8 @@ printable file, [`assembly_diagrams.pdf`](docs/diagrams/assembly_diagrams.pdf).
    runs from its driver out through the lid and up the spine's cable channel, so make it long enough
    to reach the amp in the tray with 10 cm to spare. With the lid off the tub, push the pairs up
    through the 8 mm hole in the lid from underneath until they come out of the top of the channel.
-   Pass the full-range pairs through the chamber holes. Seal the chamber holes and the lid hole with
-   hot glue around the wires, from the inside. Fill the lid hole completely. It opens into the woofer
+   Pass the full-range pairs through the chamber holes and seal those with hot glue around the wires,
+   from the inside. The lid hole is sealed later, from above, in step 7. It opens into the woofer
    chamber, and any gap left there acts as a port and spoils the passive radiator tuning.
 4. Mount the drivers from the outside on 1 mm gasket tape with M3 x 6 screws in the pilot holes.
    Lay the tape around the outer edge of each mounting face, under the flange.
@@ -420,8 +432,17 @@ over an edge:
    use 28 V: the amp's maximum is 26 V. Screw the board to the power plate's sled, USB-C socket toward the opening:
    - **Front holes (by the USB port, 3.6 mm):** two M3 x 6 thread-forming screws.
    - **Rear holes (1.8 mm):** two M1.7 x 5 self-tapping screws. These are optional; the front pair
-     holds the board. Put 18 AWG
-   leads in its screw terminal, feed them through the cavity and up the cable channel into the tray,
+     holds the board.
+
+   **Seal the lid hole before fitting the plate.**
+   1. Pull the speaker leads snug from above, with the lid glued on.
+   2. Look in through the empty power plate pocket. At the far end of the cavity, the floor slopes
+      down into the wire hole.
+   3. Inject non-sag RTV silicone there with a syringe or a long caulk nozzle, until it covers the
+      hole around the wires.
+   4. Let it skin over.
+
+   Put 18 AWG leads in the trigger's screw terminal, feed them up the cable channel into the tray,
    then screw the plate flush with two M3 x 8 countersunk screws. Before connecting the amp, plug in
    the charger and check for 20 V at the leads. Press the charger cable down into the clip on the lid.
 8. With the bezel shell off the stand and face down, mount the amp on its standoffs. Screw the 5 V USB-C

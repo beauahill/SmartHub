@@ -161,7 +161,7 @@ sheets = [
               parts=[("mags_rear", [0, 30, 0], "magnet"), ("mags_side_r", [30, 0, 0], "magnet"), ("mags_side_l", [-30, 0, 0], "magnet")]),
        ],
        notes=[
-         dict(k="A", text="Ø8 speaker wire hole in the lid, under the spine. Fill it with hot glue from inside before the lid goes on.",
+         dict(k="A", text="Ø8 speaker wire hole in the lid, under the spine. After the lid is glued on, seal it with silicone from above through the empty power plate pocket.",
               anchor=[0, g["WIRE_HOLE"][1], 120 + 95]),
          dict(k="B", text="Cable clip: press the charger cable in here.", anchor=[0, 137, 124 + 95]),
          dict(k="C", text="Speaker and 20 V leads run up the spine channel into the tray.", anchor=add(lift, wpt(0, T, 60))),

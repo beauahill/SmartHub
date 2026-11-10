@@ -166,10 +166,12 @@ WINDOW_CHAMFER = 0.5                         # 45 deg chamfer on the lip's inner
 CHIN_SCREW_X = (-100.0, -40.0, 40.0, 100.0)  # clear of the radar pocket in the middle
 CHIN_SCREW_LEN = 20.0                         # M3 x 20; ~5 mm goes into the insert
 # Bezel to spine: M3 bolts from the back of the spine into inserts in the tray's back wall.
-SPINE_PTS = [(-18, 45), (18, 45), (-18, 80), (18, 80)]    # (x, height up the tray back)
+SPINE_PTS = [(-18, 45), (18, 45), (-18, 110), (18, 110)]  # (x, height up the tray back); 65 mm apart vertically
 SPINE_GRIP = 12.0                            # spine material under the bolt heads -> M3 x 16 bolts
 SPINE_CLR = 0.2                              # gap between the spine and the tray back, so the curved bottom edge can't hold the faces apart
-SPINE_TOP = 5.0                              # flat at the top of the spine, instead of a knife edge
+SPINE_TOP = 10.0                             # flat at the top of the spine (at least 2 x SPINE_R, or the rounding eats it)
+SPINE_R = 4.0                                # round-over on the spine's outer edges
+SPINE_FLARE = 6.0                            # 45 deg flare where the spine's sides and front meet the lid
 BEZ_Y0 = 14.0                                # bezel bottom-front edge Y
 BEZ_GAP = 4.0                                # air gap between lid and lowest bezel corner
 
@@ -296,6 +298,11 @@ for (x, y) in BOSSES:
     tub = tub + (col ^ extrude(inner.offset(1, m3.JoinType.Round), 0, TUB_H))
 for (x, y) in BOSSES:
     tub = tub - cyl_z(x, y, TUB_H - 4, TUB_H + 1, 4.3)
+# brace columns under the spine's sides, glued to the lid: they carry the screen's rocking load to the floor
+# instead of flexing the 4 mm lid. Between the woofer's motor (ends ~76 mm back) and the radiator (starts ~97).
+SPINE_BRACES = [(-30.0, 88.0), (30.0, 88.0)]
+for (x, y) in SPINE_BRACES:
+    tub = tub + cyl_z(x, y, FLOOR - 1, TUB_H, 12.0)
 
 # Driver mounts. Each driver sits in a recessed well deep enough that its surround clears the fabric
 # by cover_clear, on a mounting ring that thickens the baffle behind it for the screws.
@@ -662,15 +669,29 @@ for x in CHIN_SCREW_X:
     # the back wall instead of hanging off the back wall alone
     tr = tr + ((lcyl_a(x, CHIN_SCREW_Z, T_FRONT + 0.5, T - 0.01, 9.0) +
                 lbox(x - 4.5, x + 4.5, T_FRONT + 0.5, T - 0.01, TRAY_WALL - 0.5, CHIN_SCREW_Z)) ^ body_outer)
-# vents in the back wall, kept clear of the chin bosses
-for i in range(9):
-    x = -112 + i * 28
-    if abs(x) < 40:
-        continue
-    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, CHIN_TOP + 3, CHIN_TOP + 13)
-for i in range(16):
-    x = -112 + i * 15
-    tr = tr - lbox(x - 2, x + 2, T - TRAY_WALL - 1, T + 1, EH - 37, EH - 15)
+# vents in the back wall: two honeycomb bands, kept clear of the back-stop posts (their bases and fillets)
+VENT_HEX, VENT_WEB = 4.0, 1.6                # hole across flats, web between holes
+def vent_band(x0, x1, z0, z1, keep_out):
+    pitch = VENT_HEX + VENT_WEB
+    row = pitch * math.sqrt(3) / 2
+    r = VENT_HEX / math.sqrt(3)
+    holes = []
+    nrows = int((z1 - z0 - 2 * r) / row) + 1
+    zc0 = (z0 + z1) / 2 - (nrows - 1) * row / 2
+    for i in range(nrows):
+        z = zc0 + i * row
+        off = pitch / 2 if i % 2 else 0.0
+        for j in range(int((x1 - x0) / pitch) + 2):
+            x = x0 + r + off + j * pitch
+            if x + r > x1 or any(math.hypot(x - kx, z - kz) < kr + r for kx, kz, kr in keep_out):
+                continue
+            holes.append(M.cylinder(TRAY_WALL + 2, r, r, 6).rotate([0, 0, 30]).rotate([-90, 0, 0])
+                         .translate([x, T - TRAY_WALL - 1, z]))
+    return holes
+_posts = [(x, z, POST_D / 2 + POST_FILLET + 1.0) for x in POST_X for z in (40, EH - 40)]
+_vents = vent_band(-114, 114, EH - 36, EH - 16, _posts)
+_vents += vent_band(-114, -40, CHIN_TOP + 3, CHIN_TOP + 13, _posts) + vent_band(40, 114, CHIN_TOP + 3, CHIN_TOP + 13, _posts)
+tr = tr - union(_vents)
 CH_H = 60.0                                     # cable channel enters tray here
 tr = tr - lcyl_a(0, CH_H, T - TRAY_WALL - 1, T + 1, 13)
 # split: shell above the top of the chin, chin cap below it
@@ -703,7 +724,7 @@ bezel_shell_w, bezel_chin_w = place(tr), place(chin)
 
 # ======================= SPINE =======================
 bp0 = to_world(0, T, 0)              # bottom of tray back face
-HS = 115.0
+HS = 145.0                           # how far up the tray back the spine reaches
 bps = to_world(0, T, HS)
 Yb0 = bp0[1]
 # Deep enough for the trigger board on its sled, 6 mm of wire room behind it, and a 3 mm wall between the
@@ -717,9 +738,17 @@ REAR_FACE_H = max(8.0, PWR_Z + PWR_PLATE_H / 2 + 3.0)    # flat rear face tall e
 bpt = to_world(0, T + SPINE_TOP, HS)       # back of the flat top
 prof = CS([[(Yb0 - 6, TOPZ), (REAR_Y - 0.6, TOPZ), (REAR_Y - 0.6, TOPZ + REAR_FACE_H), (bpt[1], bpt[2]), (bps[1], bps[2]),
             (bp0[1], bp0[2]), (Yb0 - 6, bp0[2])]])
-SW = 60.0
-spine = prof.extrude(SW).rotate([90, 0, 90]).translate([-SW/2, 0, 0])   # profile (Y,Z) extruded along X
-spine = spine.translate([0, 0, -0.5])     # sink 0.5 mm into the lid so they fuse
+SW = 80.0
+# Rounded outer edges: shrink the profile and width by SPINE_R, then grow back with a sphere (Minkowski). The
+# profile runs 10 mm below the lid first so the bottom stays square where it fuses to the lid; the face that
+# meets the bezel is cut flat again below.
+prof_lo = CS([[(Yb0 - 6, TOPZ - 10), (REAR_Y - 0.6, TOPZ - 10), (REAR_Y - 0.6, TOPZ + REAR_FACE_H), (bpt[1], bpt[2]),
+               (bps[1], bps[2]), (bp0[1], bp0[2]), (Yb0 - 6, bp0[2])]])
+core = prof_lo.offset(-SPINE_R, m3.JoinType.Round).extrude(SW - 2 * SPINE_R).rotate([90, 0, 90]).translate([-SW / 2 + SPINE_R, 0, 0])
+spine = core.minkowski_sum(M.sphere(SPINE_R, 24)) ^ box(-SW, SW, -50, 400, TOPZ - 0.5, 400)
+# flared base along the sides and front (not the rear, where the power plate slides in over the lid)
+spine = spine + M.batch_hull([box(-SW / 2 - SPINE_FLARE, SW / 2 + SPINE_FLARE, Yb0 - 6 - SPINE_FLARE, REAR_Y - 0.6, TOPZ - 0.5, TOPZ),
+                              box(-SW / 2 + 0.01, SW / 2 - 0.01, Yb0 - 6 + 0.01, REAR_Y - 0.61, TOPZ + SPINE_FLARE, TOPZ + SPINE_FLARE + 0.01)])
 # bolt holes for the bezel, drilled along the bezel normal from the spine's rear, with head counterbores
 for (x, h) in SPINE_PTS:
     spine = spine - place(lcyl_a(x, h, T - 0.5, T + 120, M3_CLR)) - place(lcyl_a(x, h, T + SPINE_GRIP, T + 160, 6.4))
@@ -772,8 +801,9 @@ pwr_plate_w = pwr_plate.rotate([90, 0, 0]).translate([0, REAR_FACE, PWR_ZW])
 spine = spine - along_y(plate_cs(PWR_PLATE_W + 2 * PWR_PLATE_CLR, PWR_PLATE_H + 2 * PWR_PLATE_CLR, PWR_PLATE_R + PWR_PLATE_CLR),
                         POCKET_FLOOR, REAR_FACE + 1, PWR_ZW)
 cav_y0 = REAR_FACE - sled_end - 6.0                          # room behind the board for the output wires
+cav_z0 = PWR_ZW + sled_top - TRIG_SLED_T - 1.5                # cavity floor
 cav = box(-TRIG_W / 2 - 2.2, TRIG_W / 2 + 2.2, cav_y0, POCKET_FLOOR + 0.01,
-          PWR_ZW + sled_top - TRIG_SLED_T - 1.5, PWR_ZW + pcb_bot + TRIG_T + TRIG_TALL + 1.5)
+          cav_z0, PWR_ZW + pcb_bot + TRIG_T + TRIG_TALL + 1.5)
 spine = spine - cav                                          # opens into the cable channel
 for sx in (-PWR_SCREW_X, PWR_SCREW_X):
     spine = spine - cyl_y(sx, PWR_ZW, POCKET_FLOOR - INSERT_DEPTH, POCKET_FLOOR + 0.01, M3_INSERT)
@@ -784,6 +814,12 @@ lid_spine = lid + spine
 # the throat is a straight 12 mm bore, so the trigger cavity floor doesn't leave a thin lip over the sphere.
 lid_spine = lid_spine - chan - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], LID_Z0 - 1, p_low[2], WIRE_HOLE_D) \
             - cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], TOPZ, p_low[2] + 7, 10)
+# Seal after assembly: a funnel slopes from the front of the trigger cavity's floor down into the wire throat.
+# With the power plate out, a syringe of silicone reaches it through the plate pocket, so the hole can be
+# sealed around the wires after the lid is glued on. It stays 3.5 mm behind the spine's front face.
+lid_spine = lid_spine - (M.batch_hull([cyl_z(WIRE_HOLE[0], WIRE_HOLE[1], TOPZ + 1.9, TOPZ + 2.0, 10),
+                                       box(-9, 9, cav_y0, cav_y0 + 8, cav_z0 - 0.01, cav_z0 + 0.01)])
+                         ^ box(-20, 20, WIRE_HOLE[1] - 4, 400, 0, 400))
 # The power plate goes in straight from behind, sled first, over the lid. Check its whole path, not only
 # where it ends up: anything on the lid behind the spine (the cable clip) has to clear it.
 _path = union([pwr_plate_w.translate([0, k, 0]) for k in np.arange(0.0, sled_end + 6.0, 1.0)])
