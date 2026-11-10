@@ -68,7 +68,8 @@ The full parts list is in [BOM.md](BOM.md).
 | [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml) | The five-view kiosk dashboard the tablet shows |
 | [`homeassistant/scripts/`](homeassistant/scripts) | Push the dashboard, create the Gillette calendars, sync the home-game calendars |
 | [`homeassistant/calendars/`](homeassistant/calendars) | Gillette Wild home dates (no feed exists), copied into a local calendar |
-| [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates every STL |
+| [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates the enclosure STLs |
+| [`enclosure/wire_holders.py`](enclosure/wire_holders.py) | Stick-on lever-nut racks and zip-tie anchors for the bezel tray |
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
 | `enclosure/renders/` | `current_*` renders of the current design, plus the original Cowork renders |
 | [`BOM.md`](BOM.md) | Bill of materials |
@@ -91,6 +92,8 @@ already oriented for printing.
 | `bezel_chin` | 272 x 26 x 9 | Prints back face down, no supports. The chin bar: holds the radar, the lip along the bottom of the glass and the pocket's bottom corners |
 | `power_plate` | 44 x 26 x 45 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
 | `power_plate_adafruit_first_build` | 44 x 26 x 26 | Only for a lid and spine printed before the HUNSOOL change (spine 55 mm deep at the lid): the plate for the Adafruit HUSB238 breakout (5807). Prints snout face down with the tongue standing up, no supports. See "First-build spine" below |
+| `lever_nut_rack_3` (x2), `lever_nut_rack_2` | 47 / 32 x 22 x 8 | Optional. Stick-on racks for 2-way lever connectors in the tray (see "Tidying the tray" in step 9). Prints base down, no supports. Built by `wire_holders.py` |
+| `tie_anchor` | 16 x 16 x 5 | Optional. Stick-on zip-tie mount for ties up to 4.6 mm wide. Print 6 to 8. Prints base down, no supports |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
@@ -398,6 +401,13 @@ pip install -r enclosure/requirements.txt
 python enclosure/enclosure.py enclosure/out
 ```
 
+The optional lever-nut racks and zip-tie anchors (step 9, "Tidying the tray") have their own script.
+Pass your connector's measured size:
+
+```
+python enclosure/wire_holders.py enclosure/out --w 13.1 --l 18.3 --h 8.1
+```
+
 The first-build power plate has its own script, which also checks its fit against the first-build spine:
 
 ```
@@ -537,6 +547,32 @@ over an edge:
    a low-pass on J12 for the woofer, a matching high-pass on J11, and the woofer level trimmed to
    suit. Then check each driver plays the right range before closing up. The pin numbers come from
    Dayton's quick-start wiring guide; match them to the pin-1 mark on the board's silkscreen.
+   **Tidying the tray.** The splices are 2-way lever connectors: six for the speaker leads (each
+   harness lead to its speaker wire) and two for the 20 V bus (+ and −). Hold them in printed racks
+   instead of leaving them loose, so they can't rattle or press on the tablet's back:
+   - Measure a connector with calipers and generate racks that fit it:
+     `python enclosure/wire_holders.py enclosure/out --w 13.1 --l 18.3 --h 8.1`. The defaults are a
+     WAGO 221-412; clones differ by up to a millimeter, and a pocket that is too loose won't hold.
+   - Print two `lever_nut_rack_3` for the speaker splices and one `lever_nut_rack_2` for the 20 V
+     splices. A single 6-wide rack (93 mm) doesn't fit anywhere in the tray without covering vents.
+   - Where they go, checked against the model. Positions are seen from the front with the tablet
+     out, measured sideways from the spine cable hole's centre and up from the bezel's bottom edge.
+     The racks sit in the clear band between the lower vents and the amp, where the speaker and
+     power wires come out of the cable hole:
+     - Speaker rack, left: 33–80 mm left of centre, 38–60 mm up, just under the amp.
+     - Speaker rack, right: 23–70 mm right of centre, 38–58 mm up, under the ESP32-C3 and left of
+       the 5 V converter.
+     - 20 V rack: turned on its side, centred over the cable hole, 68–100 mm up, between the upper
+       spine bolt bosses.
+   - Keep every rack off the honeycomb vents, the back-stop posts' wide bases and the spine bolt
+     bosses (18 mm either side of centre, 45 mm and 110 mm up).
+   - Clean the back wall with isopropyl alcohol, stick each rack down with VHB tape, and let it bond
+     for an hour before you press the connectors in. Wires leave from the open end of each pocket.
+     For extra hold, thread a zip tie through the tunnel in the rack's base and over the row.
+   - Stick `tie_anchor`s along the routes: by the cable hole, beside the amp's harness plugs and
+     along the right side for the radar wires. Tie the leads down with short zip ties. Coil the spare
+     USB-C cable and tie it to an anchor too.
+   - Nothing may stand more than about 20 mm off the back wall, or it presses on the tablet.
 10. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
     glass toward the lip, with the FPC plug riding in the channel on the right.
 11. Fit the radar into the chin bar's pocket, push the bar straight back into its slot below the tablet (its

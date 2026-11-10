@@ -61,7 +61,9 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | H7 | 12 | Neodymium disc magnets, 6 x 1 mm, N52 | One per grille ring or grille shell pocket, flush. Opposite polarity to H6 | `MAG_T_FRAME` |
 | H8 | 4 | Silicone bumper feet, 10 mm diameter, about 3 mm tall | Lift the fabric edge off the counter | 10.5 mm recesses |
 | H9 | 1 sheet | Adhesive felt, 0.5 mm | Pads on the six tablet back-stop posts, 8 mm diameter. Thin and slippery, so the tablet slides in | Tray posts |
-| H10 | 1 roll | VHB double-sided tape | Holds the UGREEN adapter, buck and ESP32-C3 in their cradles | `CRADLES` |
+| H10 | 1 roll | VHB double-sided tape | Holds the UGREEN adapter, buck and ESP32-C3 in their cradles, and the lever-nut racks and zip-tie anchors | `CRADLES` |
+| H11 | 8 | 2-way lever connectors (WAGO 221-412 or a clone) | Six for the speaker splices, two for the 20 V bus. Measure one and pass its size to `wire_holders.py` | `lever_nut_rack_*` |
+| H12 | 1 bag | Small zip ties, 2.5–4.6 mm wide, about 100 mm long | Tie the leads to the `tie_anchor`s, and optionally over each lever-nut rack | `tie_anchor` |
 
 ## 5. Wiring
 
@@ -84,6 +86,8 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | P4 | 1 | `bezel_shell.stl` | 272 x 197 x 36 | 228 cm³ |
 | P5 | 1 | `bezel_chin.stl` | 272 x 26 x 9 | 47 cm³ |
 | P6 | 1 | `power_plate.stl` | 44 x 26 x 45 | 5.2 cm³ |
+| P7 | 2 + 1 | `lever_nut_rack_3.stl` and `lever_nut_rack_2.stl`, optional | 47 x 22 x 8, 32 x 22 x 8 | 3.7 and 2.6 cm³ |
+| P8 | 6–8 | `tie_anchor.stl`, optional | 16 x 16 x 5 | 0.5 cm³ each |
 
 | # | Qty | Material | Notes |
 | --- | --- | --- | --- |
