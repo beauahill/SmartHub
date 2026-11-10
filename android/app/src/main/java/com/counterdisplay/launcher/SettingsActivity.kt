@@ -41,6 +41,7 @@ class SettingsActivity : Activity() {
             14f, false, "#9AA4AE"))
 
         val url = field(col, "Home Assistant dashboard URL", cfg.haUrl)
+        val certName = field(col, "Certificate name, only for an HTTPS URL by IP (e.g. myhome.duckdns.org)", cfg.haCertName)
         val tiles = field(col, "Dock tiles (JSON)", cfg.tilesJson, multiline = true, mono = true)
         val dock = field(col, "Dock side: right, left or bottom", cfg.dockSide)
         val port = field(col, "API port", cfg.port.toString(), number = true)
@@ -54,6 +55,17 @@ class SettingsActivity : Activity() {
         }
         col.addView(camAllowed)
         val camFacing = field(col, "Camera: front or back", cfg.cameraFacing)
+        val voice = CheckBox(this).apply {
+            text = "Hands-free voice: stream the microphone to Home Assistant's Assist pipeline while the screen is on (a green MIC dot shows)"
+            isChecked = cfg.voiceEnabled
+            setTextColor(Color.WHITE)
+        }
+        col.addView(voice)
+        val haToken = field(col, "Home Assistant long-lived access token (for voice; a non-admin user's token is enough)", cfg.haToken, mono = true)
+        val pipeline = field(col, "Assist pipeline id (blank = Home Assistant's preferred pipeline)", cfg.voicePipeline, mono = true)
+        val ambientMin = field(col, "Sleep screen: minutes between wallpaper changes", cfg.ambientIntervalMin.toString(), number = true)
+        val wallpapers = field(col, "Sleep screen: extra wallpaper image URLs, one per line (pictures pushed with PUT /wallpapers are used too)",
+            cfg.wallpaperUrls.joinToString("\n"), multiline = true, mono = true)
         val lock = CheckBox(this).apply {
             text = "Kiosk lock (pin the launcher; needs device owner)"
             isChecked = cfg.kioskLock
@@ -66,6 +78,7 @@ class SettingsActivity : Activity() {
                 val oldPort = cfg.port
                 cfg.tilesJson = tiles.text.toString()
                 cfg.haUrl = url.text.toString()
+                cfg.haCertName = certName.text.toString()
                 cfg.dockSide = dock.text.toString().trim().lowercase().takeIf { it in setOf("left", "right", "bottom") } ?: "right"
                 cfg.port = port.text.toString().toIntOrNull() ?: 2323
                 cfg.token = token.text.toString()
@@ -77,8 +90,14 @@ class SettingsActivity : Activity() {
                 if (!cfg.cameraAllowed || (CameraStreamer.running && CameraStreamer.facing != cfg.cameraFacing)) {
                     CameraStreamer.stop()             // Home Assistant turns it back on with the new camera
                 }
+                cfg.voiceEnabled = voice.isChecked
+                cfg.haToken = haToken.text.toString()
+                cfg.voicePipeline = pipeline.text.toString()
+                cfg.ambientIntervalMin = ambientMin.text.toString().toIntOrNull() ?: 10
+                cfg.wallpaperUrls = wallpapers.text.toString().lines()
                 Volume.enforce(this, cfg)
                 if (cfg.port != oldPort) ControlService.restartServer(this)
+                ControlService.syncVoice(this)
                 Bus.post(Command.ConfigChanged)
                 toast("Saved")
                 finish()
@@ -90,11 +109,13 @@ class SettingsActivity : Activity() {
         col.addView(button(if (State.kioskPaused) "Resume kiosk lock" else "Pause kiosk lock and open Android settings") {
             if (State.kioskPaused) {
                 State.kioskPaused = false
+                Kiosk.applyPolicies(this, cfg) // restore the allowlist; MainActivity re-locks on resume
                 finish()
             } else {
                 State.kioskPaused = true
                 Kiosk.exitLock(this)
-                startActivity(Intent(Settings.ACTION_SETTINGS))
+                Kiosk.applyPolicies(this, cfg) // empty allowlist, status bar back
+                startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         })
 

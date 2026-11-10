@@ -1,0 +1,1760 @@
+{
+ "title": "Counter",
+ "kiosk_mode": {
+  "non_admin_settings": {
+   "kiosk": true
+  }
+ },
+ "views": [
+  {
+   "title": "Home",
+   "path": "home",
+   "icon": "mdi:home-variant",
+   "type": "sections",
+   "max_columns": 3,
+   "dense_section_placement": true,
+   "background": {
+    "image": "/api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "badges": [
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Home",
+     "icon": "mdi:home-variant",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "blue",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/home"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Hot Tub",
+     "icon": "mdi:hot-tub",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/hot-tub"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Lights",
+     "icon": "mdi:lightbulb-group",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/lights"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Security",
+     "icon": "mdi:shield-home",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/security"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Calendar",
+     "icon": "mdi:calendar-month",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/calendar"
+     }
+    }
+   ],
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:clock-weather-card",
+       "entity": "weather.kgcc_daynight",
+       "sun_entity": "sun.sun",
+       "locale": "en-US",
+       "time_zone": "America/Denver",
+       "tap_action": {
+        "action": "more-info"
+       },
+       "additional_sensors": {
+        "temperature": "sensor.main_outdoor_temperature_2"
+       },
+       "sections": {
+        "header": {
+         "rows": [
+          {
+           "font_size": "1.2rem",
+           "segments": [
+            {
+             "type": "icon",
+             "icon": "mdi:thermometer"
+            },
+            {
+             "type": "weather",
+             "attribute": "temperature"
+            },
+            {
+             "type": "spacer"
+            },
+            {
+             "type": "weather"
+            }
+           ]
+          },
+          {
+           "font_size": "4.5rem",
+           "alignment": "center",
+           "segments": [
+            {
+             "type": "time",
+             "time_pattern": "h:mm"
+            }
+           ]
+          },
+          {
+           "font_size": "1.2rem",
+           "alignment": "center",
+           "segments": [
+            {
+             "type": "date",
+             "date_pattern": "EEEE, MMMM d"
+            }
+           ]
+          }
+         ]
+        },
+        "forecast_strip": {
+         "count": 6,
+         "time_pattern": "h a",
+         "hide_attribute": true
+        },
+        "forecast_list": {
+         "count": 5
+        }
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.main_outdoor_temperature_2",
+       "name": "Outside",
+       "icon": "mdi:thermometer",
+       "color": "blue",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.main_thermostat_humidity_2",
+       "name": "Indoor humidity",
+       "icon": "mdi:water-percent",
+       "color": "teal",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "heading",
+       "heading": "At a glance",
+       "heading_style": "title",
+       "icon": "mdi:eye-outline"
+      },
+      {
+       "type": "custom:mushroom-template-card",
+       "entity": "climate.hot_tub_temperature",
+       "primary": "Hot tub",
+       "secondary": "{{ states('sensor.hot_tub_current_temperature') | round(0) | int }}\u00b0 \u00b7 set {{ state_attr(entity, 'temperature') | round(0) | int }}\u00b0 \u00b7 {{ 'Heating' if is_state_attr(entity, 'hvac_action', 'heating') else 'Heater idle' }} {{- ' \u00b7 Jets on' if is_state('fan.hot_tub_jets_1', 'on') or is_state('fan.hot_tub_jets_2', 'on') else '' }}",
+       "icon": "mdi:hot-tub",
+       "icon_color": "{{ 'red' if is_state_attr(entity, 'hvac_action', 'heating') else 'cyan' }}",
+       "tap_action": {
+        "action": "navigate",
+        "navigation_path": "/dashboard-counter/hot-tub"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "custom:mushroom-template-card",
+       "primary": "Security",
+       "secondary": "{% set openings = [\n  'binary_sensor.door_front_window_door_is_open',\n  'binary_sensor.door_back_porch_window_door_is_open',\n  'binary_sensor.door_w_garage_entry_window_door_is_open',\n  'binary_sensor.single_garage', 'binary_sensor.double_garage',\n  'binary_sensor.window_kitchen_window_door_is_open',\n  'binary_sensor.window_kitchen_2_window_door_is_open',\n  'binary_sensor.window_dining_window_door_is_open',\n  'binary_sensor.window_dining_2_window_door_is_open',\n  'binary_sensor.window_bedroom_e_window_door_is_open',\n  'binary_sensor.window_bedroom_w_window_door_is_open'] %}\n{% set locks = ['lock.touchscreen_deadbolt_z_wave_plus',\n  'lock.w_garage_entry_deadbolt', 'lock.touchscreen_deadbolt_z_wave_plus_2'] %}\n{% set o = openings | select('is_state', 'on') | list | count %} {% set u = locks | select('is_state', 'unlocked') | list | count %} {{ 'Everything closed' if o == 0 else o ~ ' open' }} \u00b7 {{ 'all locked' if u == 0 else u ~ ' unlocked' }} \u00b7 alarm {{ states('alarm_control_panel.home_alarm') | replace('_', ' ') }}",
+       "icon": "{% set openings = [\n  'binary_sensor.door_front_window_door_is_open',\n  'binary_sensor.door_back_porch_window_door_is_open',\n  'binary_sensor.door_w_garage_entry_window_door_is_open',\n  'binary_sensor.single_garage', 'binary_sensor.double_garage',\n  'binary_sensor.window_kitchen_window_door_is_open',\n  'binary_sensor.window_kitchen_2_window_door_is_open',\n  'binary_sensor.window_dining_window_door_is_open',\n  'binary_sensor.window_dining_2_window_door_is_open',\n  'binary_sensor.window_bedroom_e_window_door_is_open',\n  'binary_sensor.window_bedroom_w_window_door_is_open'] %}\n{{ 'mdi:shield-alert' if openings | select('is_state', 'on') | list | count > 0 else 'mdi:shield-check' }}",
+       "icon_color": "{% set openings = [\n  'binary_sensor.door_front_window_door_is_open',\n  'binary_sensor.door_back_porch_window_door_is_open',\n  'binary_sensor.door_w_garage_entry_window_door_is_open',\n  'binary_sensor.single_garage', 'binary_sensor.double_garage',\n  'binary_sensor.window_kitchen_window_door_is_open',\n  'binary_sensor.window_kitchen_2_window_door_is_open',\n  'binary_sensor.window_dining_window_door_is_open',\n  'binary_sensor.window_dining_2_window_door_is_open',\n  'binary_sensor.window_bedroom_e_window_door_is_open',\n  'binary_sensor.window_bedroom_w_window_door_is_open'] %}\n{{ 'amber' if openings | select('is_state', 'on') | list | count > 0 else 'green' }}",
+       "tap_action": {
+        "action": "navigate",
+        "navigation_path": "/dashboard-counter/security"
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Garage & gate",
+       "heading_style": "title",
+       "icon": "mdi:garage-variant"
+      },
+      {
+       "type": "custom:mushroom-template-card",
+       "entity": "binary_sensor.single_garage",
+       "primary": "Single",
+       "secondary": "{{ 'Open' if is_state(entity, 'on') else 'Closed' }}",
+       "icon": "{{ 'mdi:garage-open-variant' if is_state(entity, 'on') else 'mdi:garage-variant' }}",
+       "icon_color": "{{ 'amber' if is_state(entity, 'on') else 'green' }}",
+       "layout": "vertical",
+       "fill_container": true,
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "switch.turn_on",
+        "target": {
+         "entity_id": "switch.garage_opener_single"
+        }
+       },
+       "hold_action": {
+        "action": "more-info"
+       },
+       "grid_options": {
+        "columns": 4,
+        "rows": 3
+       }
+      },
+      {
+       "type": "custom:mushroom-template-card",
+       "entity": "binary_sensor.double_garage",
+       "primary": "Double",
+       "secondary": "{{ 'Open' if is_state(entity, 'on') else 'Closed' }}",
+       "icon": "{{ 'mdi:garage-open-variant' if is_state(entity, 'on') else 'mdi:garage-variant' }}",
+       "icon_color": "{{ 'amber' if is_state(entity, 'on') else 'green' }}",
+       "layout": "vertical",
+       "fill_container": true,
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "switch.turn_on",
+        "target": {
+         "entity_id": "switch.garage_opener_double"
+        }
+       },
+       "hold_action": {
+        "action": "more-info"
+       },
+       "grid_options": {
+        "columns": 4,
+        "rows": 3
+       }
+      },
+      {
+       "type": "custom:mushroom-template-card",
+       "entity": "cover.gate_switch_gate",
+       "primary": "Gate",
+       "secondary": "{{ 'Opening' if is_state(entity, 'opening') else 'Closing' if is_state(entity, 'closing')\n   else 'Open' if is_state(entity, 'open') else 'Closed' }}",
+       "icon": "{{ 'mdi:gate-open' if is_state(entity, 'open') else 'mdi:gate' }}",
+       "icon_color": "{{ 'amber' if is_state(entity, 'open') else 'green' }}",
+       "layout": "vertical",
+       "fill_container": true,
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "cover.toggle",
+        "target": {
+         "entity_id": "cover.gate_switch_gate"
+        }
+       },
+       "hold_action": {
+        "action": "more-info"
+       },
+       "grid_options": {
+        "columns": 4,
+        "rows": 3
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "lock.w_garage_entry_deadbolt",
+       "name": "W garage entry",
+       "icon": "mdi:door",
+       "features": [
+        {
+         "type": "lock-commands"
+        }
+       ],
+       "grid_options": {
+        "columns": 12,
+        "rows": 2
+       }
+      },
+      {
+       "type": "heading",
+       "heading": "Coming up",
+       "heading_style": "title",
+       "icon": "mdi:calendar-clock",
+       "tap_action": {
+        "action": "navigate",
+        "navigation_path": "/dashboard-counter/calendar"
+       }
+      },
+      {
+       "type": "calendar",
+       "initial_view": "listWeek",
+       "entities": [
+        "calendar.hillhomeassistant_gmail_com",
+        "calendar.birthdays",
+        "calendar.campbell_county_events",
+        "calendar.rockpile_museum",
+        "calendar.gillette_college",
+        "calendar.pronghorn_home_games",
+        "calendar.gillette_wild_home_games"
+       ],
+       "grid_options": {
+        "columns": 12,
+        "rows": 7
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Climate",
+       "heading_style": "title",
+       "icon": "mdi:thermostat"
+      },
+      {
+       "type": "thermostat",
+       "entity": "climate.main",
+       "name": "House",
+       "show_current_as_primary": true,
+       "features": [
+        {
+         "type": "climate-hvac-modes",
+         "style": "icons",
+         "hvac_modes": [
+          "heat",
+          "cool",
+          "auto",
+          "off"
+         ]
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "switch.fireplace_switch_fireplace_switch",
+       "name": "Fireplace",
+       "icon": "mdi:fireplace",
+       "color": "deep-orange",
+       "vertical": false,
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "climate.office_office_cielo",
+       "name": "Office",
+       "icon": "mdi:air-conditioner",
+       "state_content": [
+        "current_temperature",
+        "hvac_action"
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "climate.garage",
+       "name": "Garage",
+       "icon": "mdi:garage",
+       "state_content": [
+        "current_temperature",
+        "hvac_action"
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "climate.man_cave",
+       "name": "Man cave",
+       "icon": "mdi:air-conditioner",
+       "state_content": [
+        "current_temperature",
+        "hvac_action"
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "picture-entity",
+       "entity": "camera.gate_keypad_live_view",
+       "name": "Gate keypad",
+       "camera_view": "auto",
+       "show_state": false,
+       "show_name": true,
+       "aspect_ratio": "16:9",
+       "tap_action": {
+        "action": "more-info"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Hot Tub",
+   "path": "hot-tub",
+   "icon": "mdi:hot-tub",
+   "type": "sections",
+   "max_columns": 3,
+   "dense_section_placement": true,
+   "background": {
+    "image": "/api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "badges": [
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Home",
+     "icon": "mdi:home-variant",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/home"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Hot Tub",
+     "icon": "mdi:hot-tub",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "blue",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/hot-tub"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Lights",
+     "icon": "mdi:lightbulb-group",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/lights"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Security",
+     "icon": "mdi:shield-home",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/security"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Calendar",
+     "icon": "mdi:calendar-month",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/calendar"
+     }
+    }
+   ],
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Temperature",
+       "heading_style": "title",
+       "icon": "mdi:thermometer-water"
+      },
+      {
+       "type": "thermostat",
+       "entity": "climate.hot_tub_temperature",
+       "name": "Hot tub",
+       "show_current_as_primary": true
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.hot_tub_current_temperature",
+       "name": "Water",
+       "icon": "mdi:waves",
+       "color": "cyan",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.hot_tub_heater_outlet",
+       "name": "Heater outlet",
+       "icon": "mdi:radiator",
+       "color": "orange",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.hot_tub_heater_power",
+       "name": "Heater",
+       "icon": "mdi:flash",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.hot_tub_pumps_power",
+       "name": "Pumps",
+       "icon": "mdi:pump",
+       "color": "blue",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "custom:mini-graph-card",
+       "name": "Last 24 hours",
+       "hours_to_show": 24,
+       "points_per_hour": 4,
+       "line_width": 2,
+       "font_size": 70,
+       "lower_bound": 90,
+       "upper_bound": 106,
+       "entities": [
+        {
+         "entity": "sensor.hot_tub_current_temperature",
+         "name": "Water",
+         "color": "#06b6d4"
+        },
+        {
+         "entity": "sensor.hot_tub_target_temperature",
+         "name": "Set point",
+         "color": "#f59e0b",
+         "show_fill": false
+        },
+        {
+         "entity": "sensor.hot_tub_heater_outlet",
+         "name": "Heater outlet",
+         "color": "#f97316",
+         "show_fill": false
+        }
+       ],
+       "show": {
+        "legend": true,
+        "extrema": false,
+        "fill": "fade"
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Jets & lights",
+       "heading_style": "title",
+       "icon": "mdi:fan"
+      },
+      {
+       "type": "tile",
+       "entity": "fan.hot_tub_jets_1",
+       "name": "Jets 1",
+       "icon": "mdi:fan",
+       "color": "blue",
+       "grid_options": {
+        "columns": 6,
+        "rows": 2
+       },
+       "vertical": true
+      },
+      {
+       "type": "tile",
+       "entity": "fan.hot_tub_jets_2",
+       "name": "Jets 2",
+       "icon": "mdi:fan",
+       "color": "blue",
+       "grid_options": {
+        "columns": 6,
+        "rows": 2
+       },
+       "vertical": true
+      },
+      {
+       "type": "tile",
+       "entity": "switch.hot_tub_lights",
+       "name": "Lights",
+       "icon": "mdi:lightbulb-spot",
+       "color": "purple"
+      },
+      {
+       "type": "tile",
+       "entity": "select.hot_tub_color_underwater",
+       "name": "Underwater",
+       "icon": "mdi:palette",
+       "features": [
+        {
+         "type": "select-options"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "select.hot_tub_color_exterior",
+       "name": "Exterior",
+       "icon": "mdi:palette",
+       "features": [
+        {
+         "type": "select-options"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "select.hot_tub_color_bartop",
+       "name": "Bar top",
+       "icon": "mdi:palette",
+       "features": [
+        {
+         "type": "select-options"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "select.hot_tub_color_pillow",
+       "name": "Pillow",
+       "icon": "mdi:palette",
+       "features": [
+        {
+         "type": "select-options"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "select.hot_tub_color_cycle_speed",
+       "name": "Colour cycle",
+       "icon": "mdi:sync",
+       "features": [
+        {
+         "type": "select-options"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Maintenance",
+       "heading_style": "title",
+       "icon": "mdi:wrench"
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.hot_tub_salt_content",
+       "name": "Salt level",
+       "icon": "mdi:shaker-outline",
+       "color": "teal",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.hot_tub_salt_level_confirmed",
+       "name": "Salt confirmed",
+       "icon": "mdi:check-decagram",
+       "color": "teal",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "number.hot_tub_salt_power",
+       "name": "Salt output",
+       "icon": "mdi:shaker",
+       "features": [
+        {
+         "type": "numeric-input",
+         "style": "slider"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "switch.hot_tub_clean_cycle",
+       "name": "Clean cycle",
+       "icon": "mdi:broom",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.hot_tub_salt_boost",
+       "name": "Salt boost",
+       "icon": "mdi:rocket-launch",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.hot_tub_spa_lock",
+       "name": "Spa lock",
+       "icon": "mdi:lock",
+       "color": "red",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.hot_tub_temperature_lock",
+       "name": "Temp lock",
+       "icon": "mdi:thermometer-lock",
+       "color": "red",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.hot_tub_summer_timer",
+       "name": "Summer timer",
+       "icon": "mdi:weather-sunny",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.hot_tub_controller_temperature",
+       "name": "Controller",
+       "icon": "mdi:chip",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Lights",
+   "path": "lights",
+   "icon": "mdi:lightbulb-group",
+   "type": "sections",
+   "max_columns": 3,
+   "dense_section_placement": true,
+   "background": {
+    "image": "/api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "badges": [
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Home",
+     "icon": "mdi:home-variant",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/home"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Hot Tub",
+     "icon": "mdi:hot-tub",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/hot-tub"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Lights",
+     "icon": "mdi:lightbulb-group",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "blue",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/lights"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Security",
+     "icon": "mdi:shield-home",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/security"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Calendar",
+     "icon": "mdi:calendar-month",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/calendar"
+     }
+    }
+   ],
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Living room",
+       "heading_style": "title",
+       "icon": "mdi:sofa"
+      },
+      {
+       "type": "tile",
+       "entity": "light.lr_lamp_dimmer",
+       "name": "Lamp 1",
+       "icon": "mdi:floor-lamp",
+       "features": [
+        {
+         "type": "light-brightness"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "light.lr_lamp_dimmer_2",
+       "name": "Lamp 2",
+       "icon": "mdi:floor-lamp",
+       "features": [
+        {
+         "type": "light-brightness"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "light.kauf_bulb_304d85_kauf_bulb",
+       "name": "Living room lamp",
+       "icon": "mdi:lamp",
+       "features": [
+        {
+         "type": "light-brightness"
+        }
+       ]
+      },
+      {
+       "type": "heading",
+       "heading": "Basement",
+       "heading_style": "title",
+       "icon": "mdi:stairs-down"
+      },
+      {
+       "type": "tile",
+       "entity": "light.workout_room_dimmer_switch_light",
+       "name": "Workout room",
+       "icon": "mdi:dumbbell",
+       "features": [
+        {
+         "type": "light-brightness"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Man cave & bar",
+       "heading_style": "title",
+       "icon": "mdi:glass-mug-variant"
+      },
+      {
+       "type": "tile",
+       "entity": "light.man_cave",
+       "name": "Man cave",
+       "icon": "mdi:ceiling-light",
+       "color": "amber",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.bar_lights",
+       "name": "Bar",
+       "icon": "mdi:glass-cocktail",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.back_bar",
+       "name": "Back bar",
+       "icon": "mdi:bottle-wine",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "heading",
+       "heading": "Scenes",
+       "heading_style": "title",
+       "icon": "mdi:palette-swatch"
+      },
+      {
+       "type": "tile",
+       "entity": "input_boolean.normal_lights",
+       "name": "Normal",
+       "icon": "mdi:lightbulb-on",
+       "color": "white",
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "input_boolean.turn_on",
+        "target": {
+         "entity_id": "input_boolean.normal_lights"
+        }
+       },
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "vertical": true
+      },
+      {
+       "type": "tile",
+       "entity": "input_boolean.go_bills",
+       "name": "Go Bills",
+       "icon": "mdi:football",
+       "color": "blue",
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "input_boolean.turn_on",
+        "target": {
+         "entity_id": "input_boolean.go_bills"
+        }
+       },
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "vertical": true
+      },
+      {
+       "type": "tile",
+       "entity": "input_boolean.go_pokes",
+       "name": "Go Pokes",
+       "icon": "mdi:football-helmet",
+       "color": "brown",
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "input_boolean.turn_on",
+        "target": {
+         "entity_id": "input_boolean.go_pokes"
+        }
+       },
+       "grid_options": {
+        "columns": 4,
+        "rows": 2
+       },
+       "vertical": true
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Garage",
+       "heading_style": "title",
+       "icon": "mdi:garage"
+      },
+      {
+       "type": "tile",
+       "entity": "switch.garage_lights_main",
+       "name": "Main",
+       "icon": "mdi:ceiling-light-multiple",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.garageworkbenchlights",
+       "name": "Workbench",
+       "icon": "mdi:hammer-wrench",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.garage_kennel_lights",
+       "name": "Kennel",
+       "icon": "mdi:dog-side",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.kauf_garage_patio",
+       "name": "Garage patio",
+       "icon": "mdi:outdoor-lamp",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.garage_bulb_1",
+       "name": "Bulb 1",
+       "icon": "mdi:lightbulb",
+       "color": "amber",
+       "grid_options": {
+        "columns": 4,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.garage_bulb_2",
+       "name": "Bulb 2",
+       "icon": "mdi:lightbulb",
+       "color": "amber",
+       "grid_options": {
+        "columns": 4,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.garage_bulb_3",
+       "name": "Bulb 3",
+       "icon": "mdi:lightbulb",
+       "color": "amber",
+       "grid_options": {
+        "columns": 4,
+        "rows": 1
+       }
+      },
+      {
+       "type": "heading",
+       "heading": "Outdoor",
+       "heading_style": "title",
+       "icon": "mdi:pine-tree"
+      },
+      {
+       "type": "tile",
+       "entity": "switch.front_porch",
+       "name": "Front porch",
+       "icon": "mdi:coach-lamp",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.back_porch_light_switch_light",
+       "name": "Back porch",
+       "icon": "mdi:coach-lamp-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.back_patio_lights",
+       "name": "Patio party lights",
+       "icon": "mdi:string-lights",
+       "color": "pink",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "input_boolean.landscapelt_toggle",
+       "name": "Landscape",
+       "icon": "mdi:spotlight-beam",
+       "color": "green",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "switch.hot_tub_lights",
+       "name": "Hot tub lights",
+       "icon": "mdi:hot-tub",
+       "color": "purple",
+       "grid_options": {
+        "columns": 12,
+        "rows": 1
+       }
+      },
+      {
+       "type": "heading",
+       "heading": " ",
+       "heading_style": "subtitle"
+      },
+      {
+       "type": "button",
+       "name": "Everything off",
+       "icon": "mdi:lightbulb-off-outline",
+       "icon_height": "36px",
+       "show_state": false,
+       "tap_action": {
+        "action": "perform-action",
+        "perform_action": "homeassistant.turn_off",
+        "target": {
+         "entity_id": [
+          "light.lr_lamp_dimmer",
+          "light.lr_lamp_dimmer_2",
+          "light.kauf_bulb_304d85_kauf_bulb",
+          "light.workout_room_dimmer_switch_light",
+          "light.man_cave",
+          "light.bar_lights",
+          "light.back_bar",
+          "switch.garage_lights_main",
+          "switch.garageworkbenchlights",
+          "switch.garage_kennel_lights",
+          "light.kauf_garage_patio",
+          "light.garage_bulb_1",
+          "light.garage_bulb_2",
+          "light.garage_bulb_3",
+          "switch.front_porch",
+          "light.back_porch_light_switch_light",
+          "switch.back_patio_lights",
+          "switch.hot_tub_lights"
+         ]
+        },
+        "confirmation": {
+         "text": "Turn every light off?"
+        }
+       },
+       "grid_options": {
+        "columns": 12,
+        "rows": 2
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Security",
+   "path": "security",
+   "icon": "mdi:shield-home",
+   "type": "sections",
+   "max_columns": 3,
+   "dense_section_placement": true,
+   "background": {
+    "image": "/api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "badges": [
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Home",
+     "icon": "mdi:home-variant",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/home"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Hot Tub",
+     "icon": "mdi:hot-tub",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/hot-tub"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Lights",
+     "icon": "mdi:lightbulb-group",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/lights"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Security",
+     "icon": "mdi:shield-home",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "blue",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/security"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Calendar",
+     "icon": "mdi:calendar-month",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/calendar"
+     }
+    }
+   ],
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Locks",
+       "heading_style": "title",
+       "icon": "mdi:lock"
+      },
+      {
+       "type": "tile",
+       "entity": "lock.touchscreen_deadbolt_z_wave_plus",
+       "name": "Back porch",
+       "icon": "mdi:door-closed-lock",
+       "features": [
+        {
+         "type": "lock-commands"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "lock.w_garage_entry_deadbolt",
+       "name": "W garage entry",
+       "icon": "mdi:door-closed-lock",
+       "features": [
+        {
+         "type": "lock-commands"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "lock.touchscreen_deadbolt_z_wave_plus_2",
+       "name": "E garage entry",
+       "icon": "mdi:door-closed-lock",
+       "features": [
+        {
+         "type": "lock-commands"
+        }
+       ]
+      },
+      {
+       "type": "heading",
+       "heading": "Alarm",
+       "heading_style": "title",
+       "icon": "mdi:shield-home"
+      },
+      {
+       "type": "alarm-panel",
+       "entity": "alarm_control_panel.home_alarm",
+       "name": "Home alarm",
+       "states": [
+        "arm_home",
+        "arm_away"
+       ]
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Doors",
+       "heading_style": "title",
+       "icon": "mdi:door"
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.door_front_window_door_is_open",
+       "name": "Front door",
+       "icon": "mdi:door",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.door_back_porch_window_door_is_open",
+       "name": "Back porch",
+       "icon": "mdi:door",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.door_w_garage_entry_window_door_is_open",
+       "name": "W garage entry",
+       "icon": "mdi:door",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "cover.gate_switch_gate",
+       "name": "Gate",
+       "icon": "mdi:gate",
+       "color": "amber",
+       "tap_action": {
+        "action": "more-info"
+       },
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.single_garage",
+       "name": "Single garage",
+       "icon": "mdi:garage-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.double_garage",
+       "name": "Double garage",
+       "icon": "mdi:garage-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "heading",
+       "heading": "Windows",
+       "heading_style": "title",
+       "icon": "mdi:window-closed-variant"
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.window_kitchen_window_door_is_open",
+       "name": "Kitchen 1",
+       "icon": "mdi:window-closed-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.window_kitchen_2_window_door_is_open",
+       "name": "Kitchen 2",
+       "icon": "mdi:window-closed-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.window_dining_window_door_is_open",
+       "name": "Dining 1",
+       "icon": "mdi:window-closed-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.window_dining_2_window_door_is_open",
+       "name": "Dining 2",
+       "icon": "mdi:window-closed-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.window_bedroom_e_window_door_is_open",
+       "name": "Bedroom E",
+       "icon": "mdi:window-closed-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.window_bedroom_w_window_door_is_open",
+       "name": "Bedroom W",
+       "icon": "mdi:window-closed-variant",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Cameras",
+       "heading_style": "title",
+       "icon": "mdi:cctv"
+      },
+      {
+       "type": "picture-entity",
+       "entity": "camera.gate_keypad_live_view",
+       "name": "Gate keypad",
+       "camera_view": "auto",
+       "show_state": false,
+       "aspect_ratio": "16:9"
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.gate_keypad_motion",
+       "name": "Gate motion",
+       "icon": "mdi:motion-sensor",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.gate_keypad_ding",
+       "name": "Keypad ring",
+       "icon": "mdi:bell-ring",
+       "color": "amber",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Calendar",
+   "path": "calendar",
+   "icon": "mdi:calendar-month",
+   "type": "sections",
+   "max_columns": 3,
+   "dense_section_placement": true,
+   "background": {
+    "image": "/api/image/serve/e68b5880f1fc47bc932783ae9ad45355/original",
+    "size": "cover",
+    "attachment": "fixed"
+   },
+   "badges": [
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Home",
+     "icon": "mdi:home-variant",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/home"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Hot Tub",
+     "icon": "mdi:hot-tub",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/hot-tub"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Lights",
+     "icon": "mdi:lightbulb-group",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/lights"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Security",
+     "icon": "mdi:shield-home",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "grey",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/security"
+     }
+    },
+    {
+     "type": "entity",
+     "entity": "sun.sun",
+     "name": "Calendar",
+     "icon": "mdi:calendar-month",
+     "show_name": true,
+     "show_state": false,
+     "show_icon": true,
+     "color": "blue",
+     "tap_action": {
+      "action": "navigate",
+      "navigation_path": "/dashboard-counter/calendar"
+     }
+    }
+   ],
+   "sections": [
+    {
+     "type": "grid",
+     "column_span": 2,
+     "cards": [
+      {
+       "type": "calendar",
+       "title": "Household & Gillette",
+       "initial_view": "dayGridMonth",
+       "entities": [
+        "calendar.hillhomeassistant_gmail_com",
+        "calendar.birthdays",
+        "calendar.campbell_county_events",
+        "calendar.rockpile_museum",
+        "calendar.gillette_college",
+        "calendar.pronghorn_home_games",
+        "calendar.gillette_wild_home_games"
+       ],
+       "grid_options": {
+        "columns": "full",
+        "rows": 13
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Coming up",
+       "heading_style": "title",
+       "icon": "mdi:calendar-clock"
+      },
+      {
+       "type": "calendar",
+       "initial_view": "listWeek",
+       "entities": [
+        "calendar.hillhomeassistant_gmail_com",
+        "calendar.birthdays",
+        "calendar.campbell_county_events",
+        "calendar.rockpile_museum",
+        "calendar.gillette_college",
+        "calendar.pronghorn_home_games",
+        "calendar.gillette_wild_home_games"
+       ],
+       "grid_options": {
+        "columns": "full",
+        "rows": 12
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -47,16 +47,27 @@ The full parts list is in [BOM.md](BOM.md).
 - **Camera.** The tablet's front camera, looking out through the bezel, can act as a security camera
   for Home Assistant. Counter Home serves snapshots and an MJPEG stream through its API, only while
   Home Assistant has turned the camera on, and only if it is allowed on the tablet.
+- **Voice.** Say "OK Nabu, open the gate" from across the kitchen: while the screen is on, Counter
+  Home streams the microphone into Home Assistant's Assist pipeline, which detects the wake word
+  (openWakeWord add-on), understands the request (Home Assistant Cloud speech-to-text) and answers
+  through the speakers. A green MIC dot shows in the dock whenever the microphone is open.
+- **Sleep screen.** When nobody has been near for two minutes the dashboard gives way to a large
+  clock, the date and the outdoor temperature over a wallpaper that changes every ten minutes:
+  your own photos, pictures from Home Assistant, or built-in gradients that follow the time of
+  day. The radar brings the dashboard back when someone walks up.
 
 ## Repository layout
 
 | Path | What it is |
 | --- | --- |
 | [`android/`](android) | Counter Home launcher: Kotlin source, Gradle build, `setup.sh` provisioning script |
-| `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap and camera, so build v1.2.0 from source |
+| `android/CounterHome-1.0.0.apk` | Prebuilt v1.0.0. It predates the volume cap and camera, so build the current version from source |
 | [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
 | [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
+| [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml) | The five-view kiosk dashboard the tablet shows |
+| [`homeassistant/scripts/`](homeassistant/scripts) | Push the dashboard, create the Gillette calendars, sync the home-game calendars |
+| [`homeassistant/calendars/`](homeassistant/calendars) | Gillette Wild home dates (no feed exists), copied into a local calendar |
 | [`enclosure/enclosure.py`](enclosure/enclosure.py) | Parametric enclosure model (manifold3d). Generates every STL |
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
 | `enclosure/renders/` | `current_*` renders of the current design, plus the original Cowork renders |
@@ -79,7 +90,7 @@ already oriented for printing.
 | `bezel_shell` | 272 x 197 x 36 | Prints back wall down, front rim on top, no supports. Rim, tablet pocket and tray in one piece |
 | `bezel_chin` | 272 x 26 x 9 | Prints back face down, no supports. The chin bar: holds the radar, the lip along the bottom of the glass and the pocket's bottom corners |
 | `power_plate` | 44 x 26 x 45 | Prints face down with the sled standing up. Carries the USB-C PD trigger |
-| `power_plate_adafruit_first_build` | 44 x 26 x 33 | Only for a lid and spine printed before the HUNSOOL change (spine 55 mm deep at the lid): the plate for the Adafruit HUSB238 trigger. See "First-build spine" below |
+| `power_plate_adafruit_first_build` | 44 x 26 x 26 | Only for a lid and spine printed before the HUNSOOL change (spine 55 mm deep at the lid): the plate for the Adafruit HUSB238 breakout (5807). Prints snout face down with the tongue standing up, no supports. See "First-build spine" below |
 
 You need a printer with at least a 300 mm bed axis; a 320 mm or larger bed is more comfortable.
 The tablet alone is 257 mm wide, so the bezel cannot fit a 256 mm bed in one piece.
@@ -259,15 +270,42 @@ The tray depth follows the amp height, `AMP_H`. Dayton's spec sheet gives 20 mm 
 the PCB, which makes the tray 27 mm deep and the whole bezel 35.9 mm, down from 39.7 mm.
 
 **First-build spine.** A lid and spine printed before the HUNSOOL change is 55 mm deep at the lid
-(the current one is about 67 mm). Use it with the Adafruit HUSB238 and
-`power_plate_adafruit_first_build.stl`. On that spine the lid's wire hole, 74 mm from the lid's front
-edge, sits under the trigger's sled, so the speaker wires can't get past. To rework it:
-1. Drill a new 8 mm hole on the centre line, 62 mm from the lid's front edge, from underneath. It is
-   about 14 mm to the trigger cavity, just in front of the board's end.
-2. Fill the old hole solid with epoxy or hot glue.
-3. Run the speaker leads up through the new hole, laid flat in front of the board's end and into the
-   channel.
-4. Hot-glue the new hole shut around the wires.
+(the current one is about 67 mm). Use it with the Adafruit HUSB238 breakout (product 5807) and
+`power_plate_adafruit_first_build.stl`. The plate is built by `power_plate_first_build.py`, from
+Adafruit's CAD model of the board. It replaces an earlier plate for this spine with two problems:
+- **Plug jammed.** That plate assumed the socket sat on the PCB's centre line. On the 5807 it sits on
+  top of the board, 2.4 mm higher, so the plug's overmold hit the top of the plate's opening.
+- **Wire hole covered.** Its sled ran over the lid's wire hole, 74 mm from the lid's front edge, and the
+  12 mm throat above it. The speaker wires couldn't get past, and the hole couldn't be sealed.
+
+![First-build power plate](enclosure/renders/first_build_power.png)
+
+The new plate works like this:
+- **Snout.** A tapered snout stands 9 mm out of the spine's rear face and holds the front of the board.
+  The socket's mouth sits 0.2 mm behind the snout's face, in a hole that hugs the receptacle, so the
+  plug seats fully against the face.
+- **Board.** The board slides in from the inside, USB end first, until its edge stops against the face.
+  Two M2.5 x 6 thread-forming screws go down through the two holes on top of the snout, through the
+  board's mounting holes, into the floor. A tongue inside the spine carries the board's far end, with a
+  slot for the terminal's pins.
+- **Wire hole clear.** The board now ends 2 mm behind the wire hole's throat, so nothing sits over it.
+  The speaker wires come straight up through the original hole.
+- **Same mounting.** It uses the spine's pocket and M3 inserts and the same M3 x 8 countersunk screws.
+  The screws go in through wells in the snout's sides.
+
+![Old and new plate in section](enclosure/renders/first_build_power_section.png)
+
+To fit it:
+1. Run the speaker leads up through the original wire hole and the cable channel.
+2. With the plate out, hot-glue the hole shut around the wires. Reach in through the open pocket; the
+   hole is about 24 mm in from the rear face, at the bottom of the cavity.
+3. Screw the board to the plate and put the 18 AWG leads in its terminal. Feed them through the cavity
+   and up the channel.
+4. Slide the plate in, tongue first, and screw it flush.
+
+If you already drilled the 62 mm hole from the earlier rework, use either hole for the wires and fill
+the other with epoxy or hot glue. Both are open from the pocket now. The plug stands 9 mm further back
+over the lid than before, closer to the cable clip, so a right-angle plug that points down works best.
 
 **USB-C power plate.** The PD trigger mounts on a sled molded onto the back of the plate, using its
 own four mounting holes. The geometry is the HUNSOOL PD3.1 trigger as measured:
@@ -358,6 +396,12 @@ To change dimensions, edit the `PARAMETERS` block in `enclosure.py` and regenera
 ```
 pip install -r enclosure/requirements.txt
 python enclosure/enclosure.py enclosure/out
+```
+
+The first-build power plate has its own script, which also checks its fit against the first-build spine:
+
+```
+python enclosure/power_plate_first_build.py enclosure/out
 ```
 
 The script prints part volumes and the air volume of each chamber: about 0.54 L per full-range
@@ -526,30 +570,63 @@ ESPHome `secrets.yaml`. Suggested radar tuning is in the YAML comments.
 
 ### 4. Provision the tablet
 
-1. Build Counter Home v1.2.0, as described in [Building the app](#building-the-app). `setup.sh`
+1. Build Counter Home v1.2.1, as described in [Building the app](#building-the-app). `setup.sh`
    installs that build when it exists, and otherwise falls back to the prebuilt v1.0.0, which has no
    volume cap or camera.
-2. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on USB debugging.
-   Device owner can only be set while the tablet has no accounts.
-3. On your computer, with Android platform-tools installed:
+2. Factory reset the tablet. Connect Wi-Fi, skip every Google and Samsung sign-in, and turn on
+   developer options. Device owner can only be set while the tablet has no accounts.
+3. Connect adb. In the finished enclosure the tablet's only USB-C port feeds the audio adapter, so
+   use wireless debugging with the computer on the same Wi-Fi. Turn on Settings > Developer options >
+   Wireless debugging, tap "Pair device with pairing code", then:
+
+   ```
+   adb pair <tablet_ip>:<pairing_port>
+   adb connect <tablet_ip>:<port>
+   ```
+
+   The connect port is the one on the Wireless debugging screen, not the pairing port.
+4. On your computer, with Android platform-tools installed:
 
    ```
    cd android
    ./setup.sh http://<HA_IP>:8123/dashboard-counter/0?kiosk
    ```
 
-   It installs the APK, makes Counter Home the device owner, removes Samsung extras, and prints the
+   It installs the APK, makes Counter Home the device owner, removes bloat, and prints the
    tablet IP, the API token and the Home Assistant secrets. Reserve that IP on your router.
-4. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
+5. On the tablet, hold the dock clock for 3 seconds and enter PIN `2580`. Choose
    "Pause kiosk lock and open Android settings". Sign in to Google, install Spotify, YouTube TV,
-   IPTV Smarters and the Home Assistant app, set Battery protection to Maximum, and make Home
-   Assistant the default digital assistant. Then tap "Resume kiosk lock".
-5. Change the settings PIN. The default PIN is public in this repository.
-6. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
+   an IPTV player such as OTT Play, Audacy (the Radio tile) and the Home Assistant app, set Battery
+   protection to Maximum, and make Home Assistant the default digital assistant. Then tap "Resume
+   kiosk lock". The default dock is Music, Live TV, IPTV, Radio, Volume and Assist; edit the tiles
+   JSON in the settings screen (or `POST /config`) to change it.
+6. Change the settings PIN. The default PIN is public in this repository.
+7. Set the volume cap by ear. Play music with bass at the cap, and lower "Max media volume" in the
    settings screen if the full-range drivers distort or bottom out.
-7. To use the camera, tick "Allow the camera" in the settings screen. It stays off until Home
+8. To use the camera, tick "Allow the camera" in the settings screen. It stays off until Home
    Assistant turns it on. Also check that Android's camera access toggle is on: Settings > Security
    and privacy > More privacy settings > Camera access. When it's off, every frame comes out black.
+
+**HTTPS dashboards by LAN IP.** If Home Assistant is HTTPS-only with a certificate for a public
+name, such as a DuckDNS address, the tablet usually can't reach that name from the LAN: most routers
+don't loop the public address back in. Load the dashboard by Home Assistant's LAN IP instead, and set
+"Certificate name" in the settings screen (`haCertName` in `POST /config`) to the name on the
+certificate. Counter Home then accepts the certificate for that IP only when it names that host and
+is otherwise valid: trusted, in date, and for the configured dashboard host. At provisioning time:
+
+```
+HA_CERT_NAME=myhome.duckdns.org ./setup.sh https://192.168.0.50:8123/dashboard-counter/0?kiosk
+```
+
+A local DNS entry that points the public name at the LAN IP also works, with no setting needed.
+
+**Debloat.** `setup.sh` runs `debloat.sh`, which removes about a hundred Samsung, Google, Microsoft
+and Meta apps listed in `android/debloat-packages.txt`. It keeps Play services, the Play Store,
+Android System WebView, Chrome, One UI Home, Samsung Keyboard and Device care; the list's header
+says why each stays. Removal is per user, so `/system` is untouched. Preview with
+`./debloat.sh --dry-run`, put one app back with `./restore.sh <package>`, or everything with
+`./restore.sh --all`. A factory reset, and sometimes a major One UI update, brings the apps back;
+rerun `./debloat.sh` after an update.
 
 Do the YouTube TV and Spotify sign-ins while the kiosk lock is paused. Google's login screens
 belong to other packages, and lock task mode blocks them.
@@ -571,12 +648,112 @@ ICP1 or KPX programmer, can drop the Bluetooth input.
 The automations expect the presence entity `binary_sensor.counter_presence_presence`, which the
 ESPHome config creates.
 
+**The dashboard.** [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml)
+is the `dashboard-counter` dashboard the tablet loads: five views for an 11" landscape screen in
+kiosk mode. Each view is one screen with no scrolling: the view's title and a navigation pill on
+top (the kiosk hides HA's tabs), then three columns of dark glass tiles over the wallpaper. A tile
+turns white while its light is on, its door is open or its lock is unlocked. Tap a tile to act,
+hold it for the details (brightness, thermostat, history).
+
+| View | What's on it |
+| --- | --- |
+| Home | Weather for the next hours, house thermostat, fireplace and the room units, the two garage doors and the gate as big tap tiles, the garage entry lock, the next four calendar events, the gate camera, and one line each for lights, security and the hot tub that leads to its view |
+| Lights | Every light by room, the Normal / Go Bills / Go Pokes scenes, "all lights off" |
+| Security | Locks (tap asks before it locks or unlocks), alarm, garage doors and gate, every door and window sensor, the gate camera |
+| Hot Tub | Set point dial, 24 h graph, jets, lights and their colours, salt system, locks and timers, temperatures |
+| Calendar | Month view of the household and Gillette calendars |
+
+It needs the HACS cards `button-card` (version 7 or newer), `mini-graph-card` and `kiosk-mode`
+(the dashboard's `kiosk_mode:` block hides the header and sidebar for non-admin users, so the
+tablet's `counter` user stays in kiosk mode when it switches views). The look is in the file
+itself, as button-card templates at the top of `counter.yaml`; it does not use card-mod or a Home
+Assistant theme, so it is the same whichever theme the tablet's user has. A column holds eight
+72 px rows; more than that runs off the screen. The scripts in
+[`homeassistant/scripts/`](homeassistant/scripts) talk to Home Assistant with a long-lived access
+token, read from `HA_TOKEN` or from `ha_token:` in the git-ignored `android/keystore/ha-secrets.yaml`
+(`pip install websockets pyyaml pillow` first):
+
+```
+python3 homeassistant/scripts/push_dashboard.py     # save counter.yaml as dashboard-counter, reload the tablet
+python3 homeassistant/scripts/setup_calendars.py    # create the Gillette community calendars (idempotent)
+python3 homeassistant/scripts/sync_home_games.py    # fill the Pronghorn and Gillette Wild home-game calendars
+python3 homeassistant/scripts/set_wallpaper.py      # upload the wallpaper and set it as every view's background
+```
+
+The wallpaper is a mesh gradient (blue through indigo to a warm corner) rendered by
+[`homeassistant/dashboards/wallpaper/make_wallpaper.py`](homeassistant/dashboards/wallpaper/make_wallpaper.py);
+`set_wallpaper.py` puts the PNG in Home Assistant's image store (served without a login, so the
+kiosk user can load it) and writes its URL into the dashboard's `wallpaper` anchor, which every
+view uses. To use your own picture, `set_wallpaper.py path/to/image.jpg` then `push_dashboard.py`.
+The dock in Counter Home paints the same edge colours so the wallpaper appears to run behind it;
+with another picture, change the `EDGE_` colours in
+[`Dock.kt`](android/app/src/main/java/com/counterdisplay/launcher/Dock.kt) to match.
+
+`setup_calendars.py` subscribes Home Assistant's built-in Remote Calendar integration to the
+Campbell County events and Rockpile Museum feeds (campbellcountywy.gov) and the Gillette College
+events feed, which update themselves. The two sports calendars are Local Calendars:
+`sync_home_games.py` reads the college's PrestoSports iCal feeds and keeps only games at the
+Pronghorn Center, and copies the Gillette Wild home dates from
+[`homeassistant/calendars/gillette_wild_home.yaml`](homeassistant/calendars/gillette_wild_home.yaml)
+(the NA3HL site has no feed, so that file is updated by hand each season). Re-run it when a
+schedule changes; it only adds what's missing.
+
+The shared household calendar is a Google calendar. The Google Calendar integration needs its own
+OAuth client: in the [Google Cloud console](https://console.cloud.google.com) create a project,
+enable the Google Calendar API, configure the OAuth consent screen (External, add yourself as a
+test user) and create an OAuth client ID of type "Web application" with
+`https://my.home-assistant.io/redirect/oauth` as the redirect URI. Then in Home Assistant go to
+Settings > Devices & services > Add integration > Google Calendar, paste the client ID and secret,
+and sign in. If Google sends you to a private-IP redirect, `configuration.yaml` is missing `my:`
+(it comes with `default_config`), and if the last hop fails with an empty response, the Home
+Assistant URL saved at my.home-assistant.io must be the `https://` one. `counter.yaml` lists the
+account's primary calendar (`calendar.hillhomeassistant_gmail_com`, shown as "Household") and its
+birthdays calendar; share other family calendars with that Google account and add their entities
+the same way. `homeassistant/dashboards/previous/` keeps the dashboard that was
+replaced.
+
 | Time with nobody present | What happens |
 | --- | --- |
 | Someone arrives | Screen on. Brightness 25 from 22:00 to 06:00, auto otherwise |
-| 2 minutes | Dim clock overlay, if the dashboard is in front |
-| 10 minutes | Panel off, if the dashboard is in front |
-| 30 minutes | Back to the dashboard and panel off, if another app was open |
+| 2 minutes | Sleep screen (clock, date, outdoor temperature, rotating wallpaper), if the dashboard is in front |
+| 10 minutes, 23:00–06:00 only | Panel off; at 23:00 as well if it has been alone for 10 minutes. During the day the clock stays up |
+| 30 minutes | Back to the dashboard if another app was open, then the sleep screen (or panel off late at night) |
+
+The outdoor temperature line comes from `sensor.main_outdoor_temperature_2` (the Venstar's probe)
+and the NWS weather entity; the `counter_display_ambient_info` automation sends it to the tablet
+every 15 minutes with `POST /ambient/info`. Change the entities there if yours differ.
+
+**Wallpapers.** The sleep screen shows pictures from three places, mixed at random: photos pushed to
+the tablet with [`android/wallpapers.sh`](android/wallpapers.sh) (`./wallpapers.sh push *.jpg`,
+`list`, `delete`), image URLs entered in Counter Home's settings (for example pictures in Home
+Assistant's `www` folder, `https://ha/local/wallpapers/a.jpg`), and built-in soft gradients whose
+colours follow the time of day. With no photos it shows only the gradients. Pictures around
+1920 x 1200 look best; bigger ones are scaled down on the tablet.
+
+**Hands-free voice.** `python3 homeassistant/scripts/setup_voice.py` prepares Home Assistant: it
+installs and starts the openWakeWord add-on, adds its Wyoming integration, puts "OK Nabu" on the
+preferred Assist pipeline, creates one script per dock tile ("turn on the radio", "turn on
+Spotify", "turn on YouTube TV", "turn on IPTV", "turn on the dashboard" open that app on the
+tablet) and gives the gate, garage doors, locks and sensors spoken aliases. The hub's Spotify
+app shows up in Home Assistant's Spotify integration as a Connect device, and that player is
+exposed as "the hub", so "pause the hub", "next song on the hub" and "set the hub volume to 40"
+work while Spotify plays. Starting a particular song or playlist by voice is not covered: Home
+Assistant itself can't search Spotify, so that needs Spotcast (HACS) or Music Assistant. The
+pipeline needs speech-to-text and text-to-speech engines; Home Assistant Cloud provides both. On
+the tablet, tick "Hands-free voice" in Counter Home's settings and paste a long-lived access token
+(create one from the profile page of the non-admin `counter` user; an admin token also works but
+gives the tablet more than it needs). Voice runs only while the panel is on, so at night, with the
+screen off, the microphone is closed. `POST /voice/off` pauses it from an automation (a dinner
+party, say) and `/voice/on` resumes. The wake word can be changed with
+`setup_voice.py --wake-word hey_jarvis` (`okay_nabu`, `hey_jarvis`, `alexa`, `hey_mycroft`, `hey_rhasspy`).
+
+**Claude as the brain.** Out of the box Assist only understands its fixed sentences. Add the
+Anthropic integration (Settings > Devices & services > Add integration > Anthropic, with an API
+key from console.anthropic.com; tick "Control Home Assistant" and pick a fast model such as
+Haiku), then run `setup_voice.py --conversation-agent conversation.claude_conversation`. The
+pipeline keeps trying the built-in sentences first, so "open the gate" is still instant and free,
+and hands anything else ("is anything unlocked?", "turn off everything but the kitchen") to Claude,
+which answers in plain speech. The wake word, speech-to-text and text-to-speech are unchanged.
 
 A notification fires if the tablet battery stays above 42 °C for 5 minutes.
 
@@ -623,18 +800,22 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | --- | --- |
 | `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, cameraAllowed, camera, ip |
 | `POST /screen/on`, `/screen/off`, `/screen/toggle` | Panel power |
-| `POST /ambient/on`, `/ambient/off` | Dim clock overlay, tap to dismiss |
+| `POST /ambient/on`, `/ambient/off` | Sleep screen (clock, date, wallpaper), tap to dismiss |
+| `POST /ambient/info?temperature=44&unit=°F&condition=Sunny` or `?line=...` | The line under the clock on the sleep screen |
+| `GET /wallpapers`, `PUT /wallpapers/<name>` (image body, ≤ 20 MB), `DELETE /wallpapers/<name>` | Pictures for the sleep screen |
+| `POST /voice/on`, `/voice/off` | Start or pause hands-free voice (needs it enabled in settings). `/status` reports `voice` |
 | `POST /home` | Back to the dashboard from any app |
 | `POST /launch?app=Music` | Tile label or package name |
 | `POST /assist` | Opens the default assistant (HA Assist) |
 | `POST /navigate?url=...` | Load any URL in the dashboard view, such as a camera page when the doorbell rings |
 | `POST /brightness?value=0-255` or `?value=auto` | Backlight |
 | `POST /reload` | Reload the dashboard |
+| `POST /volume?value=0-100`, `/volume/up`, `/volume/down` | Media volume as a percentage, never above the cap. Returns the new `volume` |
 | `POST /camera/on?minutes=N` | Camera on. With `minutes`, it turns itself off after that long. Needs "Allow the camera" |
 | `POST /camera/off` | Camera off |
 | `GET /camera.jpg` | Latest frame as JPEG. 503 while the camera is off |
 | `GET /camera.mjpeg` | MJPEG stream, up to 3 at once. It ends when the camera turns off |
-| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port |
+| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port, voiceEnabled, voicePipeline, haToken (write-only), ambientIntervalMin, wallpaperUrls |
 
 `volume` and `maxVolume` are percentages of the tablet's media volume range.
 
@@ -654,12 +835,29 @@ Example tiles JSON, for the settings screen or `POST /config`:
 {"tiles": [
   {"label": "Music",   "package": "com.spotify.music", "color": "#1F8F4E"},
   {"label": "Live TV", "package": "com.google.android.apps.youtube.unplugged", "color": "#C43B33"},
-  {"label": "IPTV",    "package": "com.nst.iptvsmarterstvbox", "color": "#3A62B8"},
+  {"label": "IPTV",    "package": "com.ottplay.ottplay", "color": "#3A62B8"},
+  {"label": "Recipes", "package": "com.example.recipes", "color": "#E8702A", "icon": "globe"},
+  {"label": "Volume",  "action": "volume", "color": "#5B6470"},
   {"label": "Assist",  "action": "assist", "color": "#16A3C9"}
 ]}
 ```
 
-Tile actions are `assist`, `reload` and `home`. The dock can sit on the right, left or bottom.
+The dock is drawn as a fourth column of the dashboard: the clock in the title row, then glass
+tiles with a glyph and a label. A tile's `color` tints its glyph (the hue is kept, the shade is
+lifted to suit dark glass; greys stay white). `icon` picks the glyph: `music`, `tv`, `play`,
+`radio`, `volume`, `mic`, `home`, `reload`, `video`, `globe` or `apps`. Leave it out and the dock
+guesses from the action, label and package. Up to six tiles keep their full size on a side dock;
+more than that share the height.
+
+Tile actions are `assist`, `reload`, `home`, `volume`, `volume_up` and `volume_down`. `volume`
+opens Android's media volume slider over whatever is on screen.
+
+**Volume without side keys.** The bezel covers the tablet's volume keys, so volume comes from three
+places: the Volume dock tile, the `input_number.counter_display_volume` slider that the Home
+Assistant package adds (put it on the dashboard), and `POST /volume`. All three respect the cap.
+While Spotify or another app fills the screen the dock is hidden; use the slider in Home Assistant,
+or turn on Samsung's floating Assistant menu (Settings > Accessibility > Interaction and dexterity),
+which has volume buttons. The dock can sit on the right, left or bottom.
 
 ## Building the app
 
@@ -707,6 +905,7 @@ These items came out of reviewing the Cowork export.
 | Setup script printed the wrong Home Assistant secret names | Fixed |
 | KABD-430 amp is taller than the original tray allowed | Fixed. Tray depth follows the amp height: 27 mm for the 20 mm board on Dayton's spec sheet |
 | Wide printed frame covered the tablet's glass, light sensor and camera | Changed to a frameless bezel: a thin rim, the tablet glass showing, and a one-piece shell plus chin |
+| First-build spine: the USB-C plug's overmold hit the power plate's opening, and the trigger's sled covered the lid's wire hole so it couldn't be sealed | Fixed with a new plate for the Adafruit HUSB238 (5807). A snout 9 mm out of the spine holds the socket at the face and carries the board clear of the wire hole |
 | 24 V entered through a pigtail hole | Changed to a flush USB-C port on a screw-in plate, powered by a small USB-C charger |
 | The 12 mm lid hole left the woofer chamber open to the bezel tray through the cable channel, which spoiled the passive radiator alignment | Fixed. The hole is 8 mm, sized for three 20 AWG pairs, the channel no longer cuts through the lid, and assembly step 3 seals the hole with hot glue |
 | Bezel shell: the two small lip tabs at the bottom corners of the window break easily (first PETG build). They are 1.2 mm thick, held on two sides, and sit over the gaps that let the tablet's corners slide in | Fixed for the next build (first build works as printed). The chin bar now runs up to `CHIN_SPLIT` (26 mm), where the corner blocks are still 1.5 mm thick at the pocket wall. It carries solid blocks that fill the pocket corners outside the tablet's rounded corners, with the lip's corners on their front. Checked: the bar slides straight back into place past the seated tablet without contact |

@@ -16,9 +16,11 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
+import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.InputStream
 import java.io.OutputStream
 import java.net.Inet4Address
 import java.net.InetSocketAddress
@@ -33,18 +35,26 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  *   GET  /status                    -> JSON state
  *   POST /screen/on | /screen/off   -> panel power (off needs device owner)
- *   POST /ambient/on | /ambient/off -> dim clock overlay
+ *   POST /ambient/on | /ambient/off -> the sleep screen (clock, date, wallpaper)
+ *   POST /ambient/info?temperature=44&unit=°F&condition=Sunny  (or ?line=any text)
+ *                                   -> the line under the clock on the sleep screen
  *   POST /home | /reload | /assist
  *   POST /launch?app=Music          -> tile label or package name
  *   POST /navigate?url=...          -> load a URL in the dashboard view
  *   POST /brightness?value=0-255|auto
+ *   POST /volume?value=0-100 | /volume/up | /volume/down   -> media volume, held under the cap
  *   GET  /config, POST /config      -> read or update settings (JSON body)
  *   POST /camera/on?minutes=N       -> camera on, optional auto-off (needs "Allow the camera" in settings)
  *   POST /camera/off
  *   GET  /camera.jpg                -> latest frame (503 while the camera is off)
  *   GET  /camera.mjpeg              -> MJPEG stream; ends when the camera turns off
+ *   GET  /wallpapers                -> pictures on the tablet for the sleep screen
+ *   PUT  /wallpapers/<name>         -> add one (body is the image, up to 20 MB)
+ *   DELETE /wallpapers/<name>
+ *   POST /voice/on | /voice/off     -> start or stop hands-free voice (needs it enabled in settings)
  *
- * It also holds the media volume at or below the configured cap (see [Volume]).
+ * It also holds the media volume at or below the configured cap (see [Volume]), and runs the
+ * hands-free voice loop while the screen is on (see [VoiceSatellite]).
  *
  * Every request needs the token: header "Authorization: Bearer <token>" or ?token=<token>.
  */
@@ -65,29 +75,42 @@ class ControlService : Service() {
         }
     }
 
+    /** Voice listens while the panel is on. The panel is on exactly when someone may be around. */
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) { syncVoice() }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         cfg = Config(this)
-        // Camera access from a foreground service has to be claimed while the app is on screen.
-        // The launcher starts this service from onCreate, so State.foreground is normally true here.
-        goForeground(withCamera = State.foreground)
+        // Camera and microphone access from a foreground service have to be claimed while the app is
+        // on screen. The launcher starts this service from onCreate, so State.foreground is normally true here.
+        goForeground(withDevices = State.foreground)
         holdLocks()
         startServer()
         watchVolume()
+        registerReceiver(screenReceiver, IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_SCREEN_OFF)
+        })
+        VoiceSatellite.onEvent = { ev -> Bus.post(Command.Voice(ev)) }
+        syncVoice()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_RESTART_SERVER -> startServer()
-            ACTION_REFRESH_FOREGROUND -> goForeground(withCamera = true)   // sent from MainActivity.onResume
+            ACTION_REFRESH_FOREGROUND -> { goForeground(withDevices = true); syncVoice() }   // sent from MainActivity.onResume
+            ACTION_SYNC_VOICE -> syncVoice()
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
         try { unregisterReceiver(volumeReceiver) } catch (_: Exception) { }
+        try { unregisterReceiver(screenReceiver) } catch (_: Exception) { }
+        VoiceSatellite.stop()
         CameraStreamer.stop()
         try { server?.close() } catch (_: Exception) { }
         pool.shutdownNow()
@@ -98,7 +121,7 @@ class ControlService : Service() {
 
     // ---------------------------------------------------------------- setup
 
-    private fun goForeground(withCamera: Boolean) {
+    private fun goForeground(withDevices: Boolean) {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL, "Counter Home control", NotificationManager.IMPORTANCE_MIN)
@@ -109,23 +132,29 @@ class ControlService : Service() {
             .setSmallIcon(android.R.drawable.ic_menu_manage)
             .setOngoing(true)
             .build()
-        val camera = withCamera && cfg.cameraAllowed && CameraStreamer.hasPermission(this)
+        val camera = withDevices && cfg.cameraAllowed && CameraStreamer.hasPermission(this)
+        val mic = withDevices && cfg.voiceEnabled && VoiceSatellite.hasPermission(this)
         try {
             when {
                 Build.VERSION.SDK_INT >= 34 -> startForeground(NOTIF_ID, n,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or
-                        (if (camera) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0))
-                Build.VERSION.SDK_INT >= 30 && camera ->
-                    startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+                        (if (camera) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0) or
+                        (if (mic) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0))
+                Build.VERSION.SDK_INT >= 30 && (camera || mic) ->
+                    startForeground(NOTIF_ID, n,
+                        (if (camera) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0) or
+                            (if (mic) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0))
                 else -> startForeground(NOTIF_ID, n)
             }
             cameraForeground = camera
+            micForeground = mic
         } catch (e: Exception) {
-            // Not allowed to claim the camera right now (app in the background): keep the plain type.
-            Log.w(TAG, "foreground with camera refused: ${e.message}")
+            // Not allowed to claim the devices right now (app in the background): keep the plain type.
+            Log.w(TAG, "foreground with camera/mic refused: ${e.message}")
             if (Build.VERSION.SDK_INT >= 34) startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             else startForeground(NOTIF_ID, n)
             cameraForeground = false
+            micForeground = false
         }
     }
 
@@ -148,6 +177,17 @@ class ControlService : Service() {
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(volumeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         else registerReceiver(volumeReceiver, filter)
         Volume.enforce(this, cfg)
+    }
+
+    /** Starts voice when it is enabled and the panel is on; stops it otherwise. */
+    private fun syncVoice() {
+        val want = cfg.voiceEnabled && !voicePausedByApi && Kiosk.isScreenOn(this)
+        if (want && !VoiceSatellite.running) {
+            if (!micForeground) goForeground(withDevices = true)
+            VoiceSatellite.start(this, cfg)?.let { Log.w(TAG, "voice not started: $it") }
+        } else if (!want && VoiceSatellite.running) {
+            VoiceSatellite.stop()
+        }
     }
 
     private fun startServer() {
@@ -174,10 +214,10 @@ class ControlService : Service() {
 
     private fun handle(sock: Socket) {
         sock.use { s ->
-            s.soTimeout = 5000
+            s.soTimeout = 15000
             try {
-                val reader = BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8))
-                val requestLine = reader.readLine() ?: return
+                val input = BufferedInputStream(s.getInputStream())
+                val requestLine = readLine(input) ?: return
                 val parts = requestLine.split(" ")
                 if (parts.size < 2) return
                 val method = parts[0].uppercase()
@@ -185,24 +225,24 @@ class ControlService : Service() {
 
                 val headers = HashMap<String, String>()
                 while (true) {
-                    val line = reader.readLine() ?: break
+                    val line = readLine(input) ?: break
                     if (line.isEmpty()) break
                     val i = line.indexOf(':')
                     if (i > 0) headers[line.substring(0, i).trim().lowercase()] = line.substring(i + 1).trim()
                 }
-                val len = headers["content-length"]?.toIntOrNull() ?: 0
-                val body = if (len in 1..65536) {
-                    val buf = CharArray(len); var read = 0
-                    while (read < len) { val r = reader.read(buf, read, len - read); if (r < 0) break; read += r }
-                    String(buf, 0, read)
-                } else ""
-
+                val out = s.getOutputStream()
                 val auth = headers["authorization"]?.removePrefix("Bearer ")?.trim()
                     ?: headers["x-api-key"] ?: query["token"]
-                val out = s.getOutputStream()
                 if (auth != cfg.token) {
                     writeJson(out, 401, err("bad or missing token")); return
                 }
+                val len = headers["content-length"]?.toLongOrNull() ?: 0L
+                val maxLen = if (path.startsWith("/wallpapers/")) MAX_UPLOAD else 65536L
+                if (len > maxLen) { writeJson(out, 413, err("body too large")); return }
+                val body = ByteArray(len.toInt())
+                var read = 0
+                while (read < body.size) { val r = input.read(body, read, body.size - read); if (r < 0) break; read += r }
+
                 when (path) {
                     "/camera.jpg" -> { serveSnapshot(out); return }
                     "/camera.mjpeg" -> { serveMjpeg(out); return }
@@ -215,16 +255,38 @@ class ControlService : Service() {
         }
     }
 
-    private fun route(method: String, path: String, q: Map<String, String>, body: String): Pair<Int, JSONObject> {
+    /** One header line as ISO-8859-1, without the line ending; null at end of stream. */
+    private fun readLine(s: InputStream): String? {
+        val sb = StringBuilder()
+        while (true) {
+            val c = s.read()
+            if (c < 0) return if (sb.isEmpty()) null else sb.toString()
+            if (c == '\n'.code) return sb.toString().trimEnd('\r')
+            sb.append(c.toChar())
+            if (sb.length > 16384) throw IllegalArgumentException("header line too long")
+        }
+    }
+
+    private fun route(method: String, path: String, q: Map<String, String>, body: ByteArray): Pair<Int, JSONObject> {
         val ok = JSONObject().put("ok", true)
-        when (path.trimEnd('/').ifEmpty { "/" }) {
+        val p = path.trimEnd('/').ifEmpty { "/" }
+        if (p.startsWith("/wallpapers/")) return wallpaper(method, p.removePrefix("/wallpapers/"), body)
+        when (p) {
             "/", "/status" -> return 200 to status()
-            "/screen/on" -> { Kiosk.screenOn(this); Bus.post(Command.WakeUp); Bus.post(Command.Ambient(false)) }
+            "/screen/on" -> { Kiosk.screenOn(this); Bus.post(Command.WakeUp); Bus.post(Command.Ambient(false)); syncVoice() }
             "/screen/off" -> if (!Kiosk.screenOff(this)) return 409 to err("screen off needs device owner")
             "/screen/toggle" -> if (Kiosk.isScreenOn(this)) Kiosk.screenOff(this)
                                 else { Kiosk.screenOn(this); Bus.post(Command.WakeUp) }
             "/ambient/on" -> { Kiosk.screenOn(this); Bus.post(Command.Ambient(true)) }
             "/ambient/off" -> Bus.post(Command.Ambient(false))
+            "/ambient/info" -> {
+                val line = q["line"] ?: buildString {
+                    q["temperature"]?.let { append(it.trimEnd('0').trimEnd('.')); append(q["unit"] ?: "°") }
+                    q["condition"]?.takeIf { it.isNotBlank() }?.let { if (isNotEmpty()) append(" · "); append(it) }
+                }
+                State.ambientInfo = line
+                Bus.post(Command.AmbientInfo(line))
+            }
             "/home" -> { Kiosk.screenOn(this); Bus.post(Command.Home) }
             "/reload" -> Bus.post(Command.Reload)
             "/assist" -> { Kiosk.screenOn(this); Bus.post(Command.Assist) }
@@ -242,20 +304,35 @@ class ControlService : Service() {
                            else Kiosk.setBrightness(this, v.toIntOrNull() ?: return 400 to err("value 0-255 or auto"))
                 if (!done) return 409 to err("brightness needs device owner")
             }
+            "/volume" -> {
+                val v = q["value"]?.toIntOrNull() ?: return 400 to err("value 0-100")
+                return 200 to JSONObject().put("ok", true).put("volume", Volume.set(this, cfg, v))
+            }
+            "/volume/up" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, true))
+            "/volume/down" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, false))
             "/camera/on" -> {
                 if (!cfg.cameraAllowed) return 403 to err("camera is turned off in Counter Home settings")
-                if (!cameraForeground) goForeground(withCamera = true)
+                if (!cameraForeground) goForeground(withDevices = true)
                 val minutes = q["minutes"]?.toIntOrNull() ?: 0
                 CameraStreamer.start(this, cfg, minutes)?.let { return 409 to err(it) }
                 return 200 to JSONObject().put("ok", true).put("camera", CameraStreamer.statusJson())
             }
             "/camera/off" -> CameraStreamer.stop()
+            "/voice/on" -> {
+                if (!cfg.voiceEnabled) return 403 to err("voice is turned off in Counter Home settings")
+                voicePausedByApi = false
+                syncVoice()
+                VoiceSatellite.lastError?.takeIf { !VoiceSatellite.running }?.let { return 409 to err(it) }
+                return 200 to JSONObject().put("ok", true).put("voice", VoiceSatellite.statusJson())
+            }
+            "/voice/off" -> { voicePausedByApi = true; VoiceSatellite.stop() }
+            "/wallpapers" -> return 200 to JSONObject().put("ok", true).put("wallpapers", wallpaperList())
             "/config" -> {
                 if (method == "GET") return 200 to cfg.toJson()
                 return try {
                     val oldPort = cfg.port
                     val oldCam = Triple(cfg.cameraFacing, cfg.cameraWidth, cfg.cameraRotation)
-                    cfg.apply(JSONObject(body))
+                    cfg.apply(JSONObject(String(body, Charsets.UTF_8)))
                     Volume.enforce(this, cfg)
                     if (CameraStreamer.running && oldCam != Triple(cfg.cameraFacing, cfg.cameraWidth, cfg.cameraRotation)) {
                         // reopen with the new settings, keeping any auto-off that was running
@@ -267,12 +344,42 @@ class ControlService : Service() {
                     }
                     Bus.post(Command.ConfigChanged)
                     if (cfg.port != oldPort) startServer()
+                    if (VoiceSatellite.running) VoiceSatellite.stop()   // picks up a new token or pipeline
+                    syncVoice()
                     200 to ok
                 } catch (e: Exception) { 400 to err("bad config: ${e.message}") }
             }
             else -> return 404 to err("unknown path $path")
         }
         return 200 to ok
+    }
+
+    /** PUT adds (or replaces) a picture, DELETE removes one. Names are plain file names. */
+    private fun wallpaper(method: String, rawName: String, body: ByteArray): Pair<Int, JSONObject> {
+        val name = URLDecoder.decode(rawName, "UTF-8")
+        if (name.isEmpty() || name.contains('/') || name.contains("..")) return 400 to err("bad name")
+        val f = File(AmbientView.wallpaperDir(this), name)
+        return when (method) {
+            "PUT", "POST" -> {
+                if (f.extension.lowercase() !in AmbientView.IMAGE_EXT) return 400 to err("use .jpg, .png or .webp")
+                if (body.isEmpty()) return 400 to err("empty body")
+                val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeByteArray(body, 0, body.size, bounds)
+                if (bounds.outWidth <= 0) return 400 to err("not an image")
+                f.writeBytes(body)
+                200 to JSONObject().put("ok", true).put("name", name).put("bytes", body.size)
+                    .put("width", bounds.outWidth).put("height", bounds.outHeight)
+            }
+            "DELETE" -> if (f.exists() && f.delete()) 200 to JSONObject().put("ok", true) else 404 to err("no such wallpaper")
+            else -> 405 to err("PUT or DELETE")
+        }
+    }
+
+    private fun wallpaperList(): JSONArray = JSONArray().apply {
+        AmbientView.wallpaperDir(this@ControlService).listFiles()
+            ?.filter { it.isFile && it.extension.lowercase() in AmbientView.IMAGE_EXT }
+            ?.sortedBy { it.name }
+            ?.forEach { put(JSONObject().put("name", it.name).put("bytes", it.length())) }
     }
 
     private fun status(): JSONObject {
@@ -286,6 +393,7 @@ class ControlService : Service() {
             .put("version", BuildConfigShim.VERSION)
             .put("screenOn", Kiosk.isScreenOn(this))
             .put("ambient", State.ambient)
+            .put("ambientInfo", State.ambientInfo)
             .put("launcherInFront", State.foreground)
             .put("deviceOwner", Kiosk.isOwner(this))
             .put("kioskPaused", State.kioskPaused)
@@ -295,6 +403,9 @@ class ControlService : Service() {
             .put("maxVolume", cfg.maxVolume)
             .put("cameraAllowed", cfg.cameraAllowed)
             .put("camera", CameraStreamer.statusJson())
+            .put("voiceEnabled", cfg.voiceEnabled)
+            .put("voice", VoiceSatellite.statusJson())
+            .put("wallpapers", wallpaperList().length())
             .put("batteryTempC", temp)
             .put("ip", ipAddress(this) ?: "")
     }
@@ -370,11 +481,16 @@ class ControlService : Service() {
         private const val NOTIF_ID = 7
         const val ACTION_RESTART_SERVER = "restart_server"
         const val ACTION_REFRESH_FOREGROUND = "refresh_foreground"
+        const val ACTION_SYNC_VOICE = "sync_voice"
         private const val MAX_STREAMS = 3
+        private const val MAX_UPLOAD = 20L shl 20
         private const val BOUNDARY = "counterframe"
         @Volatile private var cameraForeground = false
+        @Volatile private var micForeground = false
+        /** POST /voice/off pauses voice until /voice/on, a settings change or a restart. */
+        @Volatile private var voicePausedByApi = false
 
-        /** Re-claims the foreground service types (camera included) while the launcher is on screen. */
+        /** Re-claims the foreground service types (camera and microphone) while the launcher is on screen. */
         fun refreshForeground(ctx: Context) {
             ctx.startForegroundService(Intent(ctx, ControlService::class.java).setAction(ACTION_REFRESH_FOREGROUND))
         }
@@ -387,6 +503,13 @@ class ControlService : Service() {
             ctx.startForegroundService(Intent(ctx, ControlService::class.java).setAction(ACTION_RESTART_SERVER))
         }
 
+        /** Settings changed: start or stop voice to match. */
+        fun syncVoice(ctx: Context) {
+            voicePausedByApi = false
+            if (VoiceSatellite.running) VoiceSatellite.stop()
+            ctx.startForegroundService(Intent(ctx, ControlService::class.java).setAction(ACTION_SYNC_VOICE))
+        }
+
         fun ipAddress(ctx: Context): String? {
             val cm = ctx.getSystemService(ConnectivityManager::class.java)
             val lp = cm.getLinkProperties(cm.activeNetwork) ?: return null
@@ -396,4 +519,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.2.0" }
+object BuildConfigShim { const val VERSION = "1.5.0" }

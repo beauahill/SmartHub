@@ -1,0 +1,1005 @@
+# Counter display dashboard (url_path: dashboard-counter).
+#
+# Five views for the 11" tablet in landscape, kiosk mode (header and sidebar hidden). Each view is
+# one screen with no scrolling: a title and a navigation pill on top, then three columns of glass
+# tiles over the wallpaper. A tile that is "on" (a light, an open door, an unlocked lock) turns
+# white; everything else stays dark glass. Tap a tile to act, hold it for the details.
+#
+# Push it to Home Assistant with
+#   python3 homeassistant/scripts/push_dashboard.py
+# which saves it as the storage-mode dashboard "dashboard-counter" (see the README).
+#
+# Custom cards used (installed through HACS): button-card (v7 or newer), mini-graph-card and
+# kiosk-mode. Everything else is a core card. The look does not depend on the Home Assistant theme
+# or on card-mod: the tiles are button-card templates that carry their own colours, and the "title"
+# template sets the glass variables on the view for the few core cards (weather, thermostat,
+# calendar, camera).
+
+title: Counter
+
+# HACS kiosk-mode: hide the header and sidebar for the tablet's non-admin "counter" user even
+# after navigating between views (the ?kiosk URL parameter only applies to the first page load).
+# Admins opening this dashboard on a phone keep the normal header.
+kiosk_mode:
+  non_admin_settings:
+    kiosk: true
+
+# ---------------------------------------------------------------------------------------------
+# Shared lists. "_defs" is only a place to hang YAML anchors; push_dashboard.py drops it.
+# ---------------------------------------------------------------------------------------------
+_defs:
+  wallpaper: &wallpaper
+    image: /api/image/serve/7de7010cecc4d3ebe21c8a996e618523/original
+    size: cover
+    attachment: fixed
+
+  calendars: &calendars
+    - calendar.hillhomeassistant_gmail_com   # shared household Google calendar
+    - calendar.birthdays
+    - calendar.campbell_county_events
+    - calendar.rockpile_museum
+    - calendar.gillette_college
+    - calendar.pronghorn_home_games
+    - calendar.gillette_wild_home_games
+
+  lights: &lights
+    - light.lr_lamp_dimmer
+    - light.lr_lamp_dimmer_2
+    - light.kauf_bulb_304d85_kauf_bulb
+    - light.workout_room_dimmer_switch_light
+    - light.man_cave
+    - light.bar_lights
+    - light.back_bar
+    - switch.garage_lights_main
+    - switch.garageworkbenchlights
+    - switch.garage_kennel_lights
+    - light.kauf_garage_patio
+    - light.garage_bulb_1
+    - light.garage_bulb_2
+    - light.garage_bulb_3
+    - switch.front_porch
+    - light.back_porch_light_switch_light
+    - switch.back_patio_lights
+    - switch.hot_tub_lights
+
+  openings: &openings
+    - binary_sensor.door_front_window_door_is_open
+    - binary_sensor.door_back_porch_window_door_is_open
+    - binary_sensor.door_w_garage_entry_window_door_is_open
+    - binary_sensor.single_garage
+    - binary_sensor.double_garage
+    - binary_sensor.window_kitchen_window_door_is_open
+    - binary_sensor.window_kitchen_2_window_door_is_open
+    - binary_sensor.window_dining_window_door_is_open
+    - binary_sensor.window_dining_2_window_door_is_open
+    - binary_sensor.window_bedroom_e_window_door_is_open
+    - binary_sensor.window_bedroom_w_window_door_is_open
+
+  locks: &locks
+    - lock.touchscreen_deadbolt_z_wave_plus
+    - lock.w_garage_entry_deadbolt
+    - lock.touchscreen_deadbolt_z_wave_plus_2
+
+# ---------------------------------------------------------------------------------------------
+# button-card templates. Colours: white 96% for type, 62% for second lines; tiles are dark glass
+# (rgba 22 24 34 at 44%) and turn 94% white when on, with near-black type.
+# ---------------------------------------------------------------------------------------------
+button_card_templates:
+  # View title with today's date above it, straight on the wallpaper. Every view has one, so it
+  # also sets the look of the whole view: the "glass" variables below are written onto the
+  # sections view, where the grid and the core cards (weather, thermostat, calendar, camera)
+  # pick them up. Grid: 72 px rows, 10 px gaps, 28 px between columns.
+  title:
+    section_mode: true
+    show_icon: false
+    show_name: true
+    show_label: true
+    tap_action: { action: none }
+    hold_action: { action: none }
+    variables:
+      title: ""
+      glass:
+        "--ha-section-grid-row-height": 72px
+        "--ha-section-grid-row-gap": 10px
+        "--ha-section-grid-column-gap": 10px
+        "--ha-view-sections-column-gap": 28px
+        "--ha-view-sections-row-gap": 20px
+        "--ha-card-background": rgba(22, 24, 34, 0.44)
+        "--card-background-color": rgba(22, 24, 34, 0.44)
+        "--ha-card-border-radius": 20px
+        "--ha-card-border-width": 0px
+        "--ha-card-box-shadow": inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)
+        "--ha-card-backdrop-filter": blur(24px) saturate(1.6)
+        "--primary-text-color": rgba(255, 255, 255, 0.96)
+        "--rgb-primary-text-color": 255, 255, 255
+        "--text-primary-color": "#1d1d1f"
+        "--secondary-text-color": rgba(235, 235, 245, 0.62)
+        "--ha-color-text-secondary": rgba(235, 235, 245, 0.62)
+        "--disabled-text-color": rgba(235, 235, 245, 0.32)
+        "--divider-color": rgba(255, 255, 255, 0.10)
+        "--primary-color": "#ff9f0a"
+        "--accent-color": "#ff9f0a"
+        "--state-inactive-color": rgba(235, 235, 245, 0.55)
+    name: "[[[ return variables.title ]]]"
+    label: |
+      [[[
+        let view = this;
+        while (view && view.localName !== 'hui-sections-view') view = view.parentNode || view.host;
+        if (view && view.dataset.glass !== '1') {
+          view.dataset.glass = '1';
+          Object.entries(variables.glass).forEach(([name, value]) => view.style.setProperty(name, value));
+        }
+        void states['sun.sun'];   // re-render through the day, so the date rolls over
+        return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      ]]]
+    styles:
+      card:
+        - background: none
+        - box-shadow: none
+        - backdrop-filter: none
+        - -webkit-backdrop-filter: none
+        - border: none
+        - border-radius: 0
+        - padding: 0 6px
+        - cursor: default
+        - overflow: visible
+      grid:
+        - grid-template-areas: '"l" "n"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: min-content min-content
+        - align-content: center
+        - row-gap: 1px
+      name:
+        - justify-self: start
+        - font-size: 34px
+        - font-weight: 700
+        - letter-spacing: -0.5px
+        - line-height: 40px
+        - color: "#fff"
+      label:
+        - justify-self: start
+        - font-size: 13px
+        - font-weight: 600
+        - letter-spacing: 0.7px
+        - text-transform: uppercase
+        - color: rgba(235, 235, 245, 0.62)
+
+  # One entry in the navigation pill. variables: path (view path), active (current view path).
+  nav_item:
+    show_icon: true
+    show_name: true
+    layout: icon_name
+    size: 20px
+    tap_action:
+      action: navigate
+      navigation_path: "[[[ return '/' + window.location.pathname.split('/')[1] + '/' + variables.path ]]]"
+    hold_action: { action: none }
+    styles:
+      card:
+        - height: 44px
+        - padding: 0 16px 0 12px
+        - border-radius: 22px
+        - border: none
+        - backdrop-filter: none
+        - -webkit-backdrop-filter: none
+        - background: "[[[ return variables.path === variables.active ? 'rgba(255, 255, 255, 0.94)' : 'transparent' ]]]"
+        - box-shadow: "[[[ return variables.path === variables.active ? '0 4px 14px -4px rgba(0, 0, 0, 0.35)' : 'none' ]]]"
+        - color: "[[[ return variables.path === variables.active ? '#1d1d1f' : 'rgba(255, 255, 255, 0.86)' ]]]"
+      grid:
+        - grid-template-columns: min-content min-content
+        - column-gap: 7px
+        - justify-content: center
+      img_cell:
+        - width: 20px
+        - height: 20px
+      icon:
+        - width: 20px
+        - height: 20px
+        - color: "[[[ return variables.path === variables.active ? '#1d1d1f' : 'rgba(255, 255, 255, 0.86)' ]]]"
+      name:
+        - font-size: 14px
+        - font-weight: 600
+        - letter-spacing: 0.1px
+        - white-space: nowrap
+
+  # The navigation pill itself, right-aligned. variables: active (current view path).
+  nav:
+    section_mode: true
+    show_icon: false
+    show_name: false
+    tap_action: { action: none }
+    hold_action: { action: none }
+    styles:
+      card:
+        - background: none
+        - box-shadow: none
+        - backdrop-filter: none
+        - -webkit-backdrop-filter: none
+        - border: none
+        - border-radius: 0
+        - padding: 0
+        - cursor: default
+        - overflow: visible
+        - display: flex
+        - align-items: center
+        - justify-content: flex-end
+      grid:
+        - width: fit-content
+        - height: 52px
+        - box-sizing: border-box
+        - padding: 4px
+        - border-radius: 26px
+        - background: rgba(22, 24, 34, 0.44)
+        - backdrop-filter: blur(24px) saturate(1.6)
+        - -webkit-backdrop-filter: blur(24px) saturate(1.6)
+        - box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)
+        - grid-template-areas: '"home lights security tub calendar"'
+        - grid-template-columns: repeat(5, min-content)
+        - grid-template-rows: 44px
+        - column-gap: 2px
+    custom_fields:
+      home:
+        card:
+          type: custom:button-card
+          template: nav_item
+          name: Home
+          icon: mdi:home-variant
+          variables: { path: home, active: "[[[ return variables.active ]]]" }
+      lights:
+        card:
+          type: custom:button-card
+          template: nav_item
+          name: Lights
+          icon: mdi:lightbulb
+          variables: { path: lights, active: "[[[ return variables.active ]]]" }
+      security:
+        card:
+          type: custom:button-card
+          template: nav_item
+          name: Security
+          icon: mdi:shield-home
+          variables: { path: security, active: "[[[ return variables.active ]]]" }
+      tub:
+        card:
+          type: custom:button-card
+          template: nav_item
+          name: Hot Tub
+          icon: mdi:hot-tub
+          variables: { path: hot-tub, active: "[[[ return variables.active ]]]" }
+      calendar:
+        card:
+          type: custom:button-card
+          template: nav_item
+          name: Calendar
+          icon: mdi:calendar-blank
+          variables: { path: calendar, active: "[[[ return variables.active ]]]" }
+
+  # Section heading: plain type on the wallpaper. Give it grid_options rows: auto.
+  heading:
+    show_icon: false
+    show_name: true
+    tap_action: { action: none }
+    hold_action: { action: none }
+    styles:
+      card:
+        - background: none
+        - box-shadow: none
+        - backdrop-filter: none
+        - -webkit-backdrop-filter: none
+        - border: none
+        - border-radius: 0
+        - padding: 6px 6px 0
+        - height: 30px
+        - cursor: default
+      name:
+        - justify-self: start
+        - align-self: end
+        - font-size: 17px
+        - font-weight: 600
+        - letter-spacing: -0.1px
+        - color: rgba(255, 255, 255, 0.92)
+
+  # The tile: icon in a circle, name, one line of state. This is the base for the others.
+  # variables:
+  #   lit     true turns the tile white (default: the entity is on / open / unlocked)
+  #   accent  true tints the icon while the tile stays dark (a thermostat that is heating)
+  #   tint    the icon colour while lit or accented
+  #   text    the second line (default: the state as Home Assistant words it; lights show their %)
+  tile:
+    section_mode: true
+    show_icon: true
+    show_name: true
+    show_label: true
+    show_state: false
+    size: 22px
+    label: "[[[ return variables.text ]]]"
+    tap_action: { action: more-info }
+    hold_action: { action: more-info }
+    variables:
+      tint: "#ff9f0a"
+      accent: false
+      lit: |
+        [[[
+          if (!entity) return false;
+          const domain = entity.entity_id.split('.')[0];
+          if (domain === 'lock') return ['unlocked', 'unlocking', 'open', 'jammed'].includes(entity.state);
+          if (domain === 'cover') return ['open', 'opening', 'closing'].includes(entity.state);
+          if (domain === 'climate' || domain === 'alarm_control_panel') return false;
+          return entity.state === 'on';
+        ]]]
+      text: |
+        [[[
+          if (!entity) return '';
+          if (entity.state === 'unavailable' || entity.state === 'unknown') return 'No response';
+          const domain = entity.entity_id.split('.')[0];
+          if (domain === 'light' && entity.state === 'on' && entity.attributes.brightness)
+            return Math.round(entity.attributes.brightness / 2.55) + '%';
+          if (domain === 'climate') {
+            const now = entity.attributes.current_temperature;
+            const action = entity.attributes.hvac_action || entity.state;
+            return (now == null ? '' : Math.round(now) + '° · ') + action.charAt(0).toUpperCase() + action.slice(1);
+          }
+          return helpers.localize(entity);
+        ]]]
+    styles:
+      card:
+        - padding: 0 10px 0 12px
+        - transition: background-color 0.25s ease
+        - opacity: "[[[ return entity && entity.state === 'unavailable' ? 0.55 : 1 ]]]"
+        - background: "[[[ return variables.lit ? 'rgba(255, 255, 255, 0.94)' : 'rgba(22, 24, 34, 0.44)' ]]]"
+        - backdrop-filter: "[[[ return variables.lit ? 'none' : 'blur(24px) saturate(1.6)' ]]]"
+        - -webkit-backdrop-filter: "[[[ return variables.lit ? 'none' : 'blur(24px) saturate(1.6)' ]]]"
+        - border: none
+        - border-radius: 20px
+        - box-shadow: "[[[ return variables.lit ? '0 10px 30px -12px rgba(0, 0, 0, 0.45)' : 'inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)' ]]]"
+      grid:
+        - grid-template-areas: '"i n" "i l"'
+        - grid-template-columns: 38px 1fr
+        - grid-template-rows: 1fr 1fr
+        - column-gap: 11px
+      img_cell:
+        - width: 38px
+        - height: 38px
+        - border-radius: 50%
+        - align-self: center
+        - background: "[[[ return variables.lit || variables.accent ? variables.tint + '33' : 'rgba(255, 255, 255, 0.12)' ]]]"
+      icon:
+        - width: 22px
+        - height: 22px
+        - color: "[[[ return variables.lit || variables.accent ? variables.tint : 'rgba(255, 255, 255, 0.86)' ]]]"
+      name:
+        - justify-self: start
+        - align-self: end
+        - max-width: 100%
+        - font-size: 15px
+        - font-weight: 600
+        - line-height: 20px
+        - color: "[[[ return variables.lit ? '#1d1d1f' : 'rgba(255, 255, 255, 0.96)' ]]]"
+      label:
+        - justify-self: start
+        - align-self: start
+        - max-width: 100%
+        - font-size: 13px
+        - line-height: 18px
+        - color: "[[[ return variables.lit ? 'rgba(60, 60, 67, 0.72)' : 'rgba(235, 235, 245, 0.62)' ]]]"
+
+  # A switchable thing (light, switch, fan): tap toggles it, hold opens brightness and the rest.
+  toggle:
+    template: tile
+    tap_action: { action: toggle }
+    variables:
+      tint: "#ffb800"
+
+  # A door, window or garage sensor: white while open.
+  opening:
+    template: tile
+    variables:
+      tint: "#ff9500"
+      text: |
+        [[[
+          if (entity.state === 'unavailable' || entity.state === 'unknown') return 'No response';
+          if (entity.entity_id.startsWith('cover.')) return entity.state.charAt(0).toUpperCase() + entity.state.slice(1);
+          return entity.state === 'on' ? 'Open' : 'Closed';
+        ]]]
+
+  # A lock: white while unlocked. Tap asks first, then locks or unlocks.
+  lock:
+    template: tile
+    icon: "[[[ return entity.state === 'locked' ? 'mdi:lock' : 'mdi:lock-open-variant' ]]]"
+    variables:
+      tint: "#ff9500"
+    tap_action:
+      action: perform-action
+      perform_action: "[[[ return entity.state === 'locked' ? 'lock.unlock' : 'lock.lock' ]]]"
+      target:
+        entity_id: "[[[ return entity.entity_id ]]]"
+      confirmation:
+        text: "[[[ return (entity.state === 'locked' ? 'Unlock ' : 'Lock ') + (this._config.name || 'this door').toLowerCase() + '?' ]]]"
+
+  # A thermostat: current temperature and what it is doing; the icon warms up while it heats.
+  climate:
+    template: tile
+    variables:
+      accent: "[[[ return ['heating', 'cooling'].includes(entity.attributes.hvac_action) ]]]"
+      tint: "[[[ return entity.attributes.hvac_action === 'cooling' ? '#64d2ff' : '#ff9f0a' ]]]"
+
+  # A line that leads to another view: a tile with a chevron. variables: alert, tint, text.
+  summary:
+    template: tile
+    hold_action: { action: none }
+    variables:
+      lit: false
+      accent: "[[[ return variables.alert ]]]"
+      alert: false
+      text: ""
+    styles:
+      grid:
+        - grid-template-areas: '"i n c" "i l c"'
+        - grid-template-columns: 38px 1fr 20px
+      custom_fields:
+        c:
+          - grid-area: c
+          - align-self: center
+          - color: rgba(235, 235, 245, 0.35)
+    custom_fields:
+      c: '<ha-icon icon="mdi:chevron-right" style="--mdc-icon-size: 20px;"></ha-icon>'
+
+  # Square shape for a tile: icon top left, name and state bottom left. Use it after a tile
+  # template, as in template: [toggle, square].
+  square:
+    styles:
+      card:
+        - padding: 14px
+      grid:
+        - grid-template-areas: '"i" "n" "l"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr min-content min-content
+      img_cell:
+        - justify-self: start
+        - align-self: start
+        - width: 40px
+        - height: 40px
+
+  # The next few events across the calendars (each calendar entity only knows its next event,
+  # so this is a glance; the Calendar view has everything). variables: calendars, count.
+  agenda:
+    section_mode: true
+    show_icon: false
+    show_name: false
+    show_label: false
+    tap_action:
+      action: navigate
+      navigation_path: "[[[ return '/' + window.location.pathname.split('/')[1] + '/calendar' ]]]"
+    hold_action: { action: none }
+    variables:
+      calendars: []
+      count: 3
+    styles:
+      card:
+        - padding: 6px 16px
+        - background: rgba(22, 24, 34, 0.44)
+        - backdrop-filter: blur(24px) saturate(1.6)
+        - -webkit-backdrop-filter: blur(24px) saturate(1.6)
+        - border: none
+        - border-radius: 20px
+        - box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)
+        - color: rgba(255, 255, 255, 0.96)
+      grid:
+        - grid-template-areas: '"list"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+      custom_fields:
+        list:
+          - align-self: stretch
+          - display: flex
+          - flex-direction: column
+          - justify-content: space-evenly
+          - text-align: left
+          - min-width: 0
+    extra_styles: |
+      .ev { display: grid; grid-template-columns: 76px 1fr; column-gap: 12px; align-items: center; padding: 8px 0; }
+      .ev + .ev { border-top: 1px solid rgba(255, 255, 255, 0.09); }
+      .ev .d { font-size: 13px; font-weight: 600; color: #ff9f0a; line-height: 18px; }
+      .ev .h { font-size: 13px; color: rgba(235, 235, 245, 0.62); line-height: 18px; }
+      .ev .t { font-size: 15px; font-weight: 600; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ev .c { font-size: 13px; color: rgba(235, 235, 245, 0.62); line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .none { font-size: 14px; color: rgba(235, 235, 245, 0.62); text-align: center; }
+    custom_fields:
+      list: |
+        [[[
+          const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+          const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+          const today = day(new Date());
+          const events = variables.calendars
+            .map((id) => states[id])
+            .filter((s) => s && s.attributes.start_time && s.attributes.message)
+            .map((s) => ({
+              title: s.attributes.message,
+              calendar: s.attributes.friendly_name,
+              allDay: !!s.attributes.all_day,
+              start: new Date(s.attributes.start_time.replace(' ', 'T')),
+              end: new Date((s.attributes.end_time || s.attributes.start_time).replace(' ', 'T')),
+            }))
+            .filter((e) => !isNaN(e.start) && e.end.getTime() >= Date.now() - 60000)
+            .sort((a, b) => a.start - b.start)
+            .slice(0, variables.count);
+          if (!events.length) return '<div class="none">Nothing coming up</div>';
+          return events.map((e) => {
+            const n = Math.round((day(e.start) - today) / 86400000);
+            const d = n <= 0 ? 'Today' : n === 1 ? 'Tomorrow'
+              : n < 7 ? e.start.toLocaleDateString('en-US', { weekday: 'long' })
+              : e.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const h = e.allDay ? 'All day' : e.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            return `<div class="ev"><div><div class="d">${d}</div><div class="h">${h}</div></div>`
+              + `<div style="min-width:0"><div class="t">${esc(e.title)}</div><div class="c">${esc(e.calendar)}</div></div></div>`;
+          }).join('');
+        ]]]
+
+# ---------------------------------------------------------------------------------------------
+# Card shorthands (YAML anchors again). Each view: a full-width header row, then three columns.
+# A column holds 8 rows at most (a heading counts for half a row), or it runs off the screen.
+# ---------------------------------------------------------------------------------------------
+_cards:
+  heading: &heading { type: custom:button-card, template: heading, grid_options: { columns: 12, rows: auto } }
+  toggle: &toggle { type: custom:button-card, template: toggle, grid_options: { columns: 6, rows: 1 } }
+  info: &info { type: custom:button-card, template: tile, grid_options: { columns: 6, rows: 1 } }
+  opening: &opening { type: custom:button-card, template: opening, grid_options: { columns: 6, rows: 1 } }
+  climate: &climate { type: custom:button-card, template: climate, grid_options: { columns: 6, rows: 1 } }
+  lock: &lock { type: custom:button-card, template: lock, grid_options: { columns: 12, rows: 1 } }
+  summary: &summary { type: custom:button-card, template: summary, grid_options: { columns: 12, rows: 1 } }
+  square: &square { type: custom:button-card, template: [tile, square], grid_options: { columns: 4, rows: 2 } }
+  # The Ring gate keypad is the only camera that returns pictures right now; camera.gate,
+  # driveway, front_door and backyard answer HTTP 500 to snapshot requests.
+  gate_camera: &gate_camera
+    type: picture-entity
+    entity: camera.gate_keypad_live_view
+    camera_view: auto
+    show_state: false
+    show_name: false
+    fit_mode: cover
+    tap_action: { action: more-info }
+
+views:
+  # ------------------------------------------------------------------ Home
+  - title: Home
+    path: home
+    icon: mdi:home-variant
+    type: sections
+    max_columns: 3
+    background: *wallpaper
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:button-card
+            template: title
+            variables: { title: Home }
+            grid_options: { columns: 12, rows: 1 }
+          - type: custom:button-card
+            template: nav
+            variables: { active: home }
+            grid_options: { columns: 24, rows: 1 }
+
+      # Column 1: weather, then climate
+      - type: grid
+        cards:
+          - { <<: *heading, name: Weather }
+          # NWS (KGCC) is the weather source. It publishes day and night forecasts, not daily
+          # ones. (weather.crimson, the met.no entity, reads about 30 °F low here and is not used.)
+          - type: weather-forecast
+            entity: weather.kgcc_daynight
+            name: Gillette
+            show_current: true
+            show_forecast: true
+            forecast_type: hourly
+            forecast_slots: 5
+            secondary_info_attribute: humidity
+            tap_action: { action: more-info }
+            grid_options: { columns: 12, rows: 4 }
+          - { <<: *heading, name: Climate }
+          - <<: *climate
+            entity: climate.main
+            name: House
+            icon: mdi:thermostat
+            variables:
+              text: |
+                [[[
+                  const action = entity.attributes.hvac_action || entity.state;
+                  const humidity = Number((states['sensor.main_thermostat_humidity_2'] || {}).state);
+                  return Math.round(entity.attributes.current_temperature) + '° · '
+                    + action.charAt(0).toUpperCase() + action.slice(1)
+                    + (isNaN(humidity) ? '' : ' · ' + Math.round(humidity) + '% humidity');
+                ]]]
+            grid_options: { columns: 12, rows: 1 }
+          - <<: *toggle
+            entity: switch.fireplace_switch_fireplace_switch
+            name: Fireplace
+            icon: mdi:fireplace
+            variables: { tint: "#ff6b22" }
+          - { <<: *climate, entity: climate.garage, name: Garage, icon: mdi:garage }
+          - { <<: *climate, entity: climate.office_office_cielo, name: Office, icon: mdi:air-conditioner }
+          - { <<: *climate, entity: climate.man_cave, name: Man cave, icon: mdi:air-conditioner }
+
+      # Column 2: garage doors and gate as big tap targets, then what's coming up
+      - type: grid
+        cards:
+          - { <<: *heading, name: Garage & gate }
+          - <<: *square
+            template: [opening, square]
+            entity: binary_sensor.single_garage
+            name: Single
+            icon: "[[[ return entity.state === 'on' ? 'mdi:garage-open-variant' : 'mdi:garage-variant' ]]]"
+            tap_action:
+              action: perform-action
+              perform_action: switch.turn_on
+              target: { entity_id: switch.garage_opener_single }
+          - <<: *square
+            template: [opening, square]
+            entity: binary_sensor.double_garage
+            name: Double
+            icon: "[[[ return entity.state === 'on' ? 'mdi:garage-open-variant' : 'mdi:garage-variant' ]]]"
+            tap_action:
+              action: perform-action
+              perform_action: switch.turn_on
+              target: { entity_id: switch.garage_opener_double }
+          - <<: *square
+            template: [opening, square]
+            entity: cover.gate_switch_gate
+            name: Gate
+            icon: "[[[ return entity.state === 'closed' ? 'mdi:gate' : 'mdi:gate-open' ]]]"
+            tap_action:
+              action: perform-action
+              perform_action: cover.toggle
+              target: { entity_id: cover.gate_switch_gate }
+          - { <<: *lock, entity: lock.w_garage_entry_deadbolt, name: Garage entry }
+          - { <<: *heading, name: Up next }
+          - type: custom:button-card
+            template: agenda
+            variables:
+              calendars: *calendars
+              count: 4
+            grid_options: { columns: 12, rows: 4 }
+
+      # Column 3: the gate camera, then a line each for the other views
+      - type: grid
+        cards:
+          - { <<: *heading, name: Gate }
+          - { <<: *gate_camera, grid_options: { columns: 12, rows: 4 } }
+          - { <<: *heading, name: Around the house }
+          - <<: *summary
+            name: Lights
+            icon: mdi:lightbulb
+            variables:
+              tint: "#ffd60a"
+              ids: *lights
+              alert: "[[[ return variables.ids.some((id) => states[id] && states[id].state === 'on') ]]]"
+              text: |
+                [[[
+                  const n = variables.ids.filter((id) => states[id] && states[id].state === 'on').length;
+                  return n === 0 ? 'All off' : n === 1 ? '1 light on' : n + ' lights on';
+                ]]]
+            tap_action:
+              action: navigate
+              navigation_path: "[[[ return '/' + window.location.pathname.split('/')[1] + '/lights' ]]]"
+          - <<: *summary
+            name: Security
+            icon: mdi:shield-home
+            variables:
+              tint: "#ff9f0a"
+              openings: *openings
+              locks: *locks
+              alert: >-
+                [[[ return variables.openings.some((id) => states[id] && states[id].state === 'on')
+                  || variables.locks.some((id) => states[id] && states[id].state === 'unlocked') ]]]
+              text: |
+                [[[
+                  const open = variables.openings.filter((id) => states[id] && states[id].state === 'on').length;
+                  const unlocked = variables.locks.filter((id) => states[id] && states[id].state === 'unlocked').length;
+                  return (open === 0 ? 'All closed' : open + ' open') + ' · '
+                    + (unlocked === 0 ? 'all locked' : unlocked + ' unlocked');
+                ]]]
+            tap_action:
+              action: navigate
+              navigation_path: "[[[ return '/' + window.location.pathname.split('/')[1] + '/security' ]]]"
+          - <<: *summary
+            entity: climate.hot_tub_temperature
+            name: Hot tub
+            icon: mdi:hot-tub
+            variables:
+              tint: "#ff9f0a"
+              alert: "[[[ return entity.attributes.hvac_action === 'heating' ]]]"
+              text: |
+                [[[
+                  const water = Math.round(Number((states['sensor.hot_tub_current_temperature'] || {}).state));
+                  const jets = ['fan.hot_tub_jets_1', 'fan.hot_tub_jets_2'].some((id) => states[id] && states[id].state === 'on');
+                  return (isNaN(water) ? '' : water + '° · ')
+                    + (entity.attributes.hvac_action === 'heating' ? 'Heating' : 'Ready') + (jets ? ' · Jets on' : '');
+                ]]]
+            tap_action:
+              action: navigate
+              navigation_path: "[[[ return '/' + window.location.pathname.split('/')[1] + '/hot-tub' ]]]"
+
+  # ------------------------------------------------------------------ Lights
+  - title: Lights
+    path: lights
+    icon: mdi:lightbulb
+    type: sections
+    max_columns: 3
+    background: *wallpaper
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:button-card
+            template: title
+            variables: { title: Lights }
+            grid_options: { columns: 12, rows: 1 }
+          - type: custom:button-card
+            template: nav
+            variables: { active: lights }
+            grid_options: { columns: 24, rows: 1 }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Living room }
+          - { <<: *toggle, entity: light.lr_lamp_dimmer, name: Lamp 1, icon: mdi:floor-lamp }
+          - { <<: *toggle, entity: light.lr_lamp_dimmer_2, name: Lamp 2, icon: mdi:floor-lamp }
+          - { <<: *toggle, entity: light.kauf_bulb_304d85_kauf_bulb, name: Table lamp, icon: mdi:lamp }
+          - { <<: *toggle, entity: light.workout_room_dimmer_switch_light, name: Workout, icon: mdi:dumbbell }
+          - { <<: *heading, name: Man cave }
+          - { <<: *toggle, entity: light.man_cave, name: Man cave, icon: mdi:ceiling-light }
+          - { <<: *toggle, entity: light.bar_lights, name: Bar, icon: mdi:glass-cocktail }
+          - { <<: *toggle, entity: light.back_bar, name: Back bar, icon: mdi:bottle-wine }
+          - { <<: *heading, name: Scenes }
+          - <<: *square
+            entity: input_boolean.normal_lights
+            name: Normal
+            icon: mdi:lightbulb-on
+            variables: { tint: "#ffb800" }
+            tap_action:
+              action: perform-action
+              perform_action: input_boolean.turn_on
+              target: { entity_id: input_boolean.normal_lights }
+          - <<: *square
+            entity: input_boolean.go_bills
+            name: Go Bills
+            icon: mdi:football
+            variables: { tint: "#0a6cff" }
+            tap_action:
+              action: perform-action
+              perform_action: input_boolean.turn_on
+              target: { entity_id: input_boolean.go_bills }
+          - <<: *square
+            entity: input_boolean.go_pokes
+            name: Go Pokes
+            icon: mdi:football-helmet
+            variables: { tint: "#a2845e" }
+            tap_action:
+              action: perform-action
+              perform_action: input_boolean.turn_on
+              target: { entity_id: input_boolean.go_pokes }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Garage }
+          - { <<: *toggle, entity: switch.garage_lights_main, name: Main, icon: mdi:ceiling-light-multiple }
+          - { <<: *toggle, entity: switch.garageworkbenchlights, name: Workbench, icon: mdi:hammer-wrench }
+          - { <<: *toggle, entity: switch.garage_kennel_lights, name: Kennel, icon: mdi:dog-side }
+          - { <<: *toggle, entity: light.kauf_garage_patio, name: Garage patio, icon: mdi:outdoor-lamp }
+          - { <<: *toggle, entity: light.garage_bulb_1, name: Bulb 1, icon: mdi:lightbulb }
+          - { <<: *toggle, entity: light.garage_bulb_2, name: Bulb 2, icon: mdi:lightbulb }
+          - { <<: *toggle, entity: light.garage_bulb_3, name: Bulb 3, icon: mdi:lightbulb }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Outdoor }
+          - { <<: *toggle, entity: switch.front_porch, name: Front porch, icon: mdi:coach-lamp }
+          - { <<: *toggle, entity: light.back_porch_light_switch_light, name: Back porch, icon: mdi:coach-lamp-variant }
+          - { <<: *toggle, entity: switch.back_patio_lights, name: Patio lights, icon: mdi:string-lights, variables: { tint: "#ff375f" } }
+          - { <<: *toggle, entity: input_boolean.landscapelt_toggle, name: Landscape, icon: mdi:spotlight-beam, variables: { tint: "#30b457" } }
+          - { <<: *toggle, entity: switch.hot_tub_lights, name: Hot tub, icon: mdi:hot-tub, variables: { tint: "#af52de" } }
+          - { <<: *heading, name: Everything }
+          - <<: *summary
+            name: All lights off
+            icon: mdi:power
+            custom_fields: { c: "" }
+            variables:
+              tint: "#ffd60a"
+              ids: *lights
+              alert: "[[[ return variables.ids.some((id) => states[id] && states[id].state === 'on') ]]]"
+              text: |
+                [[[
+                  const n = variables.ids.filter((id) => states[id] && states[id].state === 'on').length;
+                  return n === 0 ? 'Nothing is on' : n === 1 ? '1 light on' : n + ' lights on';
+                ]]]
+            tap_action:
+              action: perform-action
+              perform_action: homeassistant.turn_off
+              target:
+                entity_id: *lights
+              confirmation:
+                text: Turn every light off?
+
+  # ------------------------------------------------------------------ Security
+  - title: Security
+    path: security
+    icon: mdi:shield-home
+    type: sections
+    max_columns: 3
+    background: *wallpaper
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:button-card
+            template: title
+            variables: { title: Security }
+            grid_options: { columns: 12, rows: 1 }
+          - type: custom:button-card
+            template: nav
+            variables: { active: security }
+            grid_options: { columns: 24, rows: 1 }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Locks }
+          - { <<: *lock, entity: lock.touchscreen_deadbolt_z_wave_plus, name: Back porch }
+          - { <<: *lock, entity: lock.w_garage_entry_deadbolt, name: W garage entry }
+          - { <<: *lock, entity: lock.touchscreen_deadbolt_z_wave_plus_2, name: E garage entry }
+          - { <<: *heading, name: Alarm }
+          - <<: *info
+            entity: alarm_control_panel.home_alarm
+            name: Home alarm
+            variables:
+              tint: "#ff453a"
+              accent: "[[[ return entity.state !== 'disarmed' ]]]"
+            grid_options: { columns: 12, rows: 1 }
+          - { <<: *heading, name: Garage & gate }
+          - { <<: *opening, entity: binary_sensor.single_garage, name: Single, icon: mdi:garage-variant }
+          - { <<: *opening, entity: binary_sensor.double_garage, name: Double, icon: mdi:garage-variant }
+          - { <<: *opening, entity: cover.gate_switch_gate, name: Gate, icon: mdi:gate }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Doors }
+          - { <<: *opening, entity: binary_sensor.door_front_window_door_is_open, name: Front door }
+          - { <<: *opening, entity: binary_sensor.door_back_porch_window_door_is_open, name: Back porch }
+          - { <<: *opening, entity: binary_sensor.door_w_garage_entry_window_door_is_open, name: W garage }
+          - { <<: *heading, name: Windows }
+          - { <<: *opening, entity: binary_sensor.window_kitchen_window_door_is_open, name: Kitchen 1 }
+          - { <<: *opening, entity: binary_sensor.window_kitchen_2_window_door_is_open, name: Kitchen 2 }
+          - { <<: *opening, entity: binary_sensor.window_dining_window_door_is_open, name: Dining 1 }
+          - { <<: *opening, entity: binary_sensor.window_dining_2_window_door_is_open, name: Dining 2 }
+          - { <<: *opening, entity: binary_sensor.window_bedroom_e_window_door_is_open, name: Bedroom E }
+          - { <<: *opening, entity: binary_sensor.window_bedroom_w_window_door_is_open, name: Bedroom W }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Gate camera }
+          - { <<: *gate_camera, grid_options: { columns: 12, rows: 4 } }
+          # The keypad's motion and doorbell sensors, shown only while Ring reports them.
+          - <<: *info
+            entity: binary_sensor.gate_keypad_motion
+            name: Gate motion
+            icon: mdi:motion-sensor
+            visibility:
+              - { condition: state, entity: binary_sensor.gate_keypad_motion, state_not: unavailable }
+          - <<: *info
+            entity: binary_sensor.gate_keypad_ding
+            name: Keypad ring
+            icon: mdi:bell-ring
+            visibility:
+              - { condition: state, entity: binary_sensor.gate_keypad_ding, state_not: unavailable }
+
+  # ------------------------------------------------------------------ Hot tub
+  - title: Hot Tub
+    path: hot-tub
+    icon: mdi:hot-tub
+    type: sections
+    max_columns: 3
+    background: *wallpaper
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:button-card
+            template: title
+            variables: { title: Hot Tub }
+            grid_options: { columns: 12, rows: 1 }
+          - type: custom:button-card
+            template: nav
+            variables: { active: hot-tub }
+            grid_options: { columns: 24, rows: 1 }
+
+      - type: grid
+        cards:
+          - type: thermostat
+            entity: climate.hot_tub_temperature
+            name: " "
+            show_current_as_primary: true
+            grid_options: { columns: 12, rows: 5 }
+          - { <<: *heading, name: Last 24 hours }
+          - type: custom:mini-graph-card
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 3
+            height: 112
+            lower_bound: ~96
+            upper_bound: ~106
+            entities:
+              - entity: sensor.hot_tub_current_temperature
+                name: Water
+                color: "#64d2ff"
+              - entity: sensor.hot_tub_target_temperature
+                name: Set point
+                color: "#ff9f0a"
+                show_fill: false
+            show:
+              name: false
+              icon: false
+              state: false
+              legend: false
+              labels: false
+              extrema: false
+              fill: fade
+            grid_options: { columns: 12, rows: 2 }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Jets & lights }
+          - { <<: *toggle, entity: fan.hot_tub_jets_1, name: Jets 1, icon: mdi:fan, variables: { tint: "#0a84ff" } }
+          - { <<: *toggle, entity: fan.hot_tub_jets_2, name: Jets 2, icon: mdi:fan, variables: { tint: "#0a84ff" } }
+          - { <<: *toggle, entity: switch.hot_tub_lights, name: Lights, icon: mdi:lightbulb-spot, variables: { tint: "#af52de" } }
+          - { <<: *info, entity: select.hot_tub_color_cycle_speed, name: Colour cycle, icon: mdi:sync }
+          - { <<: *heading, name: Colours }
+          - { <<: *info, entity: select.hot_tub_color_underwater, name: Underwater, icon: mdi:waves }
+          - { <<: *info, entity: select.hot_tub_color_exterior, name: Exterior, icon: mdi:wall-sconce-flat }
+          - { <<: *info, entity: select.hot_tub_color_bartop, name: Bar top, icon: mdi:glass-cocktail }
+          - { <<: *info, entity: select.hot_tub_color_pillow, name: Pillow, icon: mdi:sofa-single }
+          - { <<: *heading, name: Power }
+          - { <<: *info, entity: sensor.hot_tub_heater_power, name: Heater, icon: mdi:radiator }
+          - { <<: *info, entity: sensor.hot_tub_pumps_power, name: Pumps, icon: mdi:pump }
+
+      - type: grid
+        cards:
+          - { <<: *heading, name: Water care }
+          - { <<: *info, entity: sensor.hot_tub_salt_content, name: Salt level, icon: mdi:shaker-outline }
+          - { <<: *info, entity: number.hot_tub_salt_power, name: Salt output, icon: mdi:shaker }
+          - { <<: *toggle, entity: switch.hot_tub_salt_boost, name: Salt boost, icon: mdi:rocket-launch, variables: { tint: "#30b0c7" } }
+          - { <<: *toggle, entity: switch.hot_tub_clean_cycle, name: Clean cycle, icon: mdi:broom, variables: { tint: "#30b0c7" } }
+          - { <<: *heading, name: Locks & timers }
+          - { <<: *toggle, entity: switch.hot_tub_spa_lock, name: Spa lock, icon: mdi:lock, variables: { tint: "#ff3b30" } }
+          - { <<: *toggle, entity: switch.hot_tub_temperature_lock, name: Temp lock, icon: mdi:lock-clock, variables: { tint: "#ff3b30" } }
+          - { <<: *toggle, entity: switch.hot_tub_summer_timer, name: Summer, icon: mdi:weather-sunny }
+          - { <<: *info, entity: binary_sensor.hot_tub_salt_level_confirmed, name: Salt check, icon: mdi:check-decagram, variables: { lit: false, text: "[[[ return entity.state === 'on' ? 'Confirmed' : 'Not confirmed' ]]]" } }
+          - { <<: *heading, name: Temperatures }
+          - { <<: *info, entity: sensor.hot_tub_heater_outlet, name: Heater outlet, icon: mdi:thermometer-water }
+          - { <<: *info, entity: sensor.hot_tub_controller_temperature, name: Controller, icon: mdi:chip }
+
+  # ------------------------------------------------------------------ Calendar
+  - title: Calendar
+    path: calendar
+    icon: mdi:calendar-blank
+    type: sections
+    max_columns: 3
+    background: *wallpaper
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:button-card
+            template: title
+            variables: { title: Calendar }
+            grid_options: { columns: 12, rows: 1 }
+          - type: custom:button-card
+            template: nav
+            variables: { active: calendar }
+            grid_options: { columns: 24, rows: 1 }
+
+      - type: grid
+        column_span: 3
+        cards:
+          - type: calendar
+            initial_view: dayGridMonth
+            entities: *calendars
+            grid_options: { columns: full, rows: 8 }

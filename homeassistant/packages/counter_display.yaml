@@ -39,6 +39,10 @@ rest:
         value_template: "{{ value_json.batteryTempC }}"
         unit_of_measurement: "°C"
         device_class: temperature
+      - name: Counter display volume
+        unique_id: counter_display_volume
+        value_template: "{{ value_json.volume }}"
+        unit_of_measurement: "%"
     binary_sensor:
       - name: Counter display screen
         unique_id: counter_display_screen
@@ -52,6 +56,17 @@ rest:
       - name: Counter display camera
         unique_id: counter_display_camera
         value_template: "{{ value_json.camera.running }}"
+
+# Media volume slider for the dashboard. The tablet's side keys are hidden by the bezel, so this,
+# the Volume dock tile and POST /volume are the ways to change it. The app's cap still applies.
+input_number:
+  counter_display_volume:
+    name: Counter display volume
+    min: 0
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:volume-high
 
 script:
   counter_display:
@@ -100,14 +115,25 @@ automation:
         data:
           path: ambient/on
 
+  # During the day the clock screen stays up as long as nobody is around. Late at night the panel
+  # goes dark instead: 10 minutes after the last person leaves, or at 23:00 if it is already alone.
   - id: counter_display_off
-    alias: Counter display, panel off after 10 minutes alone
+    alias: Counter display, panel off after 10 minutes alone (late night)
     triggers:
       - trigger: state
         entity_id: binary_sensor.counter_presence_presence
         to: "off"
         for: "00:10:00"
+      - trigger: time
+        at: "23:00:00"
     conditions:
+      - condition: time
+        after: "23:00:00"
+        before: "06:00:00"
+      - condition: state
+        entity_id: binary_sensor.counter_presence_presence
+        state: "off"
+        for: "00:10:00"
       # Leaves the screen alone while YouTube TV or IPTV is up.
       - condition: state
         entity_id: binary_sensor.counter_display_launcher_in_front
@@ -133,9 +159,51 @@ automation:
         data:
           path: home
       - delay: "00:00:05"
+      - if:
+          - condition: time
+            after: "23:00:00"
+            before: "06:00:00"
+        then:
+          - action: rest_command.counter_display
+            data:
+              path: screen/off
+        else:
+          - action: rest_command.counter_display
+            data:
+              path: ambient/on
+
+  # The line under the clock on the sleep screen: outdoor temperature and sky, from the Venstar's
+  # outdoor probe and the NWS weather entity. Sent whenever either changes and every 15 minutes.
+  - id: counter_display_ambient_info
+    alias: Counter display, outdoor temperature on the clock screen
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: state
+        entity_id:
+          - sensor.main_outdoor_temperature_2
+          - weather.kgcc_daynight
+      - trigger: time_pattern
+        minutes: "/15"
+      - trigger: homeassistant
+        event: start
+    actions:
+      - variables:
+          sky: >-
+            {% set names = {'sunny': 'Sunny', 'clear-night': 'Clear', 'partlycloudy': 'Partly cloudy',
+              'cloudy': 'Cloudy', 'rainy': 'Rain', 'pouring': 'Heavy rain', 'lightning': 'Thunderstorms',
+              'lightning-rainy': 'Thunderstorms', 'snowy': 'Snow', 'snowy-rainy': 'Sleet', 'hail': 'Hail',
+              'fog': 'Fog', 'windy': 'Windy', 'windy-variant': 'Windy'} %}
+            {{ names.get(states('weather.kgcc_daynight'), '') }}
+          temperature: "{{ states('sensor.main_outdoor_temperature_2') }}"
       - action: rest_command.counter_display
         data:
-          path: screen/off
+          path: >-
+            {% if is_number(temperature) %}
+            ambient/info?temperature={{ temperature | round(0) | int }}&unit={{ '°F' | urlencode }}&condition={{ sky | urlencode }}
+            {% else %}
+            ambient/info?line={{ sky | urlencode }}
+            {% endif %}
 
   - id: counter_display_battery_guard
     alias: Counter display, warn if the battery runs hot
@@ -214,3 +282,13 @@ automation:
       #     data:
       #       image: /local/counter_display/last_motion.jpg
       - delay: "00:01:00"   # at most one snapshot a minute
+
+  - alias: Counter display set volume from slider
+    id: counter_display_set_volume
+    triggers:
+      - trigger: state
+        entity_id: input_number.counter_display_volume
+    actions:
+      - action: rest_command.counter_display
+        data:
+          path: "volume?value={{ states('input_number.counter_display_volume') | int }}"

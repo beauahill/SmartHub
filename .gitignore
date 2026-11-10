@@ -26,3 +26,6 @@ esphome/secrets.yaml
 
 # OS
 .DS_Store
+
+# Per-tablet log written by android/debloat.sh
+android/debloat-removed.log

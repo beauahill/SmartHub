@@ -44,7 +44,11 @@ object Kiosk {
         val dpm = dpm(ctx)
         val admin = admin(ctx)
         try {
-            dpm.setLockTaskPackages(admin, cfg.allowedPackages(ctx.packageName))
+            // While paused the allowlist is empty. That drops any running lock task, and because
+            // MainActivity's lockTaskMode is if_whitelisted it also stops the home screen from
+            // re-locking itself when Android relaunches it. stopLockTask() alone isn't enough.
+            dpm.setLockTaskPackages(admin,
+                if (State.kioskPaused) arrayOf() else cfg.allowedPackages(ctx.packageName))
             // HOME lets the nav home button bring you back here from Spotify etc.
             // GLOBAL_ACTIONS keeps the power menu so you can still restart it by hand.
             dpm.setLockTaskFeatures(
@@ -57,7 +61,10 @@ object Kiosk {
             // It still only runs when "Allow the camera" is on in Counter Home settings.
             dpm.setPermissionGrantState(admin, ctx.packageName, android.Manifest.permission.CAMERA,
                 DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
-            dpm.setStatusBarDisabled(admin, true)
+            // Same for the microphone; it is only opened while hands-free voice is switched on.
+            dpm.setPermissionGrantState(admin, ctx.packageName, android.Manifest.permission.RECORD_AUDIO,
+                DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED)
+            dpm.setStatusBarDisabled(admin, !State.kioskPaused)
 
             // Make this the permanent home app.
             val home = IntentFilter(Intent.ACTION_MAIN).apply {
@@ -160,4 +167,8 @@ sealed class Command {
     data class CameraState(val on: Boolean) : Command()
     object Assist : Command()
     object ConfigChanged : Command()
+    /** The line under the clock on the sleep screen (outdoor temperature and conditions). */
+    data class AmbientInfo(val line: String) : Command()
+    /** Hands-free voice progress, for the on-screen caption and the MIC dot. */
+    data class Voice(val event: VoiceSatellite.Event) : Command()
 }

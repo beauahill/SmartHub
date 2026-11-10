@@ -1,0 +1,21 @@
+# Gillette Wild (NA3HL, Frontier Division) home games at Spirit Hall Ice Arena.
+# The league site renders its schedule in the browser with no feed to subscribe to, so the home
+# dates are kept here and sync_home_games.py copies them into the "Gillette Wild Home Games"
+# local calendar. Times are local (America/Denver). Source: na3hl.com schedule, club 630,
+# season 2026-27, read 2026-11-09. Past games are left out.
+season: 2026-27
+venue: Spirit Hall Ice Arena, Gillette, WY
+duration_minutes: 150
+games:
+  - { date: 2026-11-20, time: "19:05", opponent: Badlands Sabres }
+  - { date: 2026-12-04, time: "19:05", opponent: Badlands Sabres }
+  - { date: 2027-01-08, time: "19:05", opponent: Badlands Sabres }
+  - { date: 2027-01-15, time: "19:30", opponent: Sheridan Hawks }
+  - { date: 2027-01-29, time: "19:05", opponent: Butte Irish }
+  - { date: 2027-01-30, time: "19:05", opponent: Butte Irish }
+  - { date: 2027-02-06, time: "19:05", opponent: Great Falls Americans }
+  - { date: 2027-02-19, time: "19:05", opponent: Bozeman Icedogs }
+  - { date: 2027-02-20, time: "19:05", opponent: Helena Bighorns }
+  - { date: 2027-02-26, time: "19:05", opponent: Great Falls Americans }
+  - { date: 2027-02-27, time: "19:05", opponent: Great Falls Americans }
+  - { date: 2027-03-13, time: "19:05", opponent: Sheridan Hawks }
