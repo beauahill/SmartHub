@@ -24,7 +24,7 @@
 # with Done / Snooze buttons; Saturday mornings bring a digest of what is overdue or due that week.
 notify:
   - mobile_app_beaucephusiphone
-  # - mobile_app_erinsiphone
+  - mobile_app_erinsiphone
 reminder_time: "09:00:00"
 
 # The hot tub water test readings (input_number.maint_tub_<id>). A reading of 0 means "not
