@@ -721,7 +721,7 @@ app on the tablet) and gives the gate, garage doors, locks and sensors spoken al
 app shows up in Home Assistant's Spotify integration as a Connect device, and that player is
 exposed as "the hub", so "pause the hub", "next song on the hub" and "set the hub volume to 40"
 work while Spotify plays. Starting a particular song or playlist by voice is not covered: Home
-Assistant itself can't search Spotify, so that needs Spotcast (HACS) or Music Assistant. The
+Assistant itself can't search Spotify, so that needs Music Assistant (set up below). The
 pipeline needs speech-to-text and text-to-speech engines; Home Assistant Cloud provides both. On
 the tablet, tick "Hands-free voice" in Counter Home's settings and paste a long-lived access token
 (create one from the profile page of the non-admin `counter` user; an admin token also works but
@@ -737,6 +737,38 @@ Haiku), then run `setup_voice.py --conversation-agent conversation.claude_conver
 pipeline keeps trying the built-in sentences first, so "open the gate" is still instant and free,
 and hands anything else ("is anything unlocked?", "turn off everything but the kitchen") to Claude,
 which answers in plain speech. The wake word, speech-to-text and text-to-speech are unchanged.
+
+**Spotify Connect and AirPlay for everyone on the Wi-Fi.** The tablet's own Spotify app shows up
+as a Connect device only for the account signed in to it. To let anyone on the Wi-Fi pick the hub
+in Spotify, with their own account (Free or Premium), or AirPlay to it from an iPhone, run Music
+Assistant and make the tablet one of its speakers:
+
+1. In Home Assistant, install the Music Assistant add-on (the repository
+   `https://github.com/music-assistant/home-assistant-addon`; this build uses the stable 2.10.9),
+   start it, open it from the sidebar and finish the first-run screens. Accept the Music Assistant
+   integration that Home Assistant then discovers. Optionally add the Spotify music provider,
+   which also lets Music Assistant search Spotify.
+2. On the tablet, install MassDroid (`net.asksakis.massdroidv2`, F-Droid). With the kiosk lock
+   paused, open it, pick the Home Assistant add-on server (port 8095) and sign in with a Music
+   Assistant username and password. "Sign in with Home Assistant" can fail on the tablet because
+   of the certificate. MassDroid registers the tablet as a Sendspin player; rename it in Music
+   Assistant (Settings > Players) to what people should see, e.g. "Counter Display".
+3. Keep it and Spotify alive in the background:
+   ```bash
+   for p in net.asksakis.massdroidv2 com.spotify.music; do
+     adb shell dumpsys deviceidle whitelist +$p
+     adb shell cmd appops set $p RUN_ANY_IN_BACKGROUND allow
+   done
+   adb shell pm grant net.asksakis.massdroidv2 android.permission.POST_NOTIFICATIONS
+   ```
+4. In Music Assistant, add the Spotify Connect plugin and the AirPlay Receiver plugin (Settings >
+   Providers), then open the tablet's player under Settings > Players and allow Spotify Connect
+   and AirPlay on it. Nothing is advertised until that per-player switch is on. The hub then
+   appears as "Counter Display | Music Assistant" in every Spotify app on the network (the plugin's
+   "Advertised device name" setting can drop the suffix).
+
+Expect a short delay (Music Assistant quotes 0.5 to 5 seconds) between pressing pause or skip in
+Spotify and hearing it. The hub's own Spotify app still works as before for the signed-in account.
 
 **Home maintenance.** [`homeassistant/maintenance/tasks.yaml`](homeassistant/maintenance/tasks.yaml)
 lists the recurring jobs: the hot tub (weekly water test, drain and refill, salt cartridge, filter

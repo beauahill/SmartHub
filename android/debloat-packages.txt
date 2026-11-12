@@ -158,6 +158,48 @@ com.tmobile.pr.mytmobile
 com.att.myWireless
 com.att.dh
 
+# --- Setup and activation nags (the SIM is never used) ---
+# Once setup is done these only post "setup in progress / tap to finish setting up" and Verizon
+# activation or SIM errors. Removed after provisioning, so they can't interfere with it.
+com.google.android.setupwizard             # "Galaxy Tab setup in progress" notification
+com.sec.android.app.SecSetupWizard
+com.sec.android.app.setupwizard            # Verizon activation agent and SIM-state service
+com.sec.android.app.setupwizardlegalprovider
+com.google.android.partnersetup
+com.google.android.apps.restore
+com.sec.app.RilErrorNotifier               # SIM / radio error pop-ups
+com.verizon.obdm                           # Verizon out-of-box device management
+com.verizon.llkagent
+com.verizon.mips.services                  # Verizon terms-and-conditions setup
+com.samsung.android.app.omcagent           # carrier app installer and config pushes
+com.samsung.carrier.logcollector
+
+# --- Samsung: leftovers found on the SM-X218U ---
+com.samsung.android.app.galaxyfinder       # Finder search
+com.samsung.android.scs                    # Samsung Core Services (Finder, Bixby)
+com.samsung.android.app.settings.bixby
+com.samsung.android.service.peoplestripe
+com.samsung.android.easysetup
+com.samsung.android.beaconmanager
+com.samsung.android.mdx.kit                # Link to Windows parts
+com.samsung.android.mdx.quickboard
+com.samsung.android.mdecservice            # Calls and texts on other devices
+com.samsung.android.audiomirroring
+com.samsung.android.homemode
+com.samsung.android.dynamiclock
+com.sec.android.app.desktoplauncher        # DeX
+com.sec.android.desktopmode.uiservice
+com.sec.android.dexsystemui
+com.sec.android.app.ve.vebgm               # Video editor music
+com.samsung.app.newtrim                    # Video trimmer
+com.sec.android.autodoodle.service
+com.sec.android.app.quicktool
+com.sec.android.app.popupcalculator
+com.samsung.android.app.clockpack
+com.samsung.android.dqagent                # Diagnostics uploaders
+com.sec.android.diagmonagent
+com.samsung.android.knox.analytics.uploader
+
 # --- Microsoft, Meta, Netflix, LinkedIn preloads ---
 com.microsoft.skydrive
 com.microsoft.office.officehubrow
