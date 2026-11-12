@@ -128,6 +128,7 @@ class ControlService : Service() {
             try { getSystemService(android.media.AudioManager::class.java).removeOnModeChangedListener(modeListener) } catch (_: Exception) { }
         }
         VoiceSatellite.stop()
+        Announcer.release()
         CameraStreamer.stop()
         try { server?.close() } catch (_: Exception) { }
         pool.shutdownNow()
@@ -337,6 +338,15 @@ class ControlService : Service() {
             "/volume/up" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, true))
             "/volume/down" -> return 200 to JSONObject().put("ok", true).put("volume", Volume.step(this, cfg, false))
             "/volume/show" -> { mainHandler.post { Volume.showPanel(this) }; return 200 to ok }
+            // Spoken announcement. Skipped during a video call so the other end doesn't hear it.
+            "/say" -> {
+                val text = q["text"]?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: body.toString(Charsets.UTF_8).trim().takeIf { it.isNotEmpty() }
+                    ?: return 400 to err("missing text")
+                if (Calls.inCall(this)) return 409 to err("a call is in progress")
+                val floor = q["volume"]?.toIntOrNull()?.coerceIn(0, 100)
+                mainHandler.post { Announcer.say(this, cfg, text.take(1000), floor) }
+            }
             "/camera/on" -> {
                 if (!cfg.cameraAllowed) return 403 to err("camera is turned off in Counter Home settings")
                 if (!cameraForeground) goForeground(withDevices = true)
@@ -549,4 +559,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.7.0" }
+object BuildConfigShim { const val VERSION = "1.8.0" }

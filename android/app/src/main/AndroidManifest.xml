@@ -32,6 +32,10 @@
         <intent>
             <action android:name="android.intent.action.ASSIST" />
         </intent>
+        <!-- Text-to-speech engines, for spoken announcements (POST /say). -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <application

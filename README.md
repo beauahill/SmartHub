@@ -738,6 +738,15 @@ pipeline keeps trying the built-in sentences first, so "open the gate" is still 
 and hands anything else ("is anything unlocked?", "turn off everything but the kitchen") to Claude,
 which answers in plain speech. The wake word, speech-to-text and text-to-speech are unchanged.
 
+**Announcements.** `python3 homeassistant/scripts/setup_announcements.py` creates
+`script.counter_announce` (message, optional minimum volume, default 40%), which has the tablet
+speak through Counter Home's `/say`. It then finds every automation that announces to the Alexa
+Everywhere group ("The single garage door is opening.", the gate ring, hot tub faults) and adds a
+step right after that announcement that sends the same message to the counter display. The Alexa
+step is left alone, the new step doesn't wait for the tablet, and an offline tablet never stops
+the rest of the automation. Re-run it after adding a new Alexa announcement; automations that
+already have the step are skipped. `--dry-run` shows what it would change.
+
 **Spotify Connect and AirPlay for everyone on the Wi-Fi.** The tablet's own Spotify app shows up
 as a Connect device only for the account signed in to it. To let anyone on the Wi-Fi pick the hub
 in Spotify, with their own account (Free or Premium), or AirPlay to it from an iPhone, run Music
@@ -877,6 +886,7 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | `POST /reload` | Reload the dashboard |
 | `POST /volume?value=0-100`, `/volume/up`, `/volume/down` | Media volume as a percentage, never above the cap. Returns the new `volume` |
 | `POST /volume/show` | Slides in the volume slider over whatever is on screen |
+| `POST /say?text=...&volume=N` | Speaks `text` (or the request body) with the tablet's text-to-speech, ducking whatever plays. `volume` raises media volume to at least N percent for the announcement (cap still applies) and puts it back after. 409 during a video call |
 | `POST /camera/on?minutes=N` | Camera on. With `minutes`, it turns itself off after that long. Needs "Allow the camera" |
 | `POST /camera/off` | Camera off |
 | `GET /camera.jpg` | Latest frame as JPEG. 503 while the camera is off |
