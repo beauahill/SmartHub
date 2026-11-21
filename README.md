@@ -73,6 +73,7 @@ The full parts list is in [BOM.md](BOM.md).
 | `enclosure/stl/` | Print-ready STLs, already in print orientation |
 | `enclosure/renders/` | `current_*` renders of the current design, plus the original Cowork renders |
 | [`BOM.md`](BOM.md) | Bill of materials |
+| [`docs/amp-dsp.md`](docs/amp-dsp.md) | Programming the KABD-430's DSP: 2.1 crossover, subsonic filter, limiter, EEPROM burn |
 | [`docs/diagrams/`](docs/diagrams) | Assembly and wiring diagrams (PNG and a printable PDF) |
 
 ## Build order
@@ -514,8 +515,9 @@ over an edge:
      it's running.
 
    The bridged channel plays whatever the DSP sends it. Load a 2.1 program through J5 with the KPX:
-   a low-pass on J12 for the woofer, a matching high-pass on J11, and the woofer level trimmed to
-   suit. Then check each driver plays the right range before closing up. The pin numbers come from
+   a 150 Hz crossover, a subsonic filter on the woofer, and the woofer level trimmed to suit.
+   [`docs/amp-dsp.md`](docs/amp-dsp.md) has the settings and the SigmaStudio steps. Do it before
+   the tablet goes in, and check each driver plays the right range before closing up. The pin numbers come from
    Dayton's quick-start wiring guide; match them to the pin-1 mark on the board's silkscreen.
 10. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
     glass toward the lip, with the FPC plug riding in the channel on the right.
@@ -613,8 +615,9 @@ Do the YouTube TV, Spotify and Meet sign-ins while the kiosk lock is paused. Goo
 belong to other packages, and lock task mode blocks them.
 
 The KABD-430 still has Bluetooth, and its default DSP program mixes Bluetooth audio with the AUX
-input. Anyone in range can pair a phone with it. A custom SigmaStudio program, loaded with a Dayton
-ICP1 or KPX programmer, can drop the Bluetooth input.
+input. Anyone in range can pair a phone with it. This build keeps it on purpose, and the 2.1 program
+in [`docs/amp-dsp.md`](docs/amp-dsp.md) keeps both inputs in its mix. A phone on Bluetooth
+bypasses the tablet's volume cap, so that guide also sets limiters in the DSP.
 
 ### 5. Configure Home Assistant
 
