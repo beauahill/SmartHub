@@ -7,7 +7,8 @@ handle. This guide loads a 2.1 program instead. It does four things:
 - a 150 Hz crossover between the ND65s and the woofer
 - a subsonic filter that stops the woofer and passive radiator over-travelling below the box tuning
 - a level match between the two
-- limiters, because a phone on Bluetooth bypasses the tablet's volume cap
+- limiters, because a phone on Bluetooth bypasses the tablet's volume cap (a second pass; the
+  crossover works without them)
 
 The amp keeps the program in its EEPROM after the programmer is unplugged.
 
@@ -45,62 +46,99 @@ disk sets the box tuning, and the woofer's subsonic filter has to match it:
 If the disk ever comes off, change the subsonic filter to 55 Hz. Without the disk, a 45 Hz filter
 lets the radiator over-travel.
 
-## 1. Build the program, with the amp unplugged
+## 1. Edit Dayton's example, with the amp unplugged
 
-Do this part with the amp disconnected. Dayton warns that pressing **Add Filter** in a Parametric
-EQ block while a board is connected makes loud, awful noises.
+Dayton's `Simple 2.1 Project` already has the right shape: inputs, a stereo path to J11 and a mono
+path to J12, each with its own Parametric EQ. You don't build a new chain. You change five things in
+the one that's there.
+
+Do this with the KPX's 6-pin cable out of J5. Dayton warns that pressing **Add Filter** in a
+Parametric EQ block while a board is connected makes loud, awful noises.
 
 1. Open SigmaStudio, then `File → Open` → `KABD-430/Simple 2.1 Project.dspproj`. Straight away,
    `File → Save As` → `counter-2.1.dspproj`, so the example stays untouched.
 2. Leave the **Register Control** tab exactly as the example has it. It sets up the Bluetooth I2S
    input and the POT ports, and a project without it plays no Bluetooth audio.
+3. Leave the **Hardware Configuration** tab alone too. It shows a USB block wired to the ADAU1701
+   at I2C 0x68 and the E2Prom at 0xA0, which is correct for this board.
 
-### What to keep and what to remove
+### What's in the example, and what to change
 
-I haven't opened Dayton's example, so this describes where you want to end up, not the exact
-blocks in the file:
+Read the Schematic tab left to right:
 
-- **Inputs.** The Input block feeds two Signal Add blocks. AUX comes in on channels **0 and 1** and
-  Bluetooth on **4 and 5**, so you want left = 0 + 4 and right = 1 + 5. Both sources then play
-  without switching, the same as the factory program. Dayton's examples are built this way.
-- **Remove anything controlled by a pot.** That means any block whose orange control pin is wired
-  to an `AUX_ADC` source. Dayton's description of its 2.1 examples mentions a pot for master volume
-  and another for the woofer. This build has nothing plugged into POT1 to POT4, so replace those
-  with the fixed blocks below.
-- **Remove bass enhancement.** Disable or delete any Super Bass or Dynamic Bass block. The box
-  doesn't have the excursion headroom for bass boost.
+| Block in the example | What it does | Change |
+| --- | --- | --- |
+| **Input**, then **Left Channel** and **Right Channel** (red-cross Signal Add blocks) | Mixes AUX (channels 0 and 1) with Bluetooth (4 and 5): left = 0 + 4, right = 1 + 5 | Keep |
+| **POT4** → **Master Volume** (SW slew) | Master volume from a pot on AUX_ADC_0 | **Change 1:** replace with a fixed volume |
+| **Left Split**, **Right Split** | Feed both the J11 and the J12 paths | Keep |
+| **J11 PEQ** → DAC0, DAC1 | EQ for J11, the ND65s in stereo | **Change 3:** add the high-pass |
+| **POT3** → **J12 Bridged Volume** (SW slew) | Woofer volume from a pot on AUX_ADC_1 | **Change 1:** replace with a fixed volume |
+| **Stereo to Mono Mixer** | Sums L and R for the woofer | **Change 2:** set to −6 dB |
+| **J12 PEQ** | EQ for J12, the woofer, bridged | **Change 4:** add the low-pass and subsonic filter |
+| **Delay** → DAC2 | Time alignment, set to 1 sample (0.0208 ms) | Keep as it is |
+| **I2S Output** (DIG0, DIG1) | For cascading a second board | Keep |
 
-### Signal chain
+**Change 1: remove the pot volumes.** This build has nothing plugged into POT1 to POT4, so a volume
+block driven by an empty pot input is unpredictable: silent, or full blast. Delete **POT4** and
+**Master Volume**. Drag in a plain volume block (in the classic toolbox, usually **Volume Controls →
+Adjustable Gain → No Slew → Single**). Right-click it → **Add Algorithm** (or **Grow Algorithm**)
+so it has two inputs and two outputs. Wire the Left and Right T blocks into it, and its outputs to
+Left Split and Right Split. SigmaStudio names it **Single 1**; leave it at **0 dB**.
+
+Do the same for **POT3** and **J12 Bridged Volume**: a two-channel volume block between the splits
+and the mixer. SigmaStudio names it **Single 2**. This is the **woofer level**. Start it at
+**0 dB**; the model puts the two halves within about 1 dB of each other there. Step 4 tunes it by ear.
+
+**Change 2: the mixer.** Set the **Stereo to Mono Mixer** to **−6 dB**. Adding left and right
+doubles a mono signal, and this halves it back.
+
+**Changes 3 and 4: the filters.** Click the blue square in each PEQ block. Use **Add Filter** until
+you have the rows below. In each row, set **Type**, **Frequency1** and **Q Factor**; leave SubType,
+Boost, Gain, View and Bypass at their defaults.
+
+| PEQ | Rows | Result |
+| --- | --- | --- |
+| **J11 PEQ** | 2 × **General High Pass**, **150 Hz**, Q **0.71** | A 24 dB/oct Linkwitz-Riley high-pass. The curve is flat above about 300 Hz and falls steeply below 150 Hz |
+| **J12 PEQ** | 2 × **General Low pass**, **150 Hz**, Q **0.71**, and 2 × **General High Pass**, **45 Hz**, Q **0.71** (55 Hz if the radiator's disk is ever removed) | The matching low-pass, plus a 24 dB/oct subsonic filter. The curve is a hill that peaks about 2 dB below zero near 80 Hz and is down about 28 dB at 20 Hz |
+
+The woofer's hill tops out about 2 dB low because its 45 Hz and 150 Hz filters are close enough to
+each take a little off the middle. The woofer level in step 4 makes up for it. One stacked pair is
+the minimum: a single 12 dB/oct row is not enough for either filter.
+
+**Change 5: a polarity switch.** Drag in a **Signal Invert** block (Basic DSP in the toolbox) and
+put it between **J12 PEQ** and **Delay**. SigmaStudio names it **Inv1**. Leave it unchecked; step 4
+checks it.
+
+The Delay block shows **Max 5** milliseconds while you edit. After a compile it may grey out and
+show **240**: that's the same 5 ms, counted in samples at 48 kHz. Don't change it.
+
+### The finished chain
 
 ```
-Input 0+4 ─┐                      ┌─ High L ── Limiter A ── DAC0 ┐ J11 stereo
-Input 1+5 ─┴─ Crossover (stereo) ─┤  High R ── Limiter A ── DAC1 ┘ ND65 pair
-             LR 24 dB/oct, 150 Hz └─ Low L + Low R ─ −6 dB ─ Subsonic HP ─ Woofer level ─ Invert ─ Limiter B ─ DAC2   J12 bridged
+Input 0+4 ─┐            ┌─ Left Split ── J11 PEQ (HP 150 Hz) ── DAC0 ┐ J11 stereo
+Input 1+5 ─┴─ Single 1 ─┤  Right Split ─        "          ──── DAC1 ┘ ND65 pair
+             (0 dB)     └─ both splits ─ Single 2 ─ Mixer −6 dB ─ J12 PEQ ─ Inv1 ─ Delay ─ DAC2   J12 bridged
+                                         (woofer)                (LP 150, HP 45)
 ```
 
-| Block (SigmaStudio toolbox) | Setting |
-| --- | --- |
-| **Crossover**, 2-way. Right-click → Add Algorithm to make it stereo | Linkwitz-Riley, 24 dB/oct, **150 Hz**. Its High outputs feed the ND65s and its Low outputs feed the woofer |
-| **Signal Add** | Low L + Low R, a mono sum for the woofer |
-| **Single Volume** (no slew) | **−6 dB**. This halves the sum, so a mono signal comes out at the same level as either channel |
-| **Parametric EQ** (or two General 2nd Order filters) | Two **2nd-order Butterworth high-pass** bands, both at **45 Hz** (55 Hz if the radiator's disk is ever removed). Stacked, they make a 24 dB/oct Linkwitz-Riley subsonic filter. A single 12 dB/oct band is not enough |
-| **Single Volume** (no slew), "woofer level" | Start at **0 dB**. The model puts the two halves within about 1 dB of each other there. Tune it by ear in step 4 |
-| **Signal Invert** | Unchecked. Step 4 checks this |
-| **Limiter A** (stereo, linked) and **Limiter B** | Put them in now with their thresholds at 0 dB, which does nothing yet. Step 5 sets them |
-| **Output** | DAC0 and DAC1 to J11, which is in stereo mode for the ND65s. DAC2 to J12, which is bridged for the woofer. Dayton's guide says a bridged J12 takes DAC2, so leave DAC3 unconnected |
+Check the three output boxes before you download: **DAC0** and **DAC1** for J11, **DAC2** for J12.
+Dayton's guide says a bridged J12 takes DAC2, so DAC3 stays unused. On a high-DPI screen the boxes
+can show only "DAC" with the number cut off; click the arrow to see which one is ticked. Save.
 
-For the limiters, use a compressor or limiter from the toolbox's Dynamics Processors section. The
-block names differ between SigmaStudio versions, so pick an RMS type you can set as a limiter: a
-high ratio, about 10:1 or more above the threshold. Leave attack and release at their defaults.
+### Limiters, for a second pass
 
-**Test tone for step 5.** Add a **Sine Tone** source, followed by a Single Volume set to **−20 dB**.
-Split it with a T block. Put a stereo **Switch** (multiplexer) in front of Limiter A and a mono
-Switch in front of Limiter B, so each limiter takes either the music or the tone. Leave both
-Switches on music.
+Step 5's limiters protect the drivers when a phone on Bluetooth plays at full volume. The rest of the
+guide works without them, so you can get the crossover sounding right first and add them later:
 
-To see the curve before you hear it, put a Stimulus at the input and a Probe on each output, then
-press Stimulus. You should see the ND65 output rolling off below 150 Hz, and the woofer output
-passing roughly 45 to 150 Hz. Save.
+- **Limiter A** (stereo, linked) between **J11 PEQ** and DAC0/DAC1, and **Limiter B** between
+  **Delay** and DAC2. Use a compressor or limiter from the toolbox's Dynamics Processors section.
+  The block names differ between SigmaStudio versions, so pick an RMS type you can set as a
+  limiter: a high ratio, about 10:1 or more above the threshold. Leave attack and release at their
+  defaults, and the thresholds at 0 dB, which does nothing until step 5.
+- **Test tone for step 5.** Add a **Sine Tone** source, followed by a Single Volume set to
+  **−20 dB**. Split it with a T block. Put a stereo **Switch** (multiplexer) in front of Limiter A
+  and a mono Switch in front of Limiter B, so each limiter takes either the music or the tone. Leave
+  both Switches on music.
 
 ## 2. Get the display ready
 
@@ -140,14 +178,18 @@ Pair a phone with "DAKAB" and play at moderate volume:
    no intelligible voice. The ND65s should carry the voice with no deep bass. A slow sine sweep from
    20 Hz to 500 Hz makes this easy to hear: the woofer takes over below about 150 Hz and goes quiet
    below the subsonic filter.
-3. **Woofer polarity.** Play something with a steady bass line and male vocals. Tick Signal Invert,
-   then untick it, while it plays. One setting sounds clearly thinner around the upper bass. The
+3. **Woofer polarity.** Play something with a steady bass line and male vocals. Tick **Inv1**,
+   then untick it, while it plays. While SigmaStudio is linked to the amp, checkboxes and sliders
+   change the sound live, without another download. One setting sounds clearly thinner around the upper bass. The
    model predicts a hole about 15 dB deep near 140 Hz when the polarity is wrong. Keep the fuller setting.
-4. **Woofer level.** Adjust "woofer level" in 1 dB steps, standing where you normally hear the
+4. **Woofer level.** Adjust **Single 2**, the woofer level, in 1 dB steps, standing where you normally hear the
    display. A counter against a wall adds bass, so 1 to 3 dB below 0 is a likely result. Change one
    thing at a time, and `File → Save` as you go.
 
 ## 5. Set the limiters
+
+Add the limiters and test tone first (see
+[Limiters, for a second pass](#limiters-for-a-second-pass)), then Link Compile Download.
 
 The tablet caps its media volume at 80 % (Counter Home's `Volume.kt`), but a phone on Bluetooth
 bypasses that cap and can drive the DSP to full scale. Dayton rates the board at 2 x 30 W plus
