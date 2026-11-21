@@ -53,7 +53,7 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | --- | --- | --- | --- | --- |
 | H1 | 10 | M3 heat-set inserts | For a 4.0 mm hole, up to 6 mm long. 4 in the chin bar's back face, 4 in the shell's spine-bolt bosses, 2 in the power plate pocket | `M3_INSERT`, `INSERT_DEPTH` |
 | H2 | 4 | M3 x 20 socket head cap screws | Chin bar to shell, from the back of the tray | `CHIN_SCREW_X`, `CHIN_SCREW_LEN` |
-| H3 | 4 | M3 x 16 socket head cap screws | Bezel to spine, from the spine's rear. The lower pair sits about 38 mm down its counterbores, so use the long arm of a 2.5 mm hex key | `SPINE_PTS`, `SPINE_GRIP` |
+| H3 | 4 | M3 x 16 socket head cap screws | Bezel to spine, from the spine's rear. The lower pair sit about 38 mm down their counterbores (use the long arm of a 2.5 mm hex key); the upper pair about 12 mm | `SPINE_PTS`, `SPINE_GRIP` |
 | H3a | 2 | M3 x 8 countersunk (flat head) screws | Power plate to spine, flush with the plate | `PWR_SCREW_X` |
 | H4 | 4 | M3 x 6 thread-forming screws | KABD-430 into its 2.6 mm standoff pilots, which are about 4.9 mm deep. Longer screws bottom out | Amp standoffs |
 | H5 | 6 | 4 mm dowel pins, 6 mm long | Align the lid to the tub for gluing. Holes are 4.3 mm, 4 mm deep in the tub and 2.8 mm in the lid | `BOSSES`, `LID_DOWEL_DEPTH` |
@@ -71,17 +71,17 @@ ear shape is inferred from the drawing, so test-fit one driver in the printed tu
 | W2 | 1 m | Power wire, 18 AWG, red and black | From the PD trigger up the spine channel, then 20 V distribution in the tray |
 | W3 | 1 m | Silicone hookup wire, 26 to 28 AWG | Radar to ESP32-C3: 5V, GND, TX, RX |
 | W4 | 1 set | KABD-430 harnesses (ship with the board) | A 6-pin plug for each speaker connector (J11, J12) with four bare leads and a MODE–GND jumper, and a power lead, red + and black −. Long enough to reach the drivers; then W1 isn't needed |
-| W5 | | Heat shrink, solder, hot glue | Hot glue seals the full-range wire pass-throughs and the lid's speaker wire hole |
+| W5 | | Heat shrink, solder, hot glue, non-sag RTV silicone and a syringe | Hot glue seals the full-range wire pass-throughs. The silicone seals the lid's speaker wire hole from above, through the power plate pocket (assembly step 7) |
 
 ## 6. Printed parts and materials
 
 | # | Qty | Part | Size (mm) | Solid volume |
 | --- | --- | --- | --- | --- |
-| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 940 cm³ |
-| P2 | 1 | `lid_spine.stl` | 300 x 150 x 119 | 395 cm³ |
+| P1 | 1 | `base_tub.stl` | 300 x 150 x 116 | 965 cm³ |
+| P2 | 1 | `lid_spine.stl` | 300 x 150 x 147 | 571 cm³ |
 | P3 | 1 | `grille_ring.stl`, linen version | 299 x 149 x 111 | 81 cm³ |
 | P3a | 1 | `grille_shell.stl`, fabric-free version instead of P3, M2 and M3 | 300 x 150 x 112 | 196 cm³ |
-| P4 | 1 | `bezel_shell.stl` | 272 x 197 x 36 | 230 cm³ |
+| P4 | 1 | `bezel_shell.stl` | 272 x 197 x 36 | 228 cm³ |
 | P5 | 1 | `bezel_chin.stl` | 272 x 26 x 9 | 47 cm³ |
 | P6 | 1 | `power_plate.stl` | 44 x 26 x 45 | 5.2 cm³ |
 
