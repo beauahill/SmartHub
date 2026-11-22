@@ -28,7 +28,7 @@ parameter and regenerate the STLs. Prices are left out because they move too oft
 | A2 | 1 | UGREEN 2-in-1 USB-C to 3.5 mm audio adapter with PD charging | Splits the tablet port into a 3.5 mm output and a USB-C charging input. Body measured 34 x 25.3 x 9.8 mm; the cradle leaves both 34 mm faces open for the ports and the cable | `audio_adapter` cradle |
 | A3 | 1 | AUX lead for J13: a 3.5 mm stereo cable wired to a 5-pin JST PH (2.0 mm) plug, or the jack lead from Dayton's KABD functional cable kit | J13 pins: 1 Left in, 2 AGND, 3 Right in, 4–5 not connected. Tip to 1, sleeve to 2, ring to 3. Runs from the UGREEN audio jack to J13 | |
 | A4 | 1 | 3.5 mm ground loop isolator, optional | Only if the speakers hum or pick up charging noise | |
-| A5 | 1 | USB-C coupler | Joins the 5 V converter's USB-C lead to the UGREEN adapter's charging port (needed on the first build) | |
+| A5 | 1 | USB-C coupler | Joins the 5 V converter's USB-C lead to the UGREEN adapter's charging port (needed on the first build). Make sure it goes on the charging port, not the UGREEN's own plug, which goes to the tablet | |
 
 ## 3. Speakers
 

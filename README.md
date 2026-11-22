@@ -500,6 +500,11 @@ over an edge:
    UGREEN charging port, and the 3.5 mm cable from the UGREEN audio jack to the KABD-430 AUX input (J13).
    Some Dayton documents call the analog input J5, but J5 is the programming port; check the silkscreen.
 
+   **Which way round the UGREEN goes.** Its own USB-C **plug** goes to the tablet, through the FPC
+   adapter. The 5 V converter goes into its USB-C **socket**, the charging port. A coupler fits either
+   way round, so the two are easy to swap. Swapped, the tablet still seems fine, but AUX plays nothing
+   or only faint static while Bluetooth works.
+
    **AUX lead.** The 3.5 mm jack isn't on the board. J13 is a 5-pin JST PH (2.0 mm) header, from
    Dayton's manual: pin 1 Left in, 2 AGND, 3 Right in, 4 and 5 not connected. Pin 1 is at the end
    with the triangle on the silkscreen. Either use the jack lead from Dayton's functional cable kit,
@@ -550,6 +555,11 @@ over an edge:
 
 The flat FPC adapter has to fit within 4 mm of the tablet's edge (`USB_CLEAR`). If yours sticks out
 further, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
+
+If AUX plays nothing, or only faint static, while Bluetooth works, check that the 5 V converter goes
+into the UGREEN's charging socket and the UGREEN's own plug goes to the tablet (step 9). The first
+build had them swapped. To test the UGREEN alone, plug it straight into the tablet with headphones in
+its jack.
 
 If you hear hum or charging noise through the speakers, add a 3.5 mm ground loop isolator in the
 audio cable. The tablet charger and the amp share one supply, which can create a ground loop.
