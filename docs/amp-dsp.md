@@ -144,6 +144,12 @@ guide works without them, so you can get the crossover sounding right first and 
 
 1. Take the tablet out of the bezel shell. J5, the 6-pin programming port, is only reachable
    through the open front of the shell.
+
+   **Leave the programming cable in.** After the first program, leave the KPX's 6-pin cable plugged
+   into J5 and tuck its free end behind the chin bar. Later changes (the woofer level, a bass boost,
+   AUX gain) then only need the KPX plugged into that free end, without taking the tablet out. Once
+   the program is burned (step 6), power-cycle the amp with the cable in and the KPX unplugged, and
+   check the new program still plays.
 2. Plug in the wall charger. **The amp must have its own power while programming.** The KPX lights
    the amp's LEDs over USB, so it looks powered even when it isn't, but programming will fail.
 3. Turn the source volume down. The first download switches programs mid-signal.
@@ -161,8 +167,8 @@ Dayton's manual is firm about the order. If you plug the KPX into the amp before
    amp yet.
    - Still orange: unplug everything from the KPX, plug in USB alone, and try another cable or port.
      If that fails, reinstall SigmaStudio.
-3. Only now, plug the KPX's **6-pin** port into J5 on the amp. Leave the KPX's 4-pin port empty;
-   it's for a different series of Dayton amps.
+3. Only now, plug the KPX's **6-pin** port into J5 on the amp, or into the free end of the cable
+   you left in J5. Leave the KPX's 4-pin port empty; it's for a different series of Dayton amps.
 
 ## 4. Download and check by ear
 
@@ -226,7 +232,8 @@ Do this after step 4, because the woofer level you chose changes what reaches th
 2. In Hardware Configuration, right-click the **ADAU1701** block → **Write Latest Compilation to
    E2PROM**. Accept the default settings in the dialog → OK. If it fails, check the KPX is still on
    USBi and IIC.
-3. Unplug the KPX from J5. Unplug the wall charger, wait a few seconds, plug it back in, then check:
+3. Unplug the KPX. Leave its 6-pin cable in J5 with the free end behind the chin bar (step 2).
+   Unplug the wall charger, wait a few seconds, plug it back in, then check:
    - music plays, not the test tone
    - the woofer carries only bass (check 2 from step 4)
    - the woofer level sounds as you set it

@@ -543,7 +543,9 @@ over an edge:
    The bridged channel plays whatever the DSP sends it. Load a 2.1 program through J5 with the KPX:
    a 150 Hz crossover, a subsonic filter on the woofer, and the woofer level trimmed to suit.
    [`docs/amp-dsp.md`](docs/amp-dsp.md) has the settings and the SigmaStudio steps. Do it before
-   the tablet goes in, and check each driver plays the right range before closing up. The pin numbers come from
+   the tablet goes in, and check each driver plays the right range before closing up. Leave the
+   KPX's 6-pin cable plugged into J5, with its free end tucked behind the chin bar, so later DSP
+   changes don't need the tablet out. The pin numbers come from
    Dayton's quick-start wiring guide; match them to the pin-1 mark on the board's silkscreen.
 10. Put 0.5 mm felt pads on the six back-stop posts. Slide the tablet up into the shell from the bottom,
     glass toward the lip, with the FPC plug riding in the channel on the right.
