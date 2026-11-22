@@ -551,6 +551,11 @@ over an edge:
 The flat FPC adapter has to fit within 4 mm of the tablet's edge (`USB_CLEAR`). If yours sticks out
 further, raise `USB_CLEAR` and `FRAME_SIDE` together and regenerate the bezel.
 
+If AUX plays nothing, or only faint static, while Bluetooth works, the tablet isn't reaching the
+UGREEN's sound card. Plug headphones into the UGREEN and test it without the FPC adapter, straight
+into the tablet. If it works there, the FPC adapter is charge-only: it passes power but not the USB
+data lines. Replace it with one that lists data transfer (BOM A1). The first build hit this.
+
 If you hear hum or charging noise through the speakers, add a 3.5 mm ground loop isolator in the
 audio cable. The tablet charger and the amp share one supply, which can create a ground loop.
 
