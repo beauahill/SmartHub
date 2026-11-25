@@ -1,6 +1,6 @@
 # Counter display dashboard (url_path: dashboard-counter).
 #
-# Five views for the 11" tablet in landscape, kiosk mode (header and sidebar hidden). Each view is
+# Seven views (plus the All tasks subview) for the 11" tablet in landscape, kiosk mode (header and sidebar hidden). Each view is
 # one screen with no scrolling: a title and a navigation pill on top, then three columns of glass
 # tiles over the wallpaper. A tile that is "on" (a light, an open door, an unlocked lock) turns
 # white; everything else stays dark glass. Tap a tile to act, hold it for the details.
@@ -289,8 +289,8 @@ button_card_templates:
         - backdrop-filter: blur(24px) saturate(1.6)
         - -webkit-backdrop-filter: blur(24px) saturate(1.6)
         - box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.20), 0 10px 30px -12px rgba(0, 0, 0, 0.35)
-        - grid-template-areas: '"home lights security tub upkeep calendar"'
-        - grid-template-columns: repeat(6, min-content)
+        - grid-template-areas: '"home lights security tub media upkeep calendar"'
+        - grid-template-columns: repeat(7, min-content)
         - grid-template-rows: 44px
         - column-gap: 2px
     custom_fields:
@@ -322,6 +322,13 @@ button_card_templates:
           name: Hot Tub
           icon: mdi:hot-tub
           variables: { path: hot-tub, active: "[[[ return variables.active ]]]" }
+      media:
+        card:
+          type: custom:button-card
+          template: nav_item
+          name: Media
+          icon: mdi:television-play
+          variables: { path: media, active: "[[[ return variables.active ]]]" }
       upkeep:
         card:
           type: custom:button-card
@@ -1249,6 +1256,120 @@ views:
           - { <<: *heading, name: Temperatures }
           - { <<: *info, entity: sensor.hot_tub_heater_outlet, name: Heater outlet, icon: mdi:thermometer-water }
           - { <<: *info, entity: sensor.hot_tub_controller_temperature, name: Controller, icon: mdi:chip }
+
+  # ------------------------------------------------------------------ Media
+  # The man cave's movie setup (projector, mini-split, lights through the two scripts) and Spotify.
+  - title: Media
+    path: media
+    icon: mdi:television-play
+    type: sections
+    max_columns: 3
+    background: *wallpaper
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:button-card
+            template: title
+            variables: { title: Media }
+            grid_options: { columns: 12, rows: 1 }
+          - type: custom:button-card
+            template: nav
+            variables: { active: media }
+            grid_options: { columns: 24, rows: 1 }
+
+      # Column 1: the man cave scripts as big tap targets (white while running), then its climate
+      - type: grid
+        cards:
+          - { <<: *heading, name: Man cave }
+          - <<: *square
+            entity: script.prep_mancave
+            name: Prep
+            icon: mdi:projector
+            grid_options: { columns: 6, rows: 2 }
+            variables:
+              tint: "#0a84ff"
+              text: "[[[ return entity.state === 'on' ? 'Starting…' : 'Projector & lights' ]]]"
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: { entity_id: script.prep_mancave }
+          - <<: *square
+            entity: script.shut_down_mancave
+            name: Shut down
+            icon: mdi:projector-off
+            grid_options: { columns: 6, rows: 2 }
+            variables:
+              tint: "#ff453a"
+              text: "[[[ return entity.state === 'on' ? 'Shutting down…' : 'Everything off' ]]]"
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target: { entity_id: script.shut_down_mancave }
+              confirmation:
+                text: Shut down the man cave (projector, lights and mini-split)?
+          - { <<: *heading, name: Climate }
+          - { <<: *climate, entity: climate.man_cave, name: Mini-split, icon: mdi:air-conditioner }
+          - { <<: *info, entity: sensor.man_cave_humidity, name: Humidity, icon: mdi:water-percent }
+
+      # Column 2: the man cave lights
+      - type: grid
+        cards:
+          - { <<: *heading, name: Lights }
+          - { <<: *toggle, entity: light.man_cave, name: Man cave, icon: mdi:ceiling-light }
+          - { <<: *toggle, entity: light.bar_lights, name: Bar, icon: mdi:glass-cocktail }
+          - { <<: *toggle, entity: light.back_bar, name: Back bar, icon: mdi:bottle-wine }
+          - { <<: *toggle, entity: input_boolean.alexa_bar_signs_2, name: Bar signs, icon: mdi:sign-text }
+
+      # Column 3: Spotify, wherever it is playing (the hub, an Echo, the AVR). Tap the top tile for
+      # volume and the device picker.
+      - type: grid
+        cards:
+          - { <<: *heading, name: Spotify }
+          - <<: *info
+            entity: media_player.spotify_beauhill
+            grid_options: { columns: 12, rows: 1 }
+            name: "[[[ return entity.attributes.media_title || 'Spotify' ]]]"
+            icon: mdi:spotify
+            variables:
+              lit: false
+              accent: "[[[ return entity.state === 'playing' ]]]"
+              tint: "#1ed760"
+              text: |
+                [[[
+                  const a = entity.attributes;
+                  if (entity.state === 'playing' || entity.state === 'paused')
+                    return [a.media_artist, a.source].filter(Boolean).join(' · ') + (entity.state === 'paused' ? ' · Paused' : '');
+                  return 'Nothing playing';
+                ]]]
+            tap_action: { action: more-info }
+          - <<: *square
+            entity: media_player.spotify_beauhill
+            name: Back
+            icon: mdi:skip-previous
+            variables: { lit: false, text: "" }
+            tap_action:
+              action: perform-action
+              perform_action: media_player.media_previous_track
+              target: { entity_id: media_player.spotify_beauhill }
+          - <<: *square
+            entity: media_player.spotify_beauhill
+            name: "[[[ return entity.state === 'playing' ? 'Pause' : 'Play' ]]]"
+            icon: "[[[ return entity.state === 'playing' ? 'mdi:pause' : 'mdi:play' ]]]"
+            variables: { lit: false, text: "" }
+            tap_action:
+              action: perform-action
+              perform_action: media_player.media_play_pause
+              target: { entity_id: media_player.spotify_beauhill }
+          - <<: *square
+            entity: media_player.spotify_beauhill
+            name: Next
+            icon: mdi:skip-next
+            variables: { lit: false, text: "" }
+            tap_action:
+              action: perform-action
+              perform_action: media_player.media_next_track
+              target: { entity_id: media_player.spotify_beauhill }
 
   # ------------------------------------------------------------------ Upkeep
   # Home maintenance. Set up by homeassistant/scripts/setup_maintenance.py from

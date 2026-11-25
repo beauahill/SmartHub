@@ -268,8 +268,11 @@ automation:
           entity_id: camera.counter_display
         data:
           filename: /config/www/counter_display/last_motion.jpg
+      # A fixed notification_id keeps this to one notification that updates. The snapshot file is
+      # overwritten each time, so separate notifications would all show the newest picture.
       - action: persistent_notification.create
         data:
+          notification_id: counter_display_motion
           title: Movement at the counter
           message: >-
             The counter display saw someone at {{ now().strftime('%H:%M') }} while nobody was home.

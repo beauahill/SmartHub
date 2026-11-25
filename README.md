@@ -65,7 +65,7 @@ The full parts list is in [BOM.md](BOM.md).
 | [`esphome/counter-presence.yaml`](esphome/counter-presence.yaml) | ESP32-C3 + LD2410C presence sensor firmware |
 | [`homeassistant/packages/counter_display.yaml`](homeassistant/packages/counter_display.yaml) | REST commands, status sensors and the wake / ambient / off automations |
 | [`homeassistant/auth_trusted_networks.yaml`](homeassistant/auth_trusted_networks.yaml) | Lets the dashboard load without a login screen |
-| [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml) | The six-view kiosk dashboard the tablet shows |
+| [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml) | The seven-view kiosk dashboard the tablet shows |
 | [`homeassistant/maintenance/tasks.yaml`](homeassistant/maintenance/tasks.yaml) | Home maintenance jobs and their intervals (hot tub, furnace filter, sprinkler blowout, ...) |
 | [`homeassistant/scripts/`](homeassistant/scripts) | Push the dashboard, create the Gillette calendars, sync the home-game calendars, set up maintenance tracking |
 | [`homeassistant/calendars/`](homeassistant/calendars) | Gillette Wild home dates (no feed exists), copied into a local calendar |
@@ -654,7 +654,7 @@ The automations expect the presence entity `binary_sensor.counter_presence_prese
 ESPHome config creates.
 
 **The dashboard.** [`homeassistant/dashboards/counter.yaml`](homeassistant/dashboards/counter.yaml)
-is the `dashboard-counter` dashboard the tablet loads: six views for an 11" landscape screen in
+is the `dashboard-counter` dashboard the tablet loads: seven views for an 11" landscape screen in
 kiosk mode. Each view is one screen with no scrolling: the view's title and a navigation pill on
 top (the kiosk hides HA's tabs), then three columns of dark glass tiles over the wallpaper. A tile
 turns white while its light is on, its door is open or its lock is unlocked. Tap a tile to act,
@@ -666,6 +666,7 @@ hold it for the details (brightness, thermostat, history).
 | Lights | Every light by room, the Normal / Go Bills / Go Pokes scenes, "all lights off" |
 | Security | Locks (tap asks before it locks or unlocks), alarm, garage doors and gate, every door and window sensor, the gate camera |
 | Hot Tub | Set point dial, 24 h graph, jets, lights and their colours, salt system, locks and timers, temperatures |
+| Media | Prep / Shut down the man cave (the `script.prep_mancave` and `script.shut_down_mancave` scripts; shutting down asks first), the man cave mini-split and lights, and Spotify (what's playing, back / play-pause / next; tap the top tile for volume and the device) |
 | Upkeep | Home maintenance: the hot tub water test (readings coloured against their targets, with what to add), quick "added pH down / shock / salt" logging, the seven most pressing jobs, thermostat and water heater alerts, low batteries. All tasks (from the Upkeep view) has every job by area |
 | Calendar | Month view of the household and Gillette calendars |
 
@@ -685,6 +686,7 @@ python3 homeassistant/scripts/setup_calendars.py    # create the Gillette commun
 python3 homeassistant/scripts/sync_home_games.py    # fill the Pronghorn and Gillette Wild home-game calendars
 python3 homeassistant/scripts/set_wallpaper.py      # upload the wallpaper and set it as every view's background
 python3 homeassistant/scripts/setup_maintenance.py  # create or update the maintenance helpers, scripts and reminders
+python3 homeassistant/scripts/setup_presence_fallbacks.py  # brightness schedule, clock and alert that work without the radar
 ```
 
 The wallpaper is a mesh gradient (blue through indigo to a warm corner) rendered by
@@ -725,6 +727,25 @@ replaced.
 | 2 minutes | Sleep screen (clock, date, outdoor temperature, rotating wallpaper), if the dashboard is in front |
 | 10 minutes, 23:00–06:00 only | Panel off; at 23:00 as well if it has been alone for 10 minutes. During the day the clock stays up |
 | 30 minutes | Back to the dashboard if another app was open, then the sleep screen (or panel off late at night) |
+
+All of these hang off `binary_sensor.counter_presence_presence`. If the radar stops reporting
+(the sensor sits at `unknown` or `unavailable`), none of them run, the panel stays on at full
+brightness, and the tablet can use more power than its 5 V supply delivers. Run
+`setup_presence_fallbacks.py` once to add three UI automations that don't need the radar:
+brightness on the same schedule (applied at 22:00, 06:00, Home Assistant start and whenever the
+panel turns on); while the radar is down, the sleep screen after the dashboard has been up for 10
+minutes (never panel off, since nothing could wake it); and a persistent notification in Home
+Assistant when the radar has been down for 30 minutes, cleared when it reports again.
+
+**Radar shows `unknown` forever.** If the ESP32 is online (its WiFi signal sensor updates) but
+presence, the radar firmware and the gate numbers are all `unknown`, the radar isn't getting
+valid frames through. Turn on "Subscribe to logs from the device" in the ESPHome integration's
+options and press Radar query params: `[ld2410] Invalid status` means frames arrive but corrupted
+(check the GND, TX and RX joints, a shared ground, and keep the wires away from the amp and the
+buck), while nothing at all means no power or TX/RX swapped. The HLKRadarTool phone app talks to
+the LD2410C over Bluetooth on its own, which tells a dead radar from a wiring fault, and can drop
+its baud rate to 115200 (change `baud_rate` in `counter-presence.yaml` to match) if the link is
+noisy.
 
 The outdoor temperature line comes from `sensor.main_outdoor_temperature_2` (the Venstar's probe)
 and the NWS weather entity; the `counter_display_ambient_info` automation sends it to the tablet
@@ -799,6 +820,33 @@ Assistant and make the tablet one of its speakers:
    and AirPlay on it. Nothing is advertised until that per-player switch is on. The hub then
    appears as "Counter Display | Music Assistant" in every Spotify app on the network (the plugin's
    "Advertised device name" setting can drop the suffix).
+
+Counter Home holds a binding to MassDroid's media service (the `keepAliveApps` setting, MassDroid
+by default). Without it, Android's cached-app freezer froze MassDroid about ten seconds after it
+paused while the dashboard was in front, and casts to the hub then played nothing. The battery
+whitelist in step 3 doesn't prevent that. `GET /status` shows the binding under `keepAlive`.
+
+MassDroid can also end up running but disconnected. When its process restarts without its screen
+being opened (it was killed or crashed, or the tablet rebooted), Counter Home's binding brings the
+playback service back, but the service alone never signs in to Music Assistant, so the hub drops
+out of Spotify and AirPlay until MassDroid is opened once (`adb logcat` shows
+`MaWsClient: ... WebSocket not authenticated`). To have Home Assistant open it by itself:
+
+1. In Music Assistant, open Settings > Players > Counter Display and switch on "Expose this player
+   to Home Assistant", so Home Assistant gets a `media_player` for it.
+2. Run `python3 homeassistant/scripts/setup_hub_speaker.py`. It saves an automation that, once the
+   player has been unavailable for 5 minutes, waits until the dashboard is in front or the panel
+   is off, opens MassDroid for 10 seconds (`POST /launch?app=net.asksakis.massdroidv2`), returns to
+   the dashboard and puts the screen back as it was. After 3 tries it leaves a notification
+   instead. Expect about 8 minutes from the drop to the speaker being back.
+
+The apps in `keepAliveApps` may be opened through `/launch` while the kiosk lock is on (Counter
+Home 1.9.3); before that the lock refused MassDroid because it has no dock tile.
+
+MassDroid is also a full Music Assistant remote: it can browse every music source and play to, or
+group, any speaker in the house. To put it on the dock, add a tile for `net.asksakis.massdroidv2`
+(this build calls it "Speakers", `"icon": "play"`). A side dock with more than eight tiles draws
+them slightly smaller so the labels still fit (Counter Home 1.9.4).
 
 Expect a short delay (Music Assistant quotes 0.5 to 5 seconds) between pressing pause or skip in
 Spotify and hearing it. The hub's own Spotify app still works as before for the signed-in account.
@@ -896,13 +944,15 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 
 | Call | Does |
 | --- | --- |
-| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, edgeVolume (on and permitted), cameraAllowed, camera, voice, inCall, ip |
+| `GET /status` | JSON: screenOn, ambient, launcherInFront, deviceOwner, kioskPaused, battery, charging, batteryTempC, volume, maxVolume, edgeVolume (on and permitted), pauseMediaOnHome, media, keepAlive, cameraAllowed, camera, voice, inCall, ip |
 | `POST /screen/on`, `/screen/off`, `/screen/toggle` | Panel power. Turning it off answers 409 during a video call |
 | `POST /ambient/on`, `/ambient/off` | Sleep screen (clock, date, wallpaper), tap to dismiss. `/ambient/on` answers 409 during a video call |
 | `POST /ambient/info?temperature=44&unit=°F&condition=Sunny` or `?line=...` | The line under the clock on the sleep screen |
 | `GET /wallpapers`, `PUT /wallpapers/<name>` (image body, ≤ 20 MB), `DELETE /wallpapers/<name>` | Pictures for the sleep screen |
 | `POST /voice/on`, `/voice/off` | Start or pause hands-free voice (needs it enabled in settings). `/status` reports `voice` |
-| `POST /home` | Back to the dashboard from any app |
+| `POST /home` | Back to the dashboard from any app. Pauses whatever plays, like the Home button (see "Music stops at home" below); `POST /home?media=keep` leaves it playing |
+| `GET /media` | What plays: `playing`, `app` (package), `state` (playing, paused, stopped, buffering, none), `title`, `artist`. Also in `/status` as `media` |
+| `POST /media/play`, `/media/pause`, `/media/playpause`, `/media/next`, `/media/previous`, `/media/stop` | Controls whichever app plays (Spotify, MassDroid, YouTube TV), else the last one used. Pause and stop act on everything playing |
 | `POST /launch?app=Music` | Tile label or package name |
 | `POST /assist` | Opens the default assistant (HA Assist) |
 | `POST /navigate?url=...` | Load any URL in the dashboard view, such as a camera page when the doorbell rings |
@@ -915,7 +965,7 @@ Every call needs `Authorization: Bearer <token>` or `?token=<token>`. Port 2323.
 | `POST /camera/off` | Camera off |
 | `GET /camera.jpg` | Latest frame as JPEG. 503 while the camera is off |
 | `GET /camera.mjpeg` | MJPEG stream, up to 3 at once. It ends when the camera turns off |
-| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, edgeVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pin, port, voiceEnabled, voicePipeline, haToken (write-only), ambientIntervalMin, wallpaperUrls |
+| `GET /config`, `POST /config` | Read or change settings as JSON: haUrl, haCertName, tiles, dockSide, kioskLock, maxVolume, edgeVolume, cameraFacing, cameraWidth, cameraFps, cameraQuality, cameraRotation, pauseMediaOnHome, keepAliveApps, pin, port, voiceEnabled, voicePipeline, haToken (write-only), ambientIntervalMin, wallpaperUrls |
 
 `volume` and `maxVolume` are percentages of the tablet's media volume range.
 
@@ -935,6 +985,7 @@ Example tiles JSON, for the settings screen or `POST /config`:
 {"tiles": [
   {"label": "Music",   "package": "com.spotify.music", "color": "#1F8F4E"},
   {"label": "Live TV", "package": "com.google.android.apps.youtube.unplugged", "color": "#C43B33"},
+  {"label": "YouTube", "package": "com.google.android.youtube", "color": "#E62117"},
   {"label": "IPTV",    "package": "com.ottplay.ottplay", "color": "#3A62B8"},
   {"label": "Recipes", "package": "com.example.recipes", "color": "#E8702A", "icon": "globe"},
   {"label": "Volume",  "action": "volume", "color": "#5B6470"},
@@ -963,10 +1014,33 @@ four places, all held under the cap:
   It needs Android's "display over other apps" permission, which setup.sh grants
   (`adb shell cmd appops set com.counterdisplay.launcher SYSTEM_ALERT_WINDOW allow`). Switch it
   off in Counter Home settings or with `{"edgeVolume": false}`.
+  Beside the slider, on the same glass, are previous, play/pause and next buttons for whichever app
+  plays, so the music can be stopped even when the app's own screen is stuck. A button tap keeps
+  the panel up for 4 s.
 - The Volume dock tile, which opens the same slider.
 - The `input_number.counter_display_volume` slider that the Home Assistant package adds (put it on
   the dashboard).
 - `POST /volume`.
+
+**Music stops at home.** Going back to the dashboard pauses whatever plays: the Home button or
+back gesture out of Spotify or YouTube TV, a `home` dock tile, and `POST /home` (so the "nobody
+around for 30 minutes" automation stops forgotten music too). The sleep screen, waking the panel,
+`POST /navigate` and `POST /home?media=keep` leave it playing, as does music cast to the hub from a
+phone while the dashboard is up. Turn it off in Counter Home settings or with
+`{"pauseMediaOnHome": false}`.
+
+Counter Home reaches the apps through their media sessions, using the notification-listener access
+setup.sh already grants for incoming calls
+(`cmd notification allow_listener com.counterdisplay.launcher/com.counterdisplay.launcher.CallWatcher`).
+That matters: Android's own media button goes to whichever app last asked for it, often MassDroid
+even while Spotify plays.
+
+YouTube TV's media session doesn't follow live TV (it says "stopped" and takes no commands). When
+audio plays and no session admits to it, Counter Home takes the audio focus for a moment instead,
+which makes the app pause. `/media` then names the session that isn't paused (YouTube TV). Such an
+app can't be resumed from here: after that pause, the sidebar's play button does nothing (for 30
+minutes, or until a proper session plays again) rather than start Spotify. `POST /media/play` still
+plays the last session.
 
 The dock can sit on the right, left or bottom.
 
