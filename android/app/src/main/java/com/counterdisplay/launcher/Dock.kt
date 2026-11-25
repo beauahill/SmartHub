@@ -66,8 +66,14 @@ object Dock {
         else -> GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, EDGE_RIGHT)
     }
 
-    /** One tile: a glass rounded rectangle with the glyph in a circle above the label. */
-    fun tile(ctx: Context, tile: Tile, onClick: () -> Unit): View {
+    /** A side dock with more tiles than this draws them [compact][tile], or their labels get cut off. */
+    const val ROOMY_SIDE = 8
+
+    /**
+     * One tile: a glass rounded rectangle with the glyph in a circle above the label.
+     * [compact] shrinks the glyph and label a little, for a side dock crowded with tiles.
+     */
+    fun tile(ctx: Context, tile: Tile, compact: Boolean = false, onClick: () -> Unit): View {
         val density = ctx.resources.displayMetrics.density
         fun dp(v: Float) = (v * density).toInt()
         val radius = 20f * density
@@ -75,13 +81,14 @@ object Dock {
         val glyph = ImageView(ctx).apply {
             setImageResource(iconFor(tile))
             imageTintList = ColorStateList.valueOf(tint(tile.color))
-            setPadding(dp(9f), dp(9f), dp(9f), dp(9f))
+            val pad = dp(if (compact) 7f else 9f)
+            setPadding(pad, pad, pad, pad)
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(CIRCLE) }
         }
         val label = TextView(ctx).apply {
             text = tile.label
             setTextColor(TEXT)
-            textSize = 12.5f
+            textSize = if (compact) 11.5f else 12.5f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             gravity = Gravity.CENTER
             maxLines = 1
@@ -99,8 +106,11 @@ object Dock {
             }
             val mask = GradientDrawable().apply { cornerRadius = radius; setColor(Color.WHITE) }
             background = RippleDrawable(ColorStateList.valueOf(PRESSED), glass, mask)
-            addView(glyph, LinearLayout.LayoutParams(dp(40f), dp(40f)))
-            addView(label, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(7f) })
+            val disc = dp(if (compact) 32f else 40f)
+            addView(glyph, LinearLayout.LayoutParams(disc, disc))
+            addView(label, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+                topMargin = dp(if (compact) 3f else 7f)
+            })
             contentDescription = tile.label
             setOnClickListener { onClick() }
         }

@@ -113,7 +113,7 @@ com.sec.android.app.chromecustomizations
 com.google.android.googlequicksearchbox    # Google app and "Hey Google"
 com.google.android.apps.googleassistant
 com.google.android.apps.bard               # Gemini
-com.google.android.youtube
+# com.google.android.youtube stays: the dock has a YouTube tile
 com.google.android.apps.youtube.music
 com.google.android.apps.youtube.kids
 com.google.android.gm                      # Gmail

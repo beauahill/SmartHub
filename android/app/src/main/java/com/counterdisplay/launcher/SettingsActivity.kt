@@ -55,6 +55,12 @@ class SettingsActivity : Activity() {
             setTextColor(Color.WHITE)
         }
         col.addView(edgeVol)
+        val pauseHome = CheckBox(this).apply {
+            text = "Pause music and video when going back to the dashboard (not for the sleep screen)"
+            isChecked = cfg.pauseMediaOnHome
+            setTextColor(Color.WHITE)
+        }
+        col.addView(pauseHome)
         val camAllowed = CheckBox(this).apply {
             text = "Allow the camera (Home Assistant can turn it on; a red CAM dot shows while it runs)"
             isChecked = cfg.cameraAllowed
@@ -93,6 +99,7 @@ class SettingsActivity : Activity() {
                 cfg.kioskLock = lock.isChecked
                 cfg.maxVolume = maxVol.text.toString().toIntOrNull() ?: Config.DEFAULT_MAX_VOLUME
                 cfg.edgeVolume = edgeVol.isChecked
+                cfg.pauseMediaOnHome = pauseHome.isChecked
                 VolumeOverlay.sync(this)
                 cfg.cameraAllowed = camAllowed.isChecked
                 cfg.cameraFacing = camFacing.text.toString().trim().lowercase()

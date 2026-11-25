@@ -38,7 +38,9 @@ import java.util.concurrent.atomic.AtomicInteger
  *   POST /ambient/on | /ambient/off -> the sleep screen (clock, date, wallpaper)
  *   POST /ambient/info?temperature=44&unit=°F&condition=Sunny  (or ?line=any text)
  *                                   -> the line under the clock on the sleep screen
- *   POST /home | /reload | /assist
+ *   POST /home | /reload | /assist  -> /home pauses media too (setting), unless ?media=keep
+ *   GET  /media                     -> what plays, in which app
+ *   POST /media/play | pause | playpause | next | previous | stop   -> the playing app (see [Media])
  *   POST /launch?app=Music          -> tile label or package name
  *   POST /navigate?url=...          -> load a URL in the dashboard view
  *   POST /brightness?value=0-255|auto
@@ -55,7 +57,8 @@ import java.util.concurrent.atomic.AtomicInteger
  *   POST /voice/on | /voice/off     -> start or stop hands-free voice (needs it enabled in settings)
  *
  * It also holds the media volume at or below the configured cap (see [Volume]), and runs the
- * hands-free voice loop while the screen is on (see [VoiceSatellite]).
+ * hands-free voice loop while the screen is on (see [VoiceSatellite]), and keeps background players
+ * such as MassDroid bound so Android doesn't freeze them (see [KeepAlive]).
  *
  * Every request needs the token: header "Authorization: Bearer <token>" or ?token=<token>.
  */
@@ -98,6 +101,7 @@ class ControlService : Service() {
         startServer()
         watchVolume()
         VolumeOverlay.sync(this)
+        KeepAlive.sync(this, cfg.keepAliveApps)
         registerReceiver(screenReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_SCREEN_OFF)
         })
@@ -123,6 +127,7 @@ class ControlService : Service() {
     override fun onDestroy() {
         try { unregisterReceiver(volumeReceiver) } catch (_: Exception) { }
         VolumeOverlay.release()
+        KeepAlive.release()
         try { unregisterReceiver(screenReceiver) } catch (_: Exception) { }
         if (Build.VERSION.SDK_INT >= 31) {
             try { getSystemService(android.media.AudioManager::class.java).removeOnModeChangedListener(modeListener) } catch (_: Exception) { }
@@ -314,7 +319,20 @@ class ControlService : Service() {
                 State.ambientInfo = line
                 Bus.post(Command.AmbientInfo(line))
             }
-            "/home" -> { Kiosk.screenOn(this); Bus.post(Command.Home) }
+            "/home" -> { Kiosk.screenOn(this); Bus.post(Command.Home(pauseMedia = q["media"] != "keep")) }
+            "/media" -> return 200 to JSONObject().put("ok", true).put("media", Media.statusJson(this))
+            "/media/play", "/media/pause", "/media/playpause", "/media/next", "/media/previous", "/media/stop" -> {
+                when (p.removePrefix("/media/")) {
+                    "play" -> Media.play(this)
+                    "pause" -> Media.pause(this)
+                    "playpause" -> Media.playPause(this)
+                    "next" -> Media.next(this)
+                    "previous" -> Media.previous(this)
+                    "stop" -> Media.stop(this)
+                }
+                mainHandler.postDelayed({ VolumeOverlay.refresh() }, 400)
+                return 200 to ok
+            }
             "/reload" -> Bus.post(Command.Reload)
             "/assist" -> { Kiosk.screenOn(this); Bus.post(Command.Assist) }
             "/launch" -> {
@@ -380,7 +398,7 @@ class ControlService : Service() {
                         CameraStreamer.start(this, cfg, left)
                     }
                     Bus.post(Command.ConfigChanged)
-                    mainHandler.post { VolumeOverlay.sync(this) }
+                    mainHandler.post { VolumeOverlay.sync(this); KeepAlive.sync(this, cfg.keepAliveApps) }
                     if (cfg.port != oldPort) startServer()
                     if (VoiceSatellite.running) VoiceSatellite.stop()   // picks up a new token or pipeline
                     syncVoice()
@@ -440,6 +458,9 @@ class ControlService : Service() {
             .put("volume", Volume.percent(this))
             .put("maxVolume", cfg.maxVolume)
             .put("edgeVolume", cfg.edgeVolume && VolumeOverlay.allowed(this))
+            .put("pauseMediaOnHome", cfg.pauseMediaOnHome)
+            .put("media", Media.statusJson(this))
+            .put("keepAlive", KeepAlive.statusJson())
             .put("cameraAllowed", cfg.cameraAllowed)
             .put("camera", CameraStreamer.statusJson())
             .put("voiceEnabled", cfg.voiceEnabled)
@@ -559,4 +580,4 @@ class ControlService : Service() {
 }
 
 /** Avoids enabling buildConfig generation just for one string. */
-object BuildConfigShim { const val VERSION = "1.8.0" }
+object BuildConfigShim { const val VERSION = "1.9.4" }

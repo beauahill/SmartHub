@@ -32,6 +32,11 @@
         <intent>
             <action android:name="android.intent.action.ASSIST" />
         </intent>
+        <!-- Media players' browser services: KeepAlive binds to them so Android doesn't freeze the
+             player (MassDroid) while it waits for a cast. -->
+        <intent>
+            <action android:name="android.media.browse.MediaBrowserService" />
+        </intent>
         <!-- Text-to-speech engines, for spoken announcements (POST /say). -->
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />

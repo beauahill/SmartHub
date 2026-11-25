@@ -41,6 +41,14 @@ object State {
     @Volatile var kioskPaused = false
     /** The line under the clock on the sleep screen, last sent by Home Assistant. */
     @Volatile var ambientInfo = ""
+    /**
+     * Set when the launcher hands the screen to an app (a dock tile, Assist, the Home button); cleared
+     * when it is back. Process-wide, not per activity: after an update or boot Android can bring up a
+     * second launcher instance in its home task, and that one must still know an app was open.
+     */
+    @Volatile var awayInApp = false
+    /** Set when Home Assistant brings the launcher up without anyone going home (wake, sleep screen, a URL). */
+    @Volatile var quietReturn = false
 }
 
 class MainActivity : Activity() {
@@ -84,6 +92,11 @@ class MainActivity : Activity() {
         hideSystemBars()
         Kiosk.applyPolicies(this, cfg) // picks up apps installed since the last launch
         if (!State.kioskPaused) Kiosk.enterLock(this, cfg)
+        // Back from Spotify or YouTube TV: the music stops with it. Not when Home Assistant only woke
+        // the panel or put up the sleep screen over the app, and not when the screen just came back on.
+        if (State.awayInApp && !State.quietReturn && !State.ambient) Media.pauseForHome(this, cfg, "back on the dashboard")
+        State.awayInApp = false
+        State.quietReturn = false
         // We're on screen, so the service may claim camera and microphone access now and keep them in the background.
         ControlService.refreshForeground(this)
         showCameraState(CameraStreamer.running)
@@ -114,6 +127,8 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         handleProvision(intent)
+        // The Home button from another app counts as going home, whichever way that app was opened.
+        if (!State.foreground && intent?.hasCategory(Intent.CATEGORY_HOME) == true) State.awayInApp = true
         // Pressing home while already home: scroll the dashboard back to its first view.
         if (State.foreground && intent?.hasCategory(Intent.CATEGORY_HOME) == true) loadDashboard()
     }
@@ -239,10 +254,11 @@ class MainActivity : Activity() {
         }
 
         val tiles = cfg.tiles
+        val compact = !bottom && tiles.size > Dock.ROOMY_SIDE
         for (tile in tiles) {
             val lp = if (bottom) LinearLayout.LayoutParams(0, MATCH_PARENT, 1f).apply { leftMargin = dp(Dock.GAP_DP) }
                      else LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f).apply { topMargin = dp(Dock.GAP_DP) }
-            dock.addView(Dock.tile(this, tile) { runTile(tile) }, lp)
+            dock.addView(Dock.tile(this, tile, compact) { runTile(tile) }, lp)
         }
         // A short list leaves the rest of the dock empty instead of stretching its tiles.
         val spare = (if (bottom) Dock.SLOTS_BOTTOM else Dock.SLOTS_SIDE) - tiles.size
@@ -302,7 +318,7 @@ class MainActivity : Activity() {
         when (tile.action) {
             "assist" -> openAssist()
             "reload" -> web.reload()
-            "home" -> loadDashboard()
+            "home" -> { Media.pauseForHome(this, cfg, "home tile"); loadDashboard() }
             "volume" -> Volume.showPanel(this)
             "volume_up" -> { Volume.step(this, cfg, true); Volume.showPanel(this) }
             "volume_down" -> { Volume.step(this, cfg, false); Volume.showPanel(this) }
@@ -326,19 +342,37 @@ class MainActivity : Activity() {
         }
         setAmbient(false)
         startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        State.awayInApp = true
     }
 
     private fun openAssist() {
         try {
             startActivity(Intent(Intent.ACTION_ASSIST).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            State.awayInApp = true
         } catch (e: Exception) {
             openPackage(Config.HA_COMPANION, "Home Assistant")
         }
     }
 
+    /** The dashboard's first view, in front, with the sleep screen down; [pauseMedia] stops what plays. */
+    private fun goHome(pauseMedia: Boolean) {
+        if (pauseMedia) Media.pauseForHome(this, cfg, "home")
+        // Already handled (or deliberately kept playing), so the return from the app doesn't pause again.
+        State.awayInApp = false
+        setAmbient(false)
+        bringToFront()
+        loadDashboard()
+    }
+
     private fun bringToFront() {
         startActivity(Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+    }
+
+    /** Comes forward for Home Assistant without counting as going home, so the music keeps playing. */
+    private fun bringToFrontQuietly() {
+        if (!State.foreground) State.quietReturn = true    // onResume clears it; when already in front there is none
+        bringToFront()
     }
 
     private fun showCameraState(on: Boolean) {
@@ -375,12 +409,12 @@ class MainActivity : Activity() {
 
     private fun onCommand(cmd: Command) {
         when (cmd) {
-            Command.Home -> { setAmbient(false); bringToFront(); loadDashboard() }
+            is Command.Home -> goHome(cmd.pauseMedia)
             Command.Reload -> web.reload()
-            Command.WakeUp -> { bringToFront(); hideSystemBars() }
-            is Command.Ambient -> { if (cmd.on) bringToFront(); setAmbient(cmd.on) }
+            Command.WakeUp -> { bringToFrontQuietly(); hideSystemBars() }
+            is Command.Ambient -> { if (cmd.on) bringToFrontQuietly(); setAmbient(cmd.on) }
             is Command.Launch -> launch(cmd.app)
-            is Command.Navigate -> { setAmbient(false); bringToFront(); web.loadUrl(cmd.url) }
+            is Command.Navigate -> { setAmbient(false); bringToFrontQuietly(); web.loadUrl(cmd.url) }
             Command.Assist -> openAssist()
             is Command.CameraState -> showCameraState(cmd.on)
             is Command.AmbientInfo -> ambient.setInfo(cmd.line)

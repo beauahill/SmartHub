@@ -116,6 +116,22 @@ class Config(context: Context) {
         get() = prefs.getBoolean(KEY_EDGE_VOLUME, true)
         set(v) = prefs.edit().putBoolean(KEY_EDGE_VOLUME, v).apply()
 
+    /**
+     * Going back to the dashboard (Home tile, POST /home, coming back from an app) pauses whatever
+     * plays. The sleep screen and waking the panel never do. See [Media.pauseForHome].
+     */
+    var pauseMediaOnHome: Boolean
+        get() = prefs.getBoolean(KEY_PAUSE_ON_HOME, true)
+        set(v) = prefs.edit().putBoolean(KEY_PAUSE_ON_HOME, v).apply()
+
+    /**
+     * Background players kept out of Android's cached-app freezer, so they can start playing while
+     * the dashboard is in front (MassDroid answering a Spotify Connect cast). See [KeepAlive].
+     */
+    var keepAliveApps: List<String>
+        get() = prefs.getString(KEY_KEEP_ALIVE, DEFAULT_KEEP_ALIVE)!!.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        set(v) = prefs.edit().putString(KEY_KEEP_ALIVE, v.joinToString(",")).apply()
+
     /** "right", "left" or "bottom". */
     var dockSide: String
         get() = prefs.getString(KEY_DOCK, "right")!!
@@ -180,6 +196,8 @@ class Config(context: Context) {
         put("dockSide", dockSide)
         put("maxVolume", maxVolume)
         put("edgeVolume", edgeVolume)
+        put("pauseMediaOnHome", pauseMediaOnHome)
+        put("keepAliveApps", JSONArray(keepAliveApps))
         put("cameraAllowed", cameraAllowed)
         put("cameraFacing", cameraFacing)
         put("cameraWidth", cameraWidth)
@@ -204,6 +222,11 @@ class Config(context: Context) {
         if (o.has("dockSide")) dockSide = o.getString("dockSide")
         if (o.has("maxVolume")) maxVolume = o.getInt("maxVolume")
         if (o.has("edgeVolume")) edgeVolume = o.getBoolean("edgeVolume")
+        if (o.has("pauseMediaOnHome")) pauseMediaOnHome = o.getBoolean("pauseMediaOnHome")
+        if (o.has("keepAliveApps")) {
+            val a = o.getJSONArray("keepAliveApps")
+            keepAliveApps = (0 until a.length()).map { a.getString(it) }
+        }
         // cameraAllowed is deliberately not settable here; see its comment.
         if (o.has("cameraFacing")) cameraFacing = o.getString("cameraFacing")
         if (o.has("cameraWidth")) cameraWidth = o.getInt("cameraWidth")
@@ -222,9 +245,14 @@ class Config(context: Context) {
         }
     }
 
-    /** Packages the launcher may open while lock task mode is on. */
+    /**
+     * Packages the launcher may open while lock task mode is on: the dock tiles, plus the kept-alive
+     * background players. Those have no tile, but Home Assistant reopens one through /launch when it
+     * has dropped off its server (MassDroid after a long Music Assistant outage).
+     */
     fun allowedPackages(self: String): Array<String> =
-        (listOf(self, HA_COMPANION) + tiles.mapNotNull { it.pkg }).distinct().toTypedArray()
+        (listOf(self, HA_COMPANION) + tiles.mapNotNull { it.pkg } + keepAliveApps)
+            .map { it.trim() }.filter { it.isNotEmpty() }.distinct().toTypedArray()
 
     companion object {
         const val HA_COMPANION = "io.homeassistant.companion.android"
@@ -239,6 +267,9 @@ class Config(context: Context) {
         private const val KEY_PROVISIONED = "provisioned"
         private const val KEY_MAX_VOLUME = "max_volume"
         private const val KEY_EDGE_VOLUME = "edge_volume"
+        private const val KEY_PAUSE_ON_HOME = "pause_media_on_home"
+        private const val KEY_KEEP_ALIVE = "keep_alive_apps"
+        const val DEFAULT_KEEP_ALIVE = "net.asksakis.massdroidv2"
         private const val KEY_CAM_ALLOWED = "camera_allowed"
         private const val KEY_CAM_FACING = "camera_facing"
         private const val KEY_CAM_WIDTH = "camera_width"
@@ -258,6 +289,7 @@ class Config(context: Context) {
             [
               {"label": "Music",   "package": "com.spotify.music",                         "color": "#1F8F4E"},
               {"label": "Live TV", "package": "com.google.android.apps.youtube.unplugged", "color": "#C43B33"},
+              {"label": "YouTube", "package": "com.google.android.youtube",                "color": "#E62117"},
               {"label": "IPTV",    "package": "com.nst.iptvsmarterstvbox",                 "color": "#3A62B8"},
               {"label": "Radio",   "package": "com.radiocom",                              "color": "#E8702A"},
               {"label": "Call",    "package": "com.google.android.apps.tachyon",           "color": "#2FA866", "icon": "video"},

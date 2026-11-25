@@ -27,6 +27,9 @@ object Announcer {
     private var ready = false
     private val pending = ArrayList<Pair<String, Int?>>()
     private val queued = AtomicInteger(0)
+
+    /** True while an announcement is queued or speaking (its speech counts as music playing). */
+    val speaking get() = queued.get() > 0
     private var focus: AudioFocusRequest? = null
     private var restoreVolume: Int? = null
     private lateinit var app: Context

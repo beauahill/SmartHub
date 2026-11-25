@@ -31,6 +31,10 @@ import kotlin.math.roundToInt
  * away a few seconds after the last touch, or at once when you touch anywhere else. The dock's
  * Volume tile opens the same slider.
  *
+ * Beside the slider, on the same glass, are previous, play/pause and next for whatever app plays
+ * (Spotify, MassDroid, YouTube TV; see [Media]), so the music can be stopped even when the app's own
+ * screen is stuck.
+ *
  * The slider runs from silent to the speaker cap ([Config.maxVolume]), so the top is the loudest the
  * speakers are allowed, and its percent is of that range.
  *
@@ -46,10 +50,13 @@ object VolumeOverlay {
     private const val EDGE_FRACTION = 0.7f      // the middle 70 % of the edge; corners stay with the apps
     private const val GESTURE_GUARD_DP = 200    // Android lets a window keep this much edge from the back gesture
     private const val OPEN_DP = 24              // leftward travel before the slider opens
-    private const val PANEL_W_DP = 88
+    private const val SLIDER_W_DP = 88
+    private const val MEDIA_W_DP = 68           // the media buttons' column, left of the slider
+    private const val PANEL_W_DP = SLIDER_W_DP + MEDIA_W_DP
     private const val PANEL_H_DP = 330
     private const val MARGIN_DP = 28            // from the right edge, clear of the dock's tiles
     private const val HIDE_MS = 2500L
+    private const val HIDE_AFTER_BUTTON_MS = 4000L
 
     private val main = Handler(Looper.getMainLooper())
     private var app: Context? = null
@@ -63,6 +70,9 @@ object VolumeOverlay {
     private var dragY = 0f
     private var dragLevel = 0f
     private var dragging = false
+    private var pressedButton = -1               // a media button held down, or -1
+
+    private val refreshMedia = Runnable { panel?.let { p -> if (panelShown) p.playing = Media.isPlaying(app!!) } }
 
     private val hideLater = Runnable { hide() }
 
@@ -94,6 +104,7 @@ object VolumeOverlay {
     fun refresh() {
         val p = panel ?: return
         if (panelShown && !dragging) p.level = Volume.level(app!!, cfg!!)
+        if (panelShown) p.playing = Media.isPlaying(app!!)
     }
 
     fun release() {
@@ -160,15 +171,31 @@ object VolumeOverlay {
         val ctx = app ?: return
         val p = panel ?: PanelView(ctx).also { panel = it }
         p.level = Volume.level(ctx, cfg!!)
+        p.playing = Media.isPlaying(ctx)
         if (!panelShown) {
             p.animate().cancel()
             if (p.parent == null) {
                 p.setOnTouchListener { _, e ->
                     when (e.actionMasked) {
                         MotionEvent.ACTION_OUTSIDE -> hide()
-                        MotionEvent.ACTION_DOWN -> startDrag(e.rawY)
-                        MotionEvent.ACTION_MOVE -> drag(e.rawY)
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> endDrag()
+                        MotionEvent.ACTION_DOWN -> {
+                            pressedButton = p.buttonAt(e.x, e.y)
+                            if (pressedButton >= 0) { p.pressed = pressedButton; main.removeCallbacks(hideLater) }
+                            else startDrag(e.rawY)
+                        }
+                        MotionEvent.ACTION_MOVE ->
+                            if (pressedButton < 0) drag(e.rawY)
+                            else p.pressed = if (p.buttonAt(e.x, e.y) == pressedButton) pressedButton else -1
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            if (pressedButton >= 0) {
+                                val hit = e.actionMasked == MotionEvent.ACTION_UP && p.buttonAt(e.x, e.y) == pressedButton
+                                p.pressed = -1
+                                if (hit) mediaButton(p, pressedButton)
+                                pressedButton = -1
+                                main.removeCallbacks(hideLater)
+                                main.postDelayed(hideLater, HIDE_AFTER_BUTTON_MS)
+                            } else endDrag()
+                        }
                     }
                     true
                 }
@@ -197,6 +224,9 @@ object VolumeOverlay {
         if (!panelShown) return
         panelShown = false
         dragging = false
+        pressedButton = -1
+        p.pressed = -1
+        main.removeCallbacks(refreshMedia)
         p.animate().translationX(dp(PANEL_W_DP + MARGIN_DP).toFloat()).alpha(0f).setDuration(160)
             .withEndAction { if (!panelShown) detach(p) }.start()
     }
@@ -215,6 +245,26 @@ object VolumeOverlay {
         dragY = y
         p.level = dragLevel
         Volume.setLevel(app!!, cfg!!, dragLevel)
+    }
+
+    private fun mediaButton(p: PanelView, which: Int) {
+        val ctx = app ?: return
+        try {
+            when (which) {
+                PanelView.PREVIOUS -> Media.previous(ctx)
+                PanelView.PLAY_PAUSE -> {
+                    val wasPlaying = Media.isPlaying(ctx)
+                    Media.playPause(ctx)
+                    p.playing = !wasPlaying              // show it at once; the app confirms below
+                }
+                PanelView.NEXT -> Media.next(ctx)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "media button", e)
+        }
+        main.removeCallbacks(refreshMedia)
+        main.postDelayed(refreshMedia, 700)
+        main.postDelayed(refreshMedia, 2000)
     }
 
     private fun endDrag() {
@@ -243,7 +293,8 @@ object VolumeOverlay {
 
     /**
      * The slider: the dock's dark glass, a percent at the top, a white fill rising in a pill-shaped
-     * track, and the volume glyph underneath.
+     * track, and the volume glyph underneath. Left of it, round previous, play/pause and next buttons
+     * in the track's frosted white.
      */
     private class PanelView(ctx: Context) : View(ctx) {
         private val d = ctx.resources.displayMetrics.density
@@ -261,12 +312,44 @@ object VolumeOverlay {
         }
         private val iconOn = ctx.getDrawable(R.drawable.dock_volume)!!.mutate().apply { setTint(0xDBFFFFFF.toInt()) }
         private val iconOff = ctx.getDrawable(R.drawable.dock_volume_off)!!.mutate().apply { setTint(0xDBFFFFFF.toInt()) }
+        private fun glyph(id: Int) = context.getDrawable(id)!!.mutate().apply { setTint(0xF5FFFFFF.toInt()) }
+        private val icPrev = glyph(R.drawable.media_previous)
+        private val icNext = glyph(R.drawable.media_next)
+        private val icPlay = glyph(R.drawable.media_play)
+        private val icPause = glyph(R.drawable.media_pause)
+        private val button = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x24FFFFFF }
+        private val buttonDown = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x52FFFFFF }
         private val box = RectF()
         private val trackBox = RectF()
         private val clip = Path()
 
         var level = 0f
             set(v) { val c = v.coerceIn(0f, 1f); if (c != field) { field = c; invalidate() } }
+
+        /** Something is playing: the middle button shows pause, otherwise play. */
+        var playing = false
+            set(v) { if (v != field) { field = v; invalidate() } }
+
+        /** The media button under the finger, or -1. */
+        var pressed = -1
+            set(v) { if (v != field) { field = v; invalidate() } }
+
+        private val mediaW get() = MEDIA_W_DP * d
+        private val sliderLeft get() = mediaW - 6f * d     // the columns share the gap between them
+        private fun buttonX() = mediaW / 2 + 2f * d
+        private fun buttonY(i: Int) = when (i) {
+            PREVIOUS -> trackTop + 26f * d
+            PLAY_PAUSE -> (trackTop + trackBottom) / 2
+            else -> trackBottom - 26f * d
+        }
+        private fun buttonR(i: Int) = (if (i == PLAY_PAUSE) 27f else 22f) * d
+
+        /** Which media button (x, y) falls on, with some slack around each; -1 for the slider side. */
+        fun buttonAt(x: Float, y: Float): Int {
+            if (x > sliderLeft) return -1
+            for (i in 0..2) if (abs(y - buttonY(i)) <= buttonR(i) + 14f * d) return i
+            return -1
+        }
 
         private val pad get() = 14f * d
         private val trackTop get() = 48f * d
@@ -283,9 +366,21 @@ object VolumeOverlay {
             box.inset(edgeLine.strokeWidth / 2, edgeLine.strokeWidth / 2)
             canvas.drawRoundRect(box, r, r, edgeLine)
 
-            canvas.drawText("${(level * 100).roundToInt()}%", w / 2, 32f * d, text)
+            for (i in 0..2) {
+                val cx = buttonX()
+                val cy = buttonY(i)
+                val br = buttonR(i)
+                canvas.drawCircle(cx, cy, br, if (pressed == i) buttonDown else button)
+                val g = when (i) { PREVIOUS -> icPrev; NEXT -> icNext; else -> if (playing) icPause else icPlay }
+                val s = ((if (i == PLAY_PAUSE) 30f else 24f) * d).toInt()
+                g.setBounds((cx - s / 2).toInt(), (cy - s / 2).toInt(), (cx + s / 2).toInt(), (cy + s / 2).toInt())
+                g.draw(canvas)
+            }
 
-            trackBox.set(pad, trackTop, w - pad, trackBottom)
+            val sx = (sliderLeft + w) / 2                       // the slider column's middle
+            canvas.drawText("${(level * 100).roundToInt()}%", sx, 32f * d, text)
+
+            trackBox.set(sliderLeft + pad, trackTop, w - pad, trackBottom)
             val tr = trackBox.width() / 2.6f
             canvas.drawRoundRect(trackBox, tr, tr, track)
             if (level > 0f) {
@@ -299,10 +394,16 @@ object VolumeOverlay {
 
             val icon = if (level > 0f) iconOn else iconOff
             val s = (26f * d).toInt()
-            val cx = (w / 2).toInt()
+            val cx = sx.toInt()
             val cy = (h - 30f * d).toInt()
             icon.setBounds(cx - s / 2, cy - s / 2, cx + s / 2, cy + s / 2)
             icon.draw(canvas)
+        }
+
+        companion object {
+            const val PREVIOUS = 0
+            const val PLAY_PAUSE = 1
+            const val NEXT = 2
         }
     }
 }

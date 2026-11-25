@@ -171,7 +171,8 @@ object Bus {
 }
 
 sealed class Command {
-    object Home : Command()
+    /** Back to the dashboard; [pauseMedia] pauses what plays (when the setting allows). */
+    data class Home(val pauseMedia: Boolean = true) : Command()
     object Reload : Command()
     object WakeUp : Command()
     data class Ambient(val on: Boolean) : Command()
